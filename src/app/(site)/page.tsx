@@ -1,9 +1,10 @@
-import { ArrowRight, BadgeCheck, ShieldCheck, Sparkles, Truck, Wrench } from "lucide-react";
+import { ArrowRight, BadgeCheck, Check, ShieldCheck, Sparkles, Truck, Wrench } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import heroImage from "@/assets/backgrounds/hero-array.webp";
 import installersImage from "@/assets/backgrounds/installers-roof.webp";
 import fieldImage from "@/assets/backgrounds/field-array.webp";
+import { BackupPlanner } from "@/components/home/backup-planner";
 import { Reveal, RevealItem, RevealList } from "@/components/motion/reveal";
 import { ProductCard } from "@/components/product/product-card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -12,7 +13,9 @@ import { shopNav, site } from "@/config/site";
 import type { CategorySlug } from "@/lib/catalogue/classify";
 import { sortProducts } from "@/lib/catalogue/filters";
 import { getCatalogue } from "@/lib/catalogue/queries";
-import { availability, type Product } from "@/lib/catalogue/types";
+import { availability, canPurchase, productUrl, specNum, specText, type Product } from "@/lib/catalogue/types";
+import { batteryBus, inverterBus } from "@/lib/compatibility/engine";
+import type { PlannerStock } from "@/lib/planner/match";
 import { formatRand } from "@/lib/pricing/vat";
 
 const steps = [
@@ -100,63 +103,72 @@ export default async function HomePage() {
   const featured = (["inverters", "batteries", "solar-panels", "kits"] as const).flatMap((c) => topInStock(products, c, 2));
   const brandList = [...brands].sort() as string[];
 
-  const stats = [
-    {
-      value: products.length ? `${products.length}+` : "200+",
-      label: "products in the range",
-    },
-    { value: brands.size ? `${brands.size}` : "20+", label: "leading brands" },
-    { value: "9", label: "provinces we deliver to" },
-    { value: "15%", label: "VAT included in every price" },
+  // Compact stock list for the backup planner (runs in the browser).
+  const plannerItem = (p: Product) => ({
+    id: p.id,
+    name: p.name,
+    brand: p.brand,
+    url: productUrl(p),
+    image: p.images[0]?.url ?? null,
+    price: p.priceInclVat,
+    inStock: canPurchase(p),
+  });
+  const plannerStock: PlannerStock = {
+    kits: products
+      .filter((p) => p.category === "kits" && specNum(p, "inverter_power_kw") && specNum(p, "battery_capacity_kwh"))
+      .map((p) => ({ ...plannerItem(p), inverterKw: specNum(p, "inverter_power_kw")!, batteryKwh: specNum(p, "battery_capacity_kwh")! })),
+    inverters: products
+      .filter((p) => p.category === "inverters" && specText(p, "inverter_type") !== "Grid-tie" && specNum(p, "rated_power_kw") && inverterBus(p))
+      .map((p) => ({ ...plannerItem(p), kw: specNum(p, "rated_power_kw")!, bus: String(inverterBus(p)) })),
+    batteries: products
+      .filter((p) => p.category === "batteries" && specNum(p, "capacity_kwh") && batteryBus(p))
+      .map((p) => ({ ...plannerItem(p), kwh: specNum(p, "capacity_kwh")!, bus: String(batteryBus(p)) })),
+  };
+
+  const facts = [
+    `${products.length || 199} products from ${brands.size || 24} brands, prices include VAT`,
+    "Delivered anywhere in South Africa",
+    "Optional installation by our registered technician",
   ];
 
   return (
     <>
-      {/* Hero */}
+      {/* Hero: the backup planner is the centrepiece */}
       <section className="relative isolate -mt-px overflow-hidden bg-navy text-white">
-        <Image src={heroImage} alt="" fill priority placeholder="blur" sizes="100vw" className="-z-20 scale-105 object-cover" />
+        <Image src={heroImage} alt="" fill priority placeholder="blur" sizes="100vw" className="-z-20 object-cover" />
         <div className="photo-wash absolute inset-0 -z-10" aria-hidden="true" />
-        <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-navy/80 to-transparent" aria-hidden="true" />
-        <div className="container-page flex min-h-[min(88vh,860px)] flex-col justify-center py-20 lg:py-28">
-          <div className="max-w-3xl animate-in fade-in slide-in-from-bottom-6 duration-700">
-            <p className="glass mb-8 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm text-white/90">
-              <Sparkles className="size-4 text-sun" aria-hidden="true" />
-              Solar · Lithium batteries · Backup power
-            </p>
-            <h1 className="text-5xl leading-[1.02] font-semibold sm:text-6xl lg:text-7xl xl:text-[5.25rem]">
-              Keep the lights on. <span className="text-sun">Cut the bill.</span>
-            </h1>
-            <p className="mt-7 max-w-2xl text-lg leading-relaxed text-white/80 sm:text-xl">
-              Tier-one solar panels, lithium batteries and hybrid inverters for South African homes and businesses. Sized for your home, checked for
-              compatibility, and installed by our registered technician if you want.
-            </p>
-            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="h-14 px-8 text-base shadow-lg shadow-sun/20 transition-transform hover:-translate-y-0.5">
-                <Link href="/advisor">
-                  Size my system <ArrowRight />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="ghost"
-                className="glass h-14 px-8 text-base text-white hover:bg-white/20 hover:text-white"
-              >
-                <Link href="/shop">Browse the shop</Link>
-              </Button>
+        <div className="container-page py-12 lg:py-16">
+          <div className="grid items-end gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700 lg:grid-cols-[1.4fr_1fr]">
+            <div>
+              <h1 className="max-w-3xl text-5xl leading-[1.02] font-semibold sm:text-6xl xl:text-7xl">Keep the lights on when the power goes off.</h1>
+              <p className="mt-5 max-w-xl text-lg leading-relaxed text-white/80">
+                Solar panels, lithium batteries and inverters for South African homes and businesses, matched so they work together.
+              </p>
+            </div>
+            <div className="space-y-6 lg:pb-2">
+              <ul className="space-y-2">
+                {facts.map((f) => (
+                  <li key={f} className="flex items-center gap-3 text-white/90">
+                    <Check className="size-5 shrink-0 text-sun" aria-hidden="true" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button asChild size="lg" className="h-12 px-6 text-base">
+                  <Link href="/shop">Shop the range</Link>
+                </Button>
+                <Button asChild size="lg" variant="ghost" className="glass h-12 px-6 text-base text-white hover:bg-white/20 hover:text-white">
+                  <Link href="/advisor">
+                    <Sparkles className="text-sun" /> Ask the Solar Advisor
+                  </Link>
+                </Button>
+              </div>
             </div>
           </div>
-          <dl className="mt-16 grid max-w-4xl grid-cols-2 gap-3 animate-in fade-in slide-in-from-bottom-4 duration-1000 sm:grid-cols-4 lg:mt-24">
-            {stats.map((s) => (
-              <div key={s.label} className="glass rounded-2xl px-5 py-4">
-                <dt className="sr-only">{s.label}</dt>
-                <dd>
-                  <span className="num block font-display text-3xl font-semibold text-white">{s.value}</span>
-                  <span className="mt-1 block text-sm text-white/70">{s.label}</span>
-                </dd>
-              </div>
-            ))}
-          </dl>
+          <div className="mt-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+            <BackupPlanner stock={plannerStock} />
+          </div>
         </div>
       </section>
 
@@ -181,7 +193,6 @@ export default async function HomePage() {
       <section className="container-page py-20 lg:py-28" aria-labelledby="categories-heading">
         <Reveal className="mb-12 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="eyebrow mb-3">Shop by category</p>
             <h2 id="categories-heading" className="text-4xl font-semibold sm:text-5xl">
               Everything for a complete system
             </h2>
@@ -240,7 +251,6 @@ export default async function HomePage() {
           <div className="container-page">
             <Reveal className="mb-12 flex flex-wrap items-end justify-between gap-4">
               <div>
-                <p className="eyebrow mb-3">In stock now</p>
                 <h2 id="featured-heading" className="text-4xl font-semibold sm:text-5xl">
                   Popular right now
                 </h2>
@@ -266,7 +276,6 @@ export default async function HomePage() {
         <div className="absolute inset-0 -z-10 bg-navy/88" aria-hidden="true" />
         <div className="container-page py-20 lg:py-28">
           <Reveal>
-            <p className="eyebrow mb-3 text-sun">How it works</p>
             <h2 id="how-heading" className="max-w-3xl text-4xl font-semibold sm:text-5xl">
               From your electricity bill to a working system in three steps
             </h2>
@@ -294,7 +303,7 @@ export default async function HomePage() {
       {brandList.length > 0 && (
         <section className="container-page py-16" aria-labelledby="brands-heading">
           <Reveal>
-            <h2 id="brands-heading" className="text-center font-sans text-sm font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+            <h2 id="brands-heading" className="text-center font-sans text-base font-medium text-muted-foreground">
               Brands we stock
             </h2>
             <ul className="mx-auto mt-8 flex max-w-5xl flex-wrap justify-center gap-x-10 gap-y-4">
@@ -311,7 +320,6 @@ export default async function HomePage() {
       {/* FAQ */}
       <section className="container-page grid gap-12 border-t py-20 lg:grid-cols-[1fr_1.4fr] lg:py-28" aria-labelledby="faq-heading">
         <Reveal>
-          <p className="eyebrow mb-3">Questions</p>
           <h2 id="faq-heading" className="text-4xl font-semibold sm:text-5xl">
             Straight answers
           </h2>
@@ -356,12 +364,7 @@ export default async function HomePage() {
                   Size my system <ArrowRight />
                 </Link>
               </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="ghost"
-                className="glass h-14 px-8 text-base text-white hover:bg-white/20 hover:text-white"
-              >
+              <Button asChild size="lg" variant="ghost" className="glass h-14 px-8 text-base text-white hover:bg-white/20 hover:text-white">
                 <Link href="/contact">Talk to us</Link>
               </Button>
             </div>

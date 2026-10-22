@@ -27,3 +27,11 @@ export async function getDeliveryQuote(address: {
     { province: parsed.data.province, postalCode: parsed.data.postalCode || undefined },
   );
 }
+
+/** Delivery cost of one product to a province, for the product page. */
+export async function estimateProductDelivery(productId: string, province: string): Promise<{ ok: true; quote: DeliveryQuote } | { ok: false; error: string }> {
+  const parsed = z.object({ productId: z.uuid(), province: z.enum(PROVINCES) }).safeParse({ productId, province });
+  if (!parsed.success) return { ok: false, error: "Choose a province." };
+  if (!isServiceRoleConfigured()) return { ok: false, error: "Delivery is worked out at checkout." };
+  return quoteDelivery([{ productId: parsed.data.productId, quantity: 1, installation: false }], { province: parsed.data.province });
+}

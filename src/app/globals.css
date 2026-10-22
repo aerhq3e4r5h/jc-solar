@@ -39,6 +39,7 @@
   --color-navy: var(--navy);
   --color-navy-foreground: var(--navy-foreground);
   --color-sun: var(--sun);
+  --color-cell: var(--cell);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -52,6 +53,8 @@
   --radius: 0.75rem;
 
   --sun: oklch(0.8 0.155 75);
+  /* Solar-cell blue: selected and interactive states. */
+  --cell: oklch(0.48 0.17 262);
   --navy: oklch(0.22 0.04 258);
   --navy-foreground: oklch(0.975 0.006 85);
 
@@ -100,6 +103,7 @@
   --success: oklch(0.74 0.15 152);
   --warning: oklch(0.8 0.14 70);
   --amber-ink: oklch(0.83 0.14 78);
+  --cell: oklch(0.6 0.16 262);
 }
 
 @layer base {
@@ -154,8 +158,9 @@
   .glass {
     @apply border border-white/15 bg-white/10 backdrop-blur-md;
   }
+  /* Short context label above a heading, in sentence case. */
   .eyebrow {
-    @apply font-mono text-xs font-medium tracking-[0.18em] uppercase text-amber-ink;
+    @apply text-sm font-semibold text-amber-ink;
   }
   .num {
     font-variant-numeric: tabular-nums;

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
+import { PaymentMethods } from "@/components/brand/payment-methods";
 import { footerNav, site } from "@/config/site";
 
 export function SiteFooter() {
@@ -29,6 +30,9 @@ export function SiteFooter() {
             </ul>
           </nav>
         ))}
+      </div>
+      <div className="container-page pb-8">
+        <PaymentMethods />
       </div>
       <div className="border-t">
         <div className="container-page flex flex-col gap-2 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">

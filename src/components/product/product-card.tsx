@@ -1,14 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
-import { productUrl, type Product } from "@/lib/catalogue/types";
+import { canPurchase, productUrl, type Product } from "@/lib/catalogue/types";
 import { artLabel, cardSpecs } from "./key-specs";
 import { Price } from "./price";
 import { ProductArt } from "./product-art";
+import { QuickAdd } from "./quick-add";
 import { StockBadge } from "./stock-badge";
 
 export function ProductCard({ product, priority = false }: { product: Product; priority?: boolean }) {
   const image = product.images[0];
   const specs = cardSpecs(product);
+  const quickAdd = canPurchase(product) ? <QuickAdd productId={product.id} name={product.name} /> : null;
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border bg-card transition-all duration-300 hover:-translate-y-1 hover:border-foreground/15 hover:shadow-xl hover:shadow-navy/10">
       {image ? (
@@ -21,14 +23,16 @@ export function ProductCard({ product, priority = false }: { product: Product; p
             className="object-contain p-2 transition-transform duration-500 group-hover:scale-105"
             priority={priority}
           />
+          {quickAdd}
         </div>
       ) : (
-        <div className="p-3 pb-0">
+        <div className="relative p-3 pb-0">
           <ProductArt category={product.category} label={artLabel(product)} />
+          {quickAdd}
         </div>
       )}
       <div className="flex flex-1 flex-col gap-2 p-4 sm:p-5">
-        {product.brand && <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{product.brand}</p>}
+        {product.brand && <p className="text-sm font-medium text-muted-foreground">{product.brand}</p>}
         <h3 className="line-clamp-2 font-sans text-sm leading-snug font-medium sm:text-base">
           <Link href={productUrl(product)} className="after:absolute after:inset-0 after:rounded-2xl">
             {product.name}

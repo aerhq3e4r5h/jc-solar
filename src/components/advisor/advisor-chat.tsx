@@ -113,7 +113,7 @@ function ProductCards({ products }: { products: RecommendationCard[] }) {
               )}
             </Link>
             <div className="flex min-w-0 flex-1 flex-col">
-              {p.brand && <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{p.brand}</p>}
+              {p.brand && <p className="text-xs font-medium text-muted-foreground">{p.brand}</p>}
               <Link href={p.url} className="line-clamp-2 text-sm leading-snug font-medium hover:underline">
                 {p.name}
               </Link>
@@ -173,10 +173,18 @@ export function AdvisorChat({ enabled }: { enabled: boolean }) {
   const textarea = useRef<HTMLTextAreaElement>(null);
 
   // Restore this tab's conversation (a convenience; nothing is stored on our side).
+  // A question handed over from another page (?ask=, e.g. the home-page planner) starts a fresh chat.
+  const [handedOver, setHandedOver] = useState<string | null>(null);
   useEffect(() => {
+    const ask = new URLSearchParams(window.location.search).get("ask")?.trim().slice(0, 1500);
+    if (ask) {
+      window.history.replaceState(null, "", window.location.pathname);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of the URL after hydration
+      setHandedOver(ask);
+      return;
+    }
     try {
       const saved = sessionStorage.getItem(STORAGE_KEY);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time restore after hydration
       if (saved) setMessages(JSON.parse(saved));
     } catch {}
   }, []);
@@ -222,6 +230,14 @@ export function AdvisorChat({ enabled }: { enabled: boolean }) {
       textarea.current?.focus();
     }
   };
+
+  useEffect(() => {
+    if (!handedOver || !enabled) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- consume the hand-over exactly once
+    setHandedOver(null);
+    void send(handedOver, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- send once per hand-over
+  }, [handedOver, enabled]);
 
   const retry = () => {
     const last = messages[messages.length - 1];

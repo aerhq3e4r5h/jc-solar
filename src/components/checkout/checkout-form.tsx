@@ -4,6 +4,7 @@ import { Building2, CreditCard, Loader2, Lock, Truck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { PaymentMethods } from "@/components/brand/payment-methods";
 import { OrderSummary } from "@/components/checkout/order-summary";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -373,6 +374,7 @@ export function CheckoutForm({
             Continue to review your order
           </Button>
           <p className="text-center text-xs text-muted-foreground">You&apos;ll see the full order before paying, and can still change it.</p>
+          <PaymentMethods className="justify-center" />
         </div>
       </form>
       <aside aria-label="Order summary" className="lg:sticky lg:top-24 lg:self-start">

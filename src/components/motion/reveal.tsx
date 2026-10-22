@@ -1,48 +1,23 @@
 "use client";
 
-import { MotionConfig, motion, type Variants } from "motion/react";
+import { MotionConfig } from "motion/react";
 
-// Scroll-triggered entrances. MotionProvider (in the site layout) honours
-// the visitor's reduced-motion setting: movement is dropped, only the fade stays.
-
-const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 28 },
-  shown: { opacity: 1, y: 0, transition: { duration: 0.65, ease: [0.22, 1, 0.36, 1] } },
-};
-
-const viewport = { once: true, margin: "0px 0px -8% 0px" } as const;
+// Sections render immediately: no scroll-triggered fades, so content is
+// visible to every visitor and crawler. The hero's load sequence is the
+// site's one orchestrated motion. These wrappers keep the page markup tidy.
 
 export function MotionProvider({ children }: { children: React.ReactNode }) {
   return <MotionConfig reducedMotion="user">{children}</MotionConfig>;
 }
 
 export function Reveal({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <motion.div className={className} variants={fadeUp} initial="hidden" whileInView="shown" viewport={viewport}>
-      {children}
-    </motion.div>
-  );
+  return <div className={className}>{children}</div>;
 }
 
-/** A list whose items rise in one after another. Children should be <RevealItem>. */
 export function RevealList({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <motion.ul
-      className={className}
-      initial="hidden"
-      whileInView="shown"
-      viewport={viewport}
-      variants={{ hidden: {}, shown: { transition: { staggerChildren: 0.07 } } }}
-    >
-      {children}
-    </motion.ul>
-  );
+  return <ul className={className}>{children}</ul>;
 }
 
 export function RevealItem({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <motion.li className={className} variants={fadeUp}>
-      {children}
-    </motion.li>
-  );
+  return <li className={className}>{children}</li>;
 }

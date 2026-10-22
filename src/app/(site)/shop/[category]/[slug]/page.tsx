@@ -1,8 +1,9 @@
-import { BadgeCheck, FileDown, ShieldCheck, Star, TriangleAlert, Truck } from "lucide-react";
+import { BadgeCheck, FileDown, ShieldCheck, Star, TriangleAlert } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Suspense } from "react";
+import { DeliveryEstimate } from "@/components/product/delivery-estimate";
 import { Gallery } from "@/components/product/gallery";
 import { artLabel } from "@/components/product/key-specs";
 import { Price } from "@/components/product/price";
@@ -177,7 +178,7 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
 
         <div className="space-y-6">
           <div>
-            {product.brand && <p className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">{product.brand}</p>}
+            {product.brand && <p className="font-medium text-muted-foreground">{product.brand}</p>}
             <h1 className="mt-1 text-2xl leading-tight font-semibold sm:text-3xl">{product.name}</h1>
             <p className="mt-2 font-mono text-xs text-muted-foreground">SKU {product.sku}</p>
           </div>
@@ -210,13 +211,17 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
           />
 
           <ul className="space-y-3 rounded-2xl border bg-card p-5 text-sm">
-            <li className="flex gap-3">
-              <Truck className="size-5 shrink-0 text-amber-ink" aria-hidden="true" />
-              <span>
-                <strong className="font-medium">Delivery anywhere in South Africa.</strong> The cost is worked out at checkout from your address
-                {product.shippingClass === "oversized" && "; panels travel on a pallet"}
-                {product.isDangerousGoods && "; lithium batteries ship with a dangerous-goods courier"}.
-              </span>
+            <li>
+              <DeliveryEstimate
+                productId={product.id}
+                note={
+                  product.shippingClass === "oversized"
+                    ? "Panels travel on a pallet; extra panels add a little each."
+                    : product.isDangerousGoods
+                      ? "Lithium batteries travel as dangerous goods with an approved service."
+                      : null
+                }
+              />
             </li>
             <li className="flex gap-3">
               <ShieldCheck className="size-5 shrink-0 text-amber-ink" aria-hidden="true" />
