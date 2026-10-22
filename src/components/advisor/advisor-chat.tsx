@@ -37,7 +37,7 @@ function RichText({ text }: { text: string }) {
           {part.slice(2, -2)}
         </strong>
       ) : (
-        <Fragment key={i}>{part}</Fragment>
+        <Fragment key={i}>{part.replace(/(^|[\s(])\*(?!\s)([^*\n]+?)\*(?=$|[\s.,!?:;)])/g, "$1$2")}</Fragment>
       ),
     );
   return (
