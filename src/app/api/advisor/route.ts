@@ -60,7 +60,10 @@ export async function POST(request: NextRequest) {
         e.kind === "config" || e.kind === "upstream"
           ? "The advisor is having trouble right now. Please try again shortly, or contact us."
           : e.message;
-      return json({ error: message, code: e.code }, e.kind === "limit" ? 429 : e.kind === "blocked" ? 400 : 502);
+      return json(
+        { error: message, code: e.code, ...(e.detail ? { detail: e.detail } : {}) },
+        e.kind === "limit" ? 429 : e.kind === "blocked" ? 400 : 502,
+      );
     }
     console.error("[advisor]", e);
     const timedOut = e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError");

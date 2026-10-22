@@ -18,6 +18,8 @@ export class AdvisorError extends Error {
     readonly kind: "config" | "upstream" | "blocked" | "limit",
     /** Short reason safe to show publicly, for diagnosing a deployment. */
     readonly code: string = kind,
+    /** Google's own error text for a rejected request (no secrets), for diagnosis. */
+    public detail?: string,
   ) {
     super(message);
   }
@@ -40,6 +42,7 @@ const SWITCH_CODES = new Set([
   "no_model_access",
   "rate_limited",
   "timeout",
+  "gemini_400",
   "gemini_500",
   "gemini_502",
   "gemini_503",
@@ -62,6 +65,7 @@ export async function runAdvisor(opts: RunOptions): Promise<{ text: string; tool
   const deadline = Date.now() + (opts.budgetMs ?? DEADLINE_MS);
   const models = [opts.model, ...FALLBACK_MODELS.filter((m) => m !== opts.model)];
   let last: unknown;
+  const attempts: string[] = [];
   for (const model of models) {
     // Not worth starting a model with too little time left for an answer.
     if (model !== models[0] && deadline - Date.now() < 5_000) break;
@@ -71,8 +75,10 @@ export async function runAdvisor(opts: RunOptions): Promise<{ text: string; tool
       last = e;
       if (!(e instanceof AdvisorError) || !SWITCH_CODES.has(e.code)) throw e;
       console.warn(`[advisor] ${model}: ${e.message}`);
+      attempts.push(`${model}: ${e.code}${e.detail ? ` (${e.detail})` : ""}`);
     }
   }
+  if (last instanceof AdvisorError && attempts.length > 1) last.detail = attempts.join("; ");
   throw last;
 }
 
@@ -135,7 +141,11 @@ async function runWithModel({ apiKey, model, system, history, ctx, fetchImpl = f
         throw new AdvisorError(`The Gemini API key doesn't have access to "${model}": ${detail.slice(0, 300)}`, "config", "no_model_access");
       if (res.status === 404) throw new AdvisorError(`Gemini model "${model}" was not found.`, "config", "model_not_found");
       if (res.status === 429) throw new AdvisorError("The advisor is busy right now. Please try again in a minute.", "limit", "rate_limited");
-      throw new AdvisorError(`Gemini returned ${res.status}: ${detail.slice(0, 300)}`, "upstream", `gemini_${res.status}`);
+      let reason = detail.slice(0, 300);
+      try {
+        reason = (JSON.parse(detail) as { error?: { message?: string } }).error?.message?.slice(0, 300) ?? reason;
+      } catch {}
+      throw new AdvisorError(`Gemini returned ${res.status}: ${reason}`, "upstream", `gemini_${res.status}`, res.status === 400 ? reason : undefined);
     }
 
     const data = (await res.json()) as {
