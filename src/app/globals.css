@@ -110,6 +110,12 @@
     scroll-behavior: smooth;
     text-rendering: optimizeLegibility;
   }
+  /* Slightly larger type on big screens; everything is rem-based so it scales together. */
+  @media (min-width: 1280px) {
+    html {
+      font-size: 106.25%;
+    }
+  }
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }
@@ -136,7 +142,17 @@
 
 @layer components {
   .container-page {
-    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+    @apply mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-10;
+  }
+  /* Full-bleed photo band: image layer + navy wash for legible white text. */
+  .photo-wash {
+    background: linear-gradient(100deg, oklch(0.16 0.04 258 / 0.94) 0%, oklch(0.18 0.04 258 / 0.78) 45%, oklch(0.2 0.04 258 / 0.35) 100%);
+  }
+  .photo-wash-bottom {
+    background: linear-gradient(to top, oklch(0.16 0.04 258 / 0.92) 0%, oklch(0.16 0.04 258 / 0.45) 55%, oklch(0.16 0.04 258 / 0.1) 100%);
+  }
+  .glass {
+    @apply border border-white/15 bg-white/10 backdrop-blur-md;
   }
   .eyebrow {
     @apply font-mono text-xs font-medium tracking-[0.18em] uppercase text-amber-ink;

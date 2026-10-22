@@ -1,9 +1,18 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { createPublicClient, storagePublicUrl } from "@/lib/supabase/public";
+import productImages from "@/data/product-images.json";
 import { isCategorySlug, type Product } from "./types";
 
 export const CATALOGUE_TAG = "catalogue";
+
+// Photos supplied by Solar Europe, shipped with the site under public/products.
+// Used until an admin uploads images for the product in Supabase Storage.
+const BUNDLED_IMAGES: Record<string, { src: string }[]> = productImages;
+
+function bundledImages(sku: string, name: string) {
+  return (BUNDLED_IMAGES[sku] ?? []).map((img, i) => ({ url: img.src, alt: i === 0 ? name : `${name}, view ${i + 1}` }));
+}
 
 const PRODUCT_COLUMNS = `
   id, sku, slug, name, price_incl_vat, compare_at_price_incl_vat, stock_qty, allow_backorder,
@@ -55,9 +64,11 @@ export async function getCatalogue(): Promise<Product[]> {
       shortDescription: row.short_description,
       description: row.description,
       datasheetUrl: row.datasheet_path ? storagePublicUrl("datasheets", row.datasheet_path) : null,
-      images: [...row.product_images]
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .map((img) => ({ url: storagePublicUrl("product-images", img.storage_path), alt: img.alt })),
+      images: row.product_images.length
+        ? [...row.product_images]
+            .sort((a, b) => a.sort_order - b.sort_order)
+            .map((img) => ({ url: storagePublicUrl("product-images", img.storage_path), alt: img.alt }))
+        : bundledImages(row.sku, row.name),
       specs: [...row.product_specs]
         .sort((a, b) => a.sort_order - b.sort_order)
         .map((s) => ({

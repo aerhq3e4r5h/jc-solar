@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import type { StaticImageData } from "next/image";
+import closeupImage from "@/assets/backgrounds/panel-closeup.webp";
+import heroImage from "@/assets/backgrounds/hero-array.webp";
+import homeImage from "@/assets/backgrounds/home-roof.webp";
+import installerImage from "@/assets/backgrounds/installer-commercial.webp";
+import { PhotoBanner } from "@/components/layout/photo-banner";
 import { ProductCard } from "@/components/product/product-card";
 import { Breadcrumbs } from "@/components/shop/breadcrumbs";
 import { FiltersPanel } from "@/components/shop/filters-panel";
@@ -36,6 +42,13 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
   };
 }
 
+const BANNER: Record<CategorySlug, StaticImageData> = {
+  "solar-panels": closeupImage,
+  batteries: homeImage,
+  inverters: installerImage,
+  kits: heroImage,
+};
+
 const TYPE_LABEL: Partial<Record<CategorySlug, string>> = {
   "solar-panels": "Cell type",
   inverters: "Inverter type",
@@ -52,7 +65,7 @@ async function Results({ category, searchParams }: { category: CategorySlug; sea
   const size = SIZE_SPEC[category];
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[260px_1fr]">
+    <div className="grid gap-10 lg:grid-cols-[280px_1fr]">
       <FiltersPanel
         facets={facets}
         filters={filters}
@@ -74,7 +87,7 @@ async function Results({ category, searchParams }: { category: CategorySlug; sea
             <p className="mt-1 text-sm text-muted-foreground">Try removing a filter, or ask us and we&apos;ll help you find the right product.</p>
           </div>
         ) : (
-          <ul className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">
+          <ul className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-3 2xl:grid-cols-4">
             {results.map((p, i) => (
               <li key={p.id}>
                 <ProductCard product={p} priority={i < 3} />
@@ -107,21 +120,24 @@ async function CategoryBody({ params, searchParams }: { params: Promise<{ catego
 
   return (
     <>
-      <Breadcrumbs
-        siteUrl={siteUrl()}
-        items={[
-          { href: "/", label: "Home" },
-          { href: "/shop", label: "Shop" },
-          { href: `/shop/${category}`, label: c.name },
-        ]}
-      />
-      <header className="mt-6 mb-10 max-w-3xl">
-        <h1 className="text-4xl font-semibold sm:text-5xl">{c.name}</h1>
-        <p className="mt-3 text-lg text-muted-foreground">{c.blurb}</p>
-      </header>
-      <Suspense fallback={<ResultsSkeleton />}>
-        <Results category={category} searchParams={searchParams} />
-      </Suspense>
+      <PhotoBanner image={BANNER[category]} eyebrow="Shop" title={c.name}>
+        <p>{c.blurb}</p>
+      </PhotoBanner>
+      <div className="container-page py-8">
+        <Breadcrumbs
+          siteUrl={siteUrl()}
+          items={[
+            { href: "/", label: "Home" },
+            { href: "/shop", label: "Shop" },
+            { href: `/shop/${category}`, label: c.name },
+          ]}
+        />
+        <div className="mt-8">
+          <Suspense fallback={<ResultsSkeleton />}>
+            <Results category={category} searchParams={searchParams} />
+          </Suspense>
+        </div>
+      </div>
     </>
   );
 }
@@ -130,17 +146,17 @@ async function CategoryBody({ params, searchParams }: { params: Promise<{ catego
 // demand (e.g. when a hosting cache regenerates it), not only at build time.
 export default function CategoryPage(props: { params: Promise<{ category: string }>; searchParams: Promise<SearchParams> }) {
   return (
-    <div className="container-page py-10">
-      <Suspense
-        fallback={
-          <>
-            <Skeleton className="mb-10 h-28 w-full max-w-3xl" />
+    <Suspense
+      fallback={
+        <>
+          <Skeleton className="h-72 w-full rounded-none" />
+          <div className="container-page py-16">
             <ResultsSkeleton />
-          </>
-        }
-      >
-        <CategoryBody {...props} />
-      </Suspense>
-    </div>
+          </div>
+        </>
+      }
+    >
+      <CategoryBody {...props} />
+    </Suspense>
   );
 }

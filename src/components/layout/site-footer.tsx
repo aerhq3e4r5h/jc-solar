@@ -8,11 +8,12 @@ export function SiteFooter() {
     .filter(Boolean)
     .join(" · ");
   return (
-    <footer className="mt-24 border-t bg-muted/40">
-      <div className="container-page grid gap-12 py-16 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+    <footer className="dark mt-24 border-t bg-background text-foreground lg:mt-32">
+      <div className="container-page grid gap-12 py-16 md:grid-cols-[1.4fr_repeat(3,1fr)] lg:py-20">
         <div className="max-w-sm space-y-4">
           <Logo />
           <p className="text-sm leading-relaxed text-muted-foreground">{site.description}</p>
+          <p className="text-sm text-muted-foreground">{site.deliveryArea}.</p>
         </div>
         {Object.entries(footerNav).map(([heading, links]) => (
           <nav key={heading} aria-label={heading}>

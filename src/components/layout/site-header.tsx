@@ -17,7 +17,7 @@ export function SiteHeader() {
       >
         Skip to content
       </a>
-      <div className="container-page flex h-16 items-center gap-4">
+      <div className="container-page flex h-16 items-center gap-4 lg:h-20">
         <MobileNav />
         <Link href="/" className="rounded-md" aria-label="JC Solar home">
           <Logo />
@@ -27,14 +27,14 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="relative rounded-md px-4 py-2 text-[0.95rem] font-medium text-muted-foreground transition-colors after:absolute after:inset-x-4 after:-bottom-0.5 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-sun after:transition-transform hover:text-foreground hover:after:scale-x-100"
             >
               {item.label}
             </Link>
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-1">
-          <Button asChild size="sm" className="mr-2 hidden sm:inline-flex">
+          <Button asChild className="mr-2 hidden sm:inline-flex lg:h-11 lg:px-5">
             <Link href="/advisor">Size my system</Link>
           </Button>
           <ThemeToggle />

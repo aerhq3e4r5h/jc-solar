@@ -206,3 +206,8 @@ Status of each item. Legal text on the site is a starting point, not legal advic
 | NRS 097-2-1 grid-tie approval | `products.nrs_097_2_1_approved` (blank = not verified; flagged incomplete for inverters) |
 | SANS 10142-1 CoC for installations | `installation_bookings.coc_path`, `coc-documents` storage bucket |
 | Lithium batteries as dangerous goods | Forced by trigger on `products.is_dangerous_goods` |
+
+## Images
+
+- **Product photos** (`public/products/<slug>/<n>.webp`, indexed by SKU in `src/data/product-images.json`) are Solar Europe's, used with their permission. A product uses them until an admin uploads its own images to Supabase Storage.
+- **Background photos** (`src/assets/backgrounds/`) are from Pexels under its free commercial licence; sources are in `src/assets/backgrounds/CREDITS.md`.

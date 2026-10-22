@@ -1,16 +1,19 @@
-import { ArrowRight, BatteryCharging, Cpu, PackageCheck, PanelsTopLeft, ShieldCheck, Truck, Wrench, Zap } from "lucide-react";
+import { ArrowRight, BadgeCheck, ShieldCheck, Sparkles, Truck, Wrench } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
-import { HeroArt } from "@/components/home/hero-art";
+import heroImage from "@/assets/backgrounds/hero-array.webp";
+import installersImage from "@/assets/backgrounds/installers-roof.webp";
+import fieldImage from "@/assets/backgrounds/field-array.webp";
+import { Reveal, RevealItem, RevealList } from "@/components/motion/reveal";
+import { ProductCard } from "@/components/product/product-card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { shopNav, site } from "@/config/site";
-
-const categoryIcons = {
-  "/shop/solar-panels": PanelsTopLeft,
-  "/shop/batteries": BatteryCharging,
-  "/shop/inverters": Cpu,
-  "/shop/kits": PackageCheck,
-} as const;
+import type { CategorySlug } from "@/lib/catalogue/classify";
+import { sortProducts } from "@/lib/catalogue/filters";
+import { getCatalogue } from "@/lib/catalogue/queries";
+import { availability, type Product } from "@/lib/catalogue/types";
+import { formatRand } from "@/lib/pricing/vat";
 
 const steps = [
   {
@@ -28,10 +31,26 @@ const steps = [
 ];
 
 const trust = [
-  { icon: Wrench, title: "Registered technician", body: "Installations certified with a CoC" },
-  { icon: ShieldCheck, title: "Manufacturer warranties", body: "Plus your rights under the CPA" },
-  { icon: Zap, title: "Secure payment", body: "Orders confirmed only once paid" },
-  { icon: Truck, title: "Nationwide delivery", body: "Anywhere in South Africa" },
+  {
+    icon: Wrench,
+    title: "Registered technician",
+    body: "Installations certified with a CoC",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Manufacturer warranties",
+    body: "Plus your rights under the CPA",
+  },
+  {
+    icon: BadgeCheck,
+    title: "Compatibility checked",
+    body: "Inverter and battery matched before you pay",
+  },
+  {
+    icon: Truck,
+    title: "Nationwide delivery",
+    body: "Anywhere in South Africa",
+  },
 ];
 
 const faqs = [
@@ -53,166 +72,302 @@ const faqs = [
   },
 ];
 
-export default function HomePage() {
+/** The first n in-stock products with photos, one per brand so the row has variety. */
+function topInStock(products: Product[], category: CategorySlug, n: number) {
+  const brands = new Set<string | null>();
+  return sortProducts(
+    products.filter((p) => p.category === category && p.images.length > 0 && availability(p).state !== "out_of_stock"),
+    "featured",
+    category,
+  )
+    .filter((p) => !brands.has(p.brand) && brands.add(p.brand))
+    .slice(0, n);
+}
+
+export default async function HomePage() {
+  const products = await getCatalogue();
+  const brands = new Set(products.map((p) => p.brand).filter(Boolean));
+  const categories = shopNav.map((item) => {
+    const slug = item.href.replace("/shop/", "") as CategorySlug;
+    const items = products.filter((p) => p.category === slug);
+    return {
+      ...item,
+      count: items.length,
+      from: items.length ? Math.min(...items.map((p) => p.priceInclVat)) : null,
+      image: topInStock(products, slug, 1)[0]?.images[0] ?? null,
+    };
+  });
+  const featured = (["inverters", "batteries", "solar-panels", "kits"] as const).flatMap((c) => topInStock(products, c, 2));
+  const brandList = [...brands].sort() as string[];
+
+  const stats = [
+    {
+      value: products.length ? `${products.length}+` : "200+",
+      label: "products in the range",
+    },
+    { value: brands.size ? `${brands.size}` : "20+", label: "leading brands" },
+    { value: "9", label: "provinces we deliver to" },
+    { value: "15%", label: "VAT included in every price" },
+  ];
+
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="container-page grid items-center gap-12 py-16 md:py-24 lg:grid-cols-[1.05fr_1fr]">
-          <div className="space-y-8">
-            <p className="eyebrow">Solar · Batteries · Backup</p>
-            <h1 className="text-4xl leading-[1.05] font-semibold sm:text-5xl lg:text-6xl">
-              Keep the lights on. <span className="text-amber-ink">Cut the bill.</span>
-            </h1>
-            <p className="max-w-xl text-lg leading-relaxed text-muted-foreground">
-              Solar panels, lithium batteries and inverters for South African homes and small businesses, sized for
-              your home and installed by our registered technician if you want.
+      <section className="relative isolate -mt-px overflow-hidden bg-navy text-white">
+        <Image src={heroImage} alt="" fill priority placeholder="blur" sizes="100vw" className="-z-20 scale-105 object-cover" />
+        <div className="photo-wash absolute inset-0 -z-10" aria-hidden="true" />
+        <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-navy/80 to-transparent" aria-hidden="true" />
+        <div className="container-page flex min-h-[min(88vh,860px)] flex-col justify-center py-20 lg:py-28">
+          <div className="max-w-3xl animate-in fade-in slide-in-from-bottom-6 duration-700">
+            <p className="glass mb-8 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm text-white/90">
+              <Sparkles className="size-4 text-sun" aria-hidden="true" />
+              Solar · Lithium batteries · Backup power
             </p>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="h-12 px-6 text-base">
+            <h1 className="text-5xl leading-[1.02] font-semibold sm:text-6xl lg:text-7xl xl:text-[5.25rem]">
+              Keep the lights on. <span className="text-sun">Cut the bill.</span>
+            </h1>
+            <p className="mt-7 max-w-2xl text-lg leading-relaxed text-white/80 sm:text-xl">
+              Tier-one solar panels, lithium batteries and hybrid inverters for South African homes and businesses. Sized for your home, checked for
+              compatibility, and installed by our registered technician if you want.
+            </p>
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="lg" className="h-14 px-8 text-base shadow-lg shadow-sun/20 transition-transform hover:-translate-y-0.5">
                 <Link href="/advisor">
                   Size my system <ArrowRight />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="h-12 px-6 text-base">
-                <Link href="/shop/kits">Shop system kits</Link>
+              <Button
+                asChild
+                size="lg"
+                variant="ghost"
+                className="glass h-14 px-8 text-base text-white hover:bg-white/20 hover:text-white"
+              >
+                <Link href="/shop">Browse the shop</Link>
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground">{site.deliveryArea}. All prices include VAT.</p>
           </div>
-          <div className="relative mx-auto w-full max-w-xl">
-            <HeroArt />
-          </div>
+          <dl className="mt-16 grid max-w-4xl grid-cols-2 gap-3 animate-in fade-in slide-in-from-bottom-4 duration-1000 sm:grid-cols-4 lg:mt-24">
+            {stats.map((s) => (
+              <div key={s.label} className="glass rounded-2xl px-5 py-4">
+                <dt className="sr-only">{s.label}</dt>
+                <dd>
+                  <span className="num block font-display text-3xl font-semibold text-white">{s.value}</span>
+                  <span className="mt-1 block text-sm text-white/70">{s.label}</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
 
       {/* Trust strip */}
-      <section aria-label="Why buy from us" className="border-y bg-card">
-        <ul className="container-page grid grid-cols-2 gap-6 py-8 lg:grid-cols-4">
+      <section aria-label="Why buy from us" className="border-b bg-card">
+        <RevealList className="container-page grid grid-cols-2 gap-6 py-10 lg:grid-cols-4">
           {trust.map(({ icon: Icon, title, body }) => (
-            <li key={title} className="flex items-start gap-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-accent text-amber-ink">
-                <Icon className="size-5" aria-hidden="true" />
+            <RevealItem key={title} className="flex items-start gap-4">
+              <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-accent text-amber-ink">
+                <Icon className="size-6" aria-hidden="true" />
               </span>
               <span>
-                <span className="block text-sm font-semibold">{title}</span>
+                <span className="block font-semibold">{title}</span>
                 <span className="block text-sm text-muted-foreground">{body}</span>
               </span>
-            </li>
+            </RevealItem>
           ))}
-        </ul>
+        </RevealList>
       </section>
 
       {/* Categories */}
-      <section className="container-page py-20" aria-labelledby="categories-heading">
-        <div className="mb-10 flex items-end justify-between gap-4">
+      <section className="container-page py-20 lg:py-28" aria-labelledby="categories-heading">
+        <Reveal className="mb-12 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="eyebrow mb-3">Shop</p>
-            <h2 id="categories-heading" className="text-3xl font-semibold sm:text-4xl">
+            <p className="eyebrow mb-3">Shop by category</p>
+            <h2 id="categories-heading" className="text-4xl font-semibold sm:text-5xl">
               Everything for a complete system
             </h2>
           </div>
-          <Link href="/shop" className="hidden items-center gap-1 text-sm font-medium hover:underline sm:inline-flex">
+          <Link href="/shop" className="inline-flex items-center gap-1 font-medium hover:underline">
             View all products <ArrowRight className="size-4" />
           </Link>
-        </div>
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {shopNav.map((item) => {
-            const Icon = categoryIcons[item.href];
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="group flex h-full flex-col gap-10 rounded-2xl border bg-card p-6 transition-all hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-lg hover:shadow-navy/5"
-                >
-                  <span className="grid size-12 place-items-center rounded-xl bg-navy text-sun dark:bg-secondary">
-                    <Icon className="size-6" aria-hidden="true" />
-                  </span>
-                  <span>
-                    <span className="flex items-center justify-between font-display text-xl font-semibold">
-                      {item.label}
-                      <ArrowRight className="size-5 -translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
+        </Reveal>
+        <RevealList className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {categories.map((c) => (
+            <RevealItem key={c.href}>
+              <Link
+                href={c.href}
+                className="group relative flex h-full flex-col overflow-hidden rounded-3xl border bg-card transition-all duration-300 hover:-translate-y-1 hover:border-foreground/15 hover:shadow-2xl hover:shadow-navy/10"
+              >
+                <div className="relative aspect-[4/3] overflow-hidden bg-white">
+                  {c.image && (
+                    <Image
+                      src={c.image.url}
+                      alt=""
+                      fill
+                      sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                      className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
+                    />
+                  )}
+                </div>
+                <div className="flex flex-1 flex-col gap-2 border-t p-6">
+                  <span className="flex items-center justify-between font-display text-2xl font-semibold">
+                    {c.label}
+                    <span className="grid size-9 place-items-center rounded-full bg-muted transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                      <ArrowRight className="size-4" aria-hidden="true" />
                     </span>
-                    <span className="mt-1 block text-sm text-muted-foreground">{item.description}</span>
                   </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+                  <span className="text-muted-foreground">{c.description}</span>
+                  {c.count > 0 && (
+                    <span className="mt-auto pt-3 text-sm text-muted-foreground">
+                      <span className="num font-medium text-foreground">{c.count}</span> products
+                      {c.from !== null && (
+                        <>
+                          {" "}
+                          · from <span className="num font-medium text-foreground">{formatRand(c.from)}</span>
+                        </>
+                      )}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            </RevealItem>
+          ))}
+        </RevealList>
       </section>
 
-      {/* How it works */}
-      <section className="bg-navy text-navy-foreground" aria-labelledby="how-heading">
-        <div className="container-page py-20">
-          <p className="eyebrow mb-3 text-sun">How it works</p>
-          <h2 id="how-heading" className="max-w-2xl text-3xl font-semibold sm:text-4xl">
-            From your electricity bill to a working system in three steps
-          </h2>
-          <ol className="mt-12 grid gap-8 md:grid-cols-3">
+      {/* Featured products */}
+      {featured.length > 0 && (
+        <section className="border-y bg-muted/50 py-20 lg:py-28" aria-labelledby="featured-heading">
+          <div className="container-page">
+            <Reveal className="mb-12 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="eyebrow mb-3">In stock now</p>
+                <h2 id="featured-heading" className="text-4xl font-semibold sm:text-5xl">
+                  Popular right now
+                </h2>
+              </div>
+              <Link href="/shop" className="inline-flex items-center gap-1 font-medium hover:underline">
+                Shop everything <ArrowRight className="size-4" />
+              </Link>
+            </Reveal>
+            <RevealList className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+              {featured.map((p) => (
+                <RevealItem key={p.id}>
+                  <ProductCard product={p} />
+                </RevealItem>
+              ))}
+            </RevealList>
+          </div>
+        </section>
+      )}
+
+      {/* How it works, over a photo */}
+      <section className="relative isolate overflow-hidden bg-navy text-navy-foreground" aria-labelledby="how-heading">
+        <Image src={installersImage} alt="" fill placeholder="blur" sizes="100vw" className="-z-20 object-cover" />
+        <div className="absolute inset-0 -z-10 bg-navy/88" aria-hidden="true" />
+        <div className="container-page py-20 lg:py-28">
+          <Reveal>
+            <p className="eyebrow mb-3 text-sun">How it works</p>
+            <h2 id="how-heading" className="max-w-3xl text-4xl font-semibold sm:text-5xl">
+              From your electricity bill to a working system in three steps
+            </h2>
+          </Reveal>
+          <RevealList className="mt-14 grid gap-5 md:grid-cols-3">
             {steps.map((step, i) => (
-              <li key={step.title} className="relative rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-                <span className="font-mono text-sm text-sun">0{i + 1}</span>
-                <h3 className="mt-4 text-2xl font-semibold">{step.title}</h3>
-                <p className="mt-3 leading-relaxed text-navy-foreground/75">{step.body}</p>
-              </li>
+              <RevealItem key={step.title} className="glass relative rounded-3xl p-8">
+                <span className="grid size-12 place-items-center rounded-full bg-sun font-mono text-lg font-semibold text-navy">{i + 1}</span>
+                <h3 className="mt-6 text-2xl font-semibold text-white">{step.title}</h3>
+                <p className="mt-3 leading-relaxed text-white/75">{step.body}</p>
+              </RevealItem>
             ))}
-          </ol>
-          <Button asChild size="lg" className="mt-12 h-12 px-6 text-base">
-            <Link href="/advisor">
-              Start with the Solar Advisor <ArrowRight />
-            </Link>
-          </Button>
+          </RevealList>
+          <Reveal>
+            <Button asChild size="lg" className="mt-14 h-14 px-8 text-base">
+              <Link href="/advisor">
+                Start with the Solar Advisor <ArrowRight />
+              </Link>
+            </Button>
+          </Reveal>
         </div>
       </section>
+
+      {/* Brands */}
+      {brandList.length > 0 && (
+        <section className="container-page py-16" aria-labelledby="brands-heading">
+          <Reveal>
+            <h2 id="brands-heading" className="text-center font-sans text-sm font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+              Brands we stock
+            </h2>
+            <ul className="mx-auto mt-8 flex max-w-5xl flex-wrap justify-center gap-x-10 gap-y-4">
+              {brandList.map((b) => (
+                <li key={b} className="font-display text-xl font-semibold text-foreground/45 transition-colors hover:text-foreground sm:text-2xl">
+                  {b}
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+        </section>
+      )}
 
       {/* FAQ */}
-      <section className="container-page grid gap-12 py-20 lg:grid-cols-[1fr_1.4fr]" aria-labelledby="faq-heading">
-        <div>
+      <section className="container-page grid gap-12 border-t py-20 lg:grid-cols-[1fr_1.4fr] lg:py-28" aria-labelledby="faq-heading">
+        <Reveal>
           <p className="eyebrow mb-3">Questions</p>
-          <h2 id="faq-heading" className="text-3xl font-semibold sm:text-4xl">
+          <h2 id="faq-heading" className="text-4xl font-semibold sm:text-5xl">
             Straight answers
           </h2>
-          <p className="mt-4 text-muted-foreground">
+          <p className="mt-4 text-lg text-muted-foreground">
             More in our{" "}
             <Link href="/faq" className="font-medium text-foreground underline underline-offset-4">
               FAQ
             </Link>
+            , or{" "}
+            <Link href="/contact" className="font-medium text-foreground underline underline-offset-4">
+              ask us directly
+            </Link>
             .
           </p>
-        </div>
-        <Accordion type="single" collapsible className="w-full">
-          {faqs.map((f) => (
-            <AccordionItem key={f.q} value={f.q}>
-              <AccordionTrigger className="text-left text-base">{f.q}</AccordionTrigger>
-              <AccordionContent className="text-base leading-relaxed text-muted-foreground">{f.a}</AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+        </Reveal>
+        <Reveal>
+          <Accordion type="single" collapsible className="w-full">
+            {faqs.map((f) => (
+              <AccordionItem key={f.q} value={f.q}>
+                <AccordionTrigger className="py-5 text-left text-lg">{f.q}</AccordionTrigger>
+                <AccordionContent className="text-base leading-relaxed text-muted-foreground">{f.a}</AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </Reveal>
       </section>
 
-      {/* Final CTA */}
+      {/* Final CTA, over a solar field */}
       <section className="container-page">
-        <div className="relative overflow-hidden rounded-3xl bg-primary px-6 py-14 text-primary-foreground sm:px-12">
+        <Reveal className="relative isolate overflow-hidden rounded-[2rem] bg-navy px-6 py-16 text-white sm:px-14 sm:py-20">
+          <Image src={fieldImage} alt="" fill placeholder="blur" sizes="(min-width: 1440px) 1440px, 100vw" className="-z-20 object-cover" />
+          <div className="photo-wash absolute inset-0 -z-10" aria-hidden="true" />
           <div className="max-w-2xl">
-            <h2 className="text-3xl font-semibold sm:text-4xl">Not sure where to start?</h2>
-            <p className="mt-4 text-lg text-primary-foreground/80">
-              Answer a few questions and get a recommended system with estimated savings. Results are estimates until
-              our technician confirms the design on site.
+            <h2 className="text-4xl font-semibold sm:text-5xl">Not sure where to start?</h2>
+            <p className="mt-5 text-lg text-white/80">
+              Answer a few questions and get a recommended system with estimated savings. Results are estimates until our technician confirms the
+              design on site.
             </p>
-            <Button asChild size="lg" variant="secondary" className="mt-8 h-12 px-6 text-base">
-              <Link href="/advisor">
-                Size my system <ArrowRight />
-              </Link>
-            </Button>
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="lg" className="h-14 px-8 text-base">
+                <Link href="/advisor">
+                  Size my system <ArrowRight />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="ghost"
+                className="glass h-14 px-8 text-base text-white hover:bg-white/20 hover:text-white"
+              >
+                <Link href="/contact">Talk to us</Link>
+              </Button>
+            </div>
+            <p className="mt-6 text-sm text-white/65">{site.deliveryArea}. All prices include VAT.</p>
           </div>
-          <svg viewBox="0 0 200 200" aria-hidden="true" className="absolute -right-10 -bottom-16 hidden w-72 opacity-25 md:block">
-            <circle cx="100" cy="100" r="60" fill="currentColor" />
-            {Array.from({ length: 12 }).map((_, i) => (
-              <rect key={i} x="97" y="8" width="6" height="22" rx="3" fill="currentColor" transform={`rotate(${i * 30} 100 100)`} />
-            ))}
-          </svg>
-        </div>
+        </Reveal>
       </section>
     </>
   );
