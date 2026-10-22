@@ -110,6 +110,22 @@ update public.profiles set role = 'admin'
 where id = (select id from auth.users where email = 'you@example.com');
 ```
 
+### Deploy on Netlify
+
+The repo includes `netlify.toml`; Netlify builds it with its official Next.js adapter. In the Netlify site settings, under **Environment variables**, add:
+
+| Variable | Value | Notes |
+|---|---|---|
+| `NEXT_PUBLIC_SITE_URL` | your site address, e.g. `https://jc-solar.netlify.app` | Used in emails, PDFs and PayFast return links |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase publishable (anon) key | Public by design |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key | **Secret.** Needed for checkout, quotes and orders. Mark it secret in Netlify |
+| `PAYFAST_SANDBOX`, `PAYFAST_MERCHANT_ID`, `PAYFAST_MERCHANT_KEY`, `PAYFAST_PASSPHRASE` | from your PayFast (sandbox) account | Secret |
+| `EFT_BANK_NAME`, `EFT_ACCOUNT_NAME`, `EFT_ACCOUNT_NUMBER`, `EFT_BRANCH_CODE`, `EFT_ACCOUNT_TYPE` | your banking details | Printed on quotes and pro forma invoices |
+| `RESEND_API_KEY`, `EMAIL_FROM` | from Resend | Optional; emails are logged without it |
+
+`NEXT_PUBLIC_*` values are built into the pages, so redeploy after changing them. In Supabase, add the Netlify address under **Authentication > URL Configuration** (site URL and redirect URL `https://<your-site>/auth/callback`).
+
 ### Run
 
 ```bash

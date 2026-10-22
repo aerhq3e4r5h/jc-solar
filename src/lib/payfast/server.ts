@@ -27,10 +27,14 @@ export const payfastNetworkChecks: ItnChecks = {
 };
 
 /**
- * The address the notification came from. On Vercel the platform sets
- * x-forwarded-for with the client address first, so it can be trusted.
+ * The address the notification came from, as reported by the hosting
+ * platform's edge (clients cannot forge these on Netlify or Vercel):
+ * Netlify sets x-nf-client-connection-ip; Vercel puts the client first in
+ * x-forwarded-for.
  */
 export function requestIp(headers: Headers): string | null {
+  const netlify = headers.get("x-nf-client-connection-ip")?.trim();
+  if (netlify) return netlify;
   const forwarded = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   return forwarded || headers.get("x-real-ip") || null;
 }

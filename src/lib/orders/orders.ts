@@ -2,6 +2,7 @@ import "server-only";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { getSessionUser } from "@/lib/auth";
+import { isServiceRoleConfigured } from "@/lib/env.server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/database.types";
 
@@ -98,7 +99,7 @@ function toView(o: OrderRow, items: ItemRow[], invoice: { invoice_number: number
  * cookie) or are the signed-in customer who placed it. Reads cookies.
  */
 export async function loadOrderForViewer(orderId: string, tokenFromLink?: string | null): Promise<OrderView | null> {
-  if (!/^[0-9a-f-]{36}$/i.test(orderId)) return null;
+  if (!/^[0-9a-f-]{36}$/i.test(orderId) || !isServiceRoleConfigured()) return null;
   const admin = createAdminClient();
   const { data: order } = await admin.from("orders").select("*").eq("id", orderId).is("deleted_at", null).maybeSingle();
   if (!order) return null;
@@ -146,7 +147,7 @@ export type QuoteView = {
 };
 
 export async function loadQuoteForViewer(quoteId: string, tokenFromLink?: string | null): Promise<QuoteView | null> {
-  if (!/^[0-9a-f-]{36}$/i.test(quoteId)) return null;
+  if (!/^[0-9a-f-]{36}$/i.test(quoteId) || !isServiceRoleConfigured()) return null;
   const admin = createAdminClient();
   const { data: q } = await admin.from("quotes").select("*").eq("id", quoteId).maybeSingle();
   if (!q) return null;

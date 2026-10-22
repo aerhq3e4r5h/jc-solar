@@ -100,19 +100,13 @@ function ResultsSkeleton() {
   );
 }
 
-export default async function CategoryPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ category: string }>;
-  searchParams: Promise<SearchParams>;
-}) {
+async function CategoryBody({ params, searchParams }: { params: Promise<{ category: string }>; searchParams: Promise<SearchParams> }) {
   const { category } = await params;
   if (!isCategorySlug(category)) notFound();
   const c = CATEGORIES[category];
 
   return (
-    <div className="container-page py-10">
+    <>
       <Breadcrumbs
         siteUrl={siteUrl()}
         items={[
@@ -127,6 +121,25 @@ export default async function CategoryPage({
       </header>
       <Suspense fallback={<ResultsSkeleton />}>
         <Results category={category} searchParams={searchParams} />
+      </Suspense>
+    </>
+  );
+}
+
+// Params are read inside <Suspense> so the page can also be rendered on
+// demand (e.g. when a hosting cache regenerates it), not only at build time.
+export default function CategoryPage(props: { params: Promise<{ category: string }>; searchParams: Promise<SearchParams> }) {
+  return (
+    <div className="container-page py-10">
+      <Suspense
+        fallback={
+          <>
+            <Skeleton className="mb-10 h-28 w-full max-w-3xl" />
+            <ResultsSkeleton />
+          </>
+        }
+      >
+        <CategoryBody {...props} />
       </Suspense>
     </div>
   );

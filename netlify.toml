@@ -1,0 +1,9 @@
+# Netlify builds the Next.js app with its official adapter
+# (@netlify/plugin-nextjs, added automatically for Next.js sites).
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NEXT_TELEMETRY_DISABLED = "1"

@@ -137,7 +137,7 @@ async function Reviews({ productId }: { productId: string }) {
   );
 }
 
-export default async function ProductPage({ params }: { params: Promise<Params> }) {
+async function ProductBody({ params }: { params: Promise<Params> }) {
   const { category, slug } = await params;
   const [catalogue, overrides] = await Promise.all([getCatalogue(), getCompatibilityOverrides()]);
   const product = catalogue.find((p) => p.slug === slug);
@@ -315,5 +315,22 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
         }}
       />
     </div>
+  );
+}
+
+// Params are read inside <Suspense> so the page can also be rendered on
+// demand (e.g. when a hosting cache regenerates it), not only at build time.
+export default function ProductPage(props: { params: Promise<Params> }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="container-page grid gap-10 py-8 lg:grid-cols-2">
+          <Skeleton className="aspect-square w-full rounded-2xl" />
+          <Skeleton className="h-96 w-full rounded-2xl" />
+        </div>
+      }
+    >
+      <ProductBody {...props} />
+    </Suspense>
   );
 }
