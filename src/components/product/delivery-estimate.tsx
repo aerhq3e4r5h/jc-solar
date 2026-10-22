@@ -74,7 +74,7 @@ export function DeliveryEstimate({ productId, note }: { productId: string; note:
           ) : (
             <>
               <span className="num font-semibold text-foreground">{formatRand(estimate.price)}</span>
-              {estimate.eta ? `, usually ${estimate.eta}` : ""}. Free if we install it.
+              {estimate.eta ? `, usually ${estimate.eta}` : ""}.
             </>
           )}
         </p>

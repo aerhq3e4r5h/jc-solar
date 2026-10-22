@@ -89,7 +89,19 @@ reset role;
 update public.shipping_settings set quote_after_order_when_unavailable = true;
 update public.shipping_rate_table set is_active = true where province = 'Limpopo';
 
--- Free delivery: with installation (installer brings it), over a threshold, or collection.
+-- Installation alone doesn't make delivery free.
+select pg_temp.act_as_service();
+do $$
+begin
+  if (public.quote_delivery('[{"productId": "90000000-0000-0000-0000-000000000001", "quantity": 1, "installation": true}]', '{"province": "Gauteng"}') ->> 'total')::numeric <> 250 then
+    raise exception 'FAIL: installation should not make delivery free by default';
+  end if;
+end;
+$$;
+
+-- Free delivery when the admin switches it on: with installation, over a threshold, or collection.
+reset role;
+update public.shipping_settings set free_delivery_with_installation = true;
 select pg_temp.act_as_service();
 do $$
 declare
@@ -119,7 +131,7 @@ begin
 end;
 $$;
 reset role;
-update public.shipping_settings set free_delivery_threshold_incl_vat = null, collection_enabled = false;
+update public.shipping_settings set free_delivery_threshold_incl_vat = null, collection_enabled = false, free_delivery_with_installation = false;
 
 -- Orders and quotes include delivery in the total and VAT.
 select pg_temp.act_as_service();

@@ -84,7 +84,7 @@ Note: PayFast's shared public sandbox merchant (10000100) currently rejects sign
 
 - Each shipping class in the cart is its own shipment: **parcel** (inverters, accessories), **oversized** (solar panels on a pallet) and **dangerous goods** (lithium batteries, UN3480 Class 9).
 - Price per shipment = first item + each extra item + per kg (if products have weights), from the row for the customer's province. A row for a postal-code range (e.g. remote towns) beats the province row.
-- Free when installation is booked (the installer brings it), above an optional order value, or for collection, all switchable in `/admin/delivery`.
+- Delivery is charged on every order, including those with installation. Optional switches in `/admin/delivery`: free delivery above an order value, free delivery when installation is booked (off), and collection (off).
 - No rate for an area: the order goes through with that part "quoted after order" (or checkout refuses, if you switch that off).
 - The same database function prices the checkout display and the order itself, so the browser can never change the delivery charge. A snapshot of how delivery was priced is kept per order (`shipping_quotes`).
 - **The starter rates are estimates** (Gauteng parcels R250, panel pallets R950 + R25 a panel, batteries R450 + R150 each; more for further provinces). Replace them with your DSV prices in `/admin/delivery`.

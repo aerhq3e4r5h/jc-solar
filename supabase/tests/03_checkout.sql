@@ -49,7 +49,8 @@ begin
       {"productId": "70000000-0000-0000-0000-000000000002", "quantity": 8, "installation": true}
     ]}$j$);
   select * into o from public.orders where id = (r ->> 'orderId')::uuid;
-  if o.total_incl_vat <> 14835.00 + 8 * 1628.40 then raise exception 'FAIL: wrong order total %', o.total_incl_vat; end if;
+  -- Products plus Gauteng parcel delivery for 9 items: 250 + 8 x 100 (installation doesn't make delivery free).
+  if o.total_incl_vat <> 14835.00 + 8 * 1628.40 + 250 + 8 * 100 then raise exception 'FAIL: wrong order total %', o.total_incl_vat; end if;
   if o.vat_amount <> round(o.total_incl_vat * 0.15 / 1.15, 2) then raise exception 'FAIL: wrong VAT'; end if;
   if not o.installation_requested then raise exception 'FAIL: installation not recorded'; end if;
   if (select installation from public.price_items('[{"productId": "70000000-0000-0000-0000-000000000002", "quantity": 1, "installation": true}]')) then

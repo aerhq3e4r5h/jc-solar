@@ -23,10 +23,6 @@ export default async function DeliveryPage() {
           warehouse in Gauteng. Each type of item travels separately (see below), so an order with panels, a battery and an inverter has three
           delivery lines.
         </p>
-        <p>
-          <strong>Free delivery with installation:</strong> if you add professional installation, our technician brings everything on installation
-          day.
-        </p>
         {provinces.length > 0 && (
           <>
             <h3>Starting prices by province (incl. VAT)</h3>

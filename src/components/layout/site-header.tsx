@@ -32,7 +32,7 @@ export function SiteHeader() {
           <p className="hidden items-center gap-2 sm:flex">
             <Wrench className="size-4 text-sun" aria-hidden="true" />
             <Link href="/installation" className="underline-offset-4 hover:underline">
-              Free delivery when we install
+              Installation by a registered technician
             </Link>
           </p>
         </div>
