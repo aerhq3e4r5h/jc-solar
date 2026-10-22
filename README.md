@@ -2,7 +2,7 @@
 
 Online shop for solar panels, lithium batteries, inverters and system kits, with optional installation by a registered technician. Built with Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui and Supabase.
 
-**Status: phase 2 of 9.** Done: project setup, design system, database and Excel import (phase 1); shop, product pages, filters, compatibility engine, compare and cart (phase 2). Checkout, courier, installation booking, AI advisor, accounts, admin dashboard and legal pages come in later phases.
+**Status: phase 3 of 9.** Done: project setup, design system, database and Excel import (phase 1); shop, product pages, filters, compatibility engine, compare and cart (phase 2); checkout, PayFast, EFT, PDF quotations and invoices, order emails (phase 3). Courier, installation booking, AI advisor, accounts, admin dashboard and legal pages come in later phases.
 
 ## Phase 1 contents
 
@@ -37,6 +37,37 @@ Online shop for solar panels, lithium batteries, inverters and system kits, with
 - **Check with us:** high-voltage systems (need a matched battery management unit) and products whose battery voltage is not on file.
 - Pairs an admin confirms or rules out in `product_compatibility` override the rules.
 - Panel strings: cold-morning Voc is taken as Voc x 1.09 (-5 °C, -0.30 %/°C), and a string must stay under the inverter's maximum PV voltage.
+
+## Phase 3 contents
+
+| Area | Where |
+|---|---|
+| Checkout (details, delivery address, payment method, terms, opt-in) | `/checkout`, `src/components/checkout/`, `src/lib/checkout/` |
+| Order review and payment (ECT Act: full order shown before paying; "Change my order") | `/order/[id]` |
+| Order and quote creation priced in the database, stock reserved atomically | `supabase/migrations/20261022000008_checkout.sql` |
+| PayFast payment form and notification (ITN) checks | `src/lib/payfast/`, `/api/payfast/itn` |
+| PDF quotation, pro forma and invoice | `src/lib/pdf/`, `/api/quotes/[id]/pdf`, `/api/orders/[id]/pdf` |
+| Order, payment and quote emails (Resend) | `src/lib/email/` |
+
+### How payment works
+
+1. Checkout creates the order with `create_checkout_order()`: prices come from the products table (never the browser), and stock is reserved for 30 minutes (PayFast) or 48 hours (EFT).
+2. The order page shows the full order and a PayFast button. The form is signed with the merchant passphrase.
+3. PayFast posts a notification to `/api/payfast/itn`. It is accepted only if the signature matches, it comes from a PayFast server address, and PayFast confirms it again. The database then checks the amount equals the order total before marking it paid, taking the stock and issuing the next invoice number.
+4. Returning to the site from PayFast never marks an order paid; the order page waits for the notification.
+5. EFT orders get a pro forma invoice with banking details and the order number as reference. Marking EFT payments as received comes with the admin dashboard (phase 8).
+
+Guests reach their order with a secret link (emailed) or a cookie set at checkout; only its SHA-256 hash is stored.
+
+### PayFast: sandbox to live
+
+1. Create a free account at https://sandbox.payfast.co.za. Under Settings, set a passphrase.
+2. Set `PAYFAST_SANDBOX=true`, `PAYFAST_MERCHANT_ID`, `PAYFAST_MERCHANT_KEY` and `PAYFAST_PASSPHRASE` from that account.
+3. `NEXT_PUBLIC_SITE_URL` must be the public https address so PayFast can reach `/api/payfast/itn`.
+4. Pay a test order with the sandbox's test card or wallet, and check the order turns "paid" and the invoice email arrives.
+5. To go live: set `PAYFAST_SANDBOX=false` and the live merchant ID, key and passphrase from your PayFast account.
+
+Note: PayFast's shared public sandbox merchant (10000100) currently rejects signatures made with its documented passphrase, so it can't be used to test signed payments. Use your own sandbox account.
 
 ## Setup
 

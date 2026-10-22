@@ -1,8 +1,9 @@
-import { AlertTriangle, Info, ShoppingCart, Wrench, XCircle } from "lucide-react";
+import { AlertTriangle, Info, Lock, ShoppingCart, Wrench, XCircle } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { CartLineControls } from "@/components/cart/cart-line-controls";
+import { QuoteDialog } from "@/components/cart/quote-dialog";
 import { artLabel } from "@/components/product/key-specs";
 import { ProductArt } from "@/components/product/product-art";
 import { Button } from "@/components/ui/button";
@@ -129,12 +130,22 @@ async function CartContents() {
               Our technician will contact you to assess your site and quote the installation. You only pay for it once you accept.
             </p>
           )}
-          <Button size="lg" className="h-12 w-full text-base" disabled>
-            Checkout opens soon
-          </Button>
-          <p className="text-center text-xs text-muted-foreground">
-            {cart.canCheckout ? "Online payment is being set up." : "Fix the items marked above before checking out."}
-          </p>
+          {cart.canCheckout ? (
+            <Button asChild size="lg" className="h-12 w-full text-base">
+              <Link href="/checkout">
+                <Lock /> Checkout
+              </Link>
+            </Button>
+          ) : (
+            <>
+              <Button size="lg" className="h-12 w-full text-base" disabled>
+                <Lock /> Checkout
+              </Button>
+              <p className="text-center text-xs text-muted-foreground">Fix the items marked above before checking out.</p>
+            </>
+          )}
+          <QuoteDialog />
+          <p className="text-center text-xs text-muted-foreground">Pay online by card or Instant EFT, or by bank transfer.</p>
         </div>
       </aside>
     </div>

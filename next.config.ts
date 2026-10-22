@@ -16,6 +16,13 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,
+  // react-pdf runs in Node at request time; its fonts are read from disk.
+  serverExternalPackages: ["@react-pdf/renderer"],
+  outputFileTracingIncludes: {
+    "/api/quotes/**": ["./src/lib/pdf/fonts/**"],
+    "/api/orders/**": ["./src/lib/pdf/fonts/**"],
+    "/api/payfast/**": ["./src/lib/pdf/fonts/**"],
+  },
   turbopack: {
     rules: {
       "*.css": {

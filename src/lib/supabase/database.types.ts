@@ -929,21 +929,26 @@ export type Database = {
       };
       orders: {
         Row: {
+          access_token_hash: string | null;
           billing_address: Json | null;
           cancelled_at: string | null;
           coupon_code: string | null;
           created_at: string;
           currency: string;
+          customer_name: string | null;
           customer_notes: string | null;
           deleted_at: string | null;
           delivery_method: Database["public"]["Enums"]["delivery_method"];
+          delivery_pending: boolean;
           discount_incl_vat: number;
           email: string;
           id: string;
           installation_incl_vat: number;
+          installation_requested: boolean;
           marketing_opt_in: boolean;
           order_number: string;
           paid_at: string | null;
+          payment_method: Database["public"]["Enums"]["payment_method"];
           phone: string | null;
           shipping_address: Json | null;
           shipping_incl_vat: number;
@@ -959,21 +964,26 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          access_token_hash?: string | null;
           billing_address?: Json | null;
           cancelled_at?: string | null;
           coupon_code?: string | null;
           created_at?: string;
           currency?: string;
+          customer_name?: string | null;
           customer_notes?: string | null;
           deleted_at?: string | null;
           delivery_method?: Database["public"]["Enums"]["delivery_method"];
+          delivery_pending?: boolean;
           discount_incl_vat?: number;
           email: string;
           id?: string;
           installation_incl_vat?: number;
+          installation_requested?: boolean;
           marketing_opt_in?: boolean;
           order_number?: string;
           paid_at?: string | null;
+          payment_method?: Database["public"]["Enums"]["payment_method"];
           phone?: string | null;
           shipping_address?: Json | null;
           shipping_incl_vat?: number;
@@ -988,21 +998,26 @@ export type Database = {
           vat_rate?: number;
         };
         Update: {
+          access_token_hash?: string | null;
           billing_address?: Json | null;
           cancelled_at?: string | null;
           coupon_code?: string | null;
           created_at?: string;
           currency?: string;
+          customer_name?: string | null;
           customer_notes?: string | null;
           deleted_at?: string | null;
           delivery_method?: Database["public"]["Enums"]["delivery_method"];
+          delivery_pending?: boolean;
           discount_incl_vat?: number;
           email?: string;
           id?: string;
           installation_incl_vat?: number;
+          installation_requested?: boolean;
           marketing_opt_in?: boolean;
           order_number?: string;
           paid_at?: string | null;
+          payment_method?: Database["public"]["Enums"]["payment_method"];
           phone?: string | null;
           shipping_address?: Json | null;
           shipping_incl_vat?: number;
@@ -1462,6 +1477,78 @@ export type Database = {
             columns: ["ai_conversation_id"];
             isOneToOne: false;
             referencedRelation: "ai_conversations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      quotes: {
+        Row: {
+          access_token_hash: string;
+          company: string | null;
+          converted_order_id: string | null;
+          created_at: string;
+          customer_name: string;
+          email: string;
+          id: string;
+          installation_requested: boolean;
+          items: NonNullable<Json>;
+          marketing_opt_in: boolean;
+          phone: string | null;
+          quote_code: string | null;
+          quote_number: number;
+          subtotal_incl_vat: number;
+          total_incl_vat: number;
+          user_id: string | null;
+          valid_until: string;
+          vat_amount: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          access_token_hash: string;
+          company?: string | null;
+          converted_order_id?: string | null;
+          created_at?: string;
+          customer_name: string;
+          email: string;
+          id?: string;
+          installation_requested?: boolean;
+          items: NonNullable<Json>;
+          marketing_opt_in?: boolean;
+          phone?: string | null;
+          quote_code?: never;
+          quote_number?: number;
+          subtotal_incl_vat: number;
+          total_incl_vat: number;
+          user_id?: string | null;
+          valid_until: string;
+          vat_amount: number;
+        };
+        Update: {
+          access_token_hash?: string;
+          company?: string | null;
+          converted_order_id?: string | null;
+          created_at?: string;
+          customer_name?: string;
+          email?: string;
+          id?: string;
+          installation_requested?: boolean;
+          items?: NonNullable<Json>;
+          marketing_opt_in?: boolean;
+          phone?: string | null;
+          quote_code?: never;
+          quote_number?: number;
+          subtotal_incl_vat?: number;
+          total_incl_vat?: number;
+          user_id?: string | null;
+          valid_until?: string;
+          vat_amount?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "quotes_converted_order_id_fkey";
+            columns: ["converted_order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
             referencedColumns: ["id"];
           },
         ];
@@ -2082,6 +2169,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      apply_payfast_itn: { Args: { p: Json }; Returns: Json };
       available_stock: {
         Args: { p_product_ids: string[] };
         Returns: {
@@ -2091,7 +2179,10 @@ export type Database = {
         }[];
       };
       booked_slot_ids: { Args: { p_from: string; p_to: string }; Returns: string[] };
+      cancel_pending_order: { Args: { p_order_id: string }; Returns: Json };
       confirm_order_paid: { Args: { p_order_id: string; p_payment_id: string }; Returns: number };
+      create_checkout_order: { Args: { p: Json }; Returns: Json };
+      create_quote: { Args: { p: Json }; Returns: Json };
       current_technician_id: { Args: Record<PropertyKey, never>; Returns: string };
       current_user_role: {
         Args: Record<PropertyKey, never>;
@@ -2100,6 +2191,20 @@ export type Database = {
       import_catalogue: { Args: { p_payload: Json }; Returns: Json };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_staff: { Args: Record<PropertyKey, never>; Returns: boolean };
+      price_items: {
+        Args: { p_items: Json };
+        Returns: {
+          installation: boolean;
+          line_total: number;
+          line_vat: number;
+          name: string;
+          product_id: string;
+          quantity: number;
+          shipping_class: Database["public"]["Enums"]["shipping_class"];
+          sku: string;
+          unit_price: number;
+        }[];
+      };
       refresh_incomplete_fields: {
         Args: { p_product_ids: string[]; p_required: Json };
         Returns: undefined;
@@ -2146,6 +2251,7 @@ export type Database = {
         | "expired"
         | "refunded"
         | "partially_refunded";
+      payment_method: "payfast" | "eft";
       payment_status: "pending" | "verified" | "failed" | "cancelled";
       property_type: "house" | "townhouse" | "apartment" | "farm" | "business" | "other";
       quote_status: "new" | "contacted" | "quoted" | "won" | "lost";
@@ -2341,6 +2447,7 @@ export const Constants = {
         "refunded",
         "partially_refunded",
       ],
+      payment_method: ["payfast", "eft"],
       payment_status: ["pending", "verified", "failed", "cancelled"],
       property_type: ["house", "townhouse", "apartment", "farm", "business", "other"],
       quote_status: ["new", "contacted", "quoted", "won", "lost"],

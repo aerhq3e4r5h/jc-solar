@@ -18,11 +18,18 @@ create table auth.users (
   raw_user_meta_data jsonb not null default '{}'::jsonb
 );
 
+-- Like Supabase: read the legacy setting or the JSON claims PostgREST sets.
 create function auth.uid() returns uuid language sql stable as $$
-  select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
+  select coalesce(
+    nullif(current_setting('request.jwt.claim.sub', true), ''),
+    nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub'
+  )::uuid
 $$;
 create function auth.role() returns text language sql stable as $$
-  select nullif(current_setting('request.jwt.claim.role', true), '')
+  select coalesce(
+    nullif(current_setting('request.jwt.claim.role', true), ''),
+    nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role'
+  )
 $$;
 
 create table storage.buckets (
