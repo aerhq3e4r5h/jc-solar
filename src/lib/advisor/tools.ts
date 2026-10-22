@@ -159,8 +159,7 @@ export function runTool(name: string, rawArgs: unknown, ctx: ToolContext): Recor
         a.sort
           ? by[a.sort]
           : (x, y) =>
-              Number(availability(x).state === "out_of_stock") - Number(availability(y).state === "out_of_stock") ||
-              x.priceInclVat - y.priceInclVat,
+              Number(availability(x).state === "out_of_stock") - Number(availability(y).state === "out_of_stock") || x.priceInclVat - y.priceInclVat,
       );
       return { total_matches: results.length, products: results.slice(0, a.limit ?? 8).map(summary) };
     }

@@ -207,11 +207,16 @@ export function AdvisorChat({ enabled }: { enabled: boolean }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ messages: next.map(({ role, text }) => ({ role, text })) }),
       });
-      const data = (await res.json().catch(() => ({}))) as { reply?: string; products?: RecommendationCard[]; error?: string };
-      if (!res.ok || !data.reply) throw new Error(data.error ?? "The advisor didn't respond. Please try again.");
+      const data = (await res.json().catch(() => ({}))) as { reply?: string; products?: RecommendationCard[]; error?: string; code?: string };
+      if (!res.ok || !data.reply) {
+        const message = data.error ?? "The advisor didn't respond. Please try again.";
+        throw new Error(data.code ? `${message} (${data.code})` : message);
+      }
       setMessages([...next, { role: "assistant", text: data.reply, products: data.products ?? [] }]);
     } catch (e) {
-      setError(e instanceof Error && e.message !== "Failed to fetch" ? e.message : "Couldn't reach the advisor. Check your connection and try again.");
+      setError(
+        e instanceof Error && e.message !== "Failed to fetch" ? e.message : "Couldn't reach the advisor. Check your connection and try again.",
+      );
     } finally {
       setLoading(false);
       textarea.current?.focus();
@@ -291,7 +296,9 @@ export function AdvisorChat({ enabled }: { enabled: boolean }) {
                 <div
                   className={cn(
                     "inline-block rounded-3xl px-4 py-3 text-left leading-relaxed sm:px-5",
-                    m.role === "user" ? "rounded-tr-md bg-navy text-navy-foreground dark:bg-secondary" : "rounded-tl-md bg-muted/70 text-foreground/90",
+                    m.role === "user"
+                      ? "rounded-tr-md bg-navy text-navy-foreground dark:bg-secondary"
+                      : "rounded-tl-md bg-muted/70 text-foreground/90",
                   )}
                 >
                   {m.role === "assistant" ? <RichText text={m.text} /> : <p className="whitespace-pre-wrap">{m.text}</p>}
@@ -317,7 +324,10 @@ export function AdvisorChat({ enabled }: { enabled: boolean }) {
         )}
 
         {error && (
-          <div role="alert" className="mx-auto flex max-w-xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+          <div
+            role="alert"
+            className="mx-auto flex max-w-xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive"
+          >
             <span>{error}</span>
             {messages[messages.length - 1]?.role === "user" && enabled && (
               <Button size="sm" variant="outline" onClick={retry}>

@@ -4,10 +4,14 @@ import { AdvisorError, runAdvisor } from "./gemini";
 import { estimateSystem } from "./sizing";
 import { extractRecommendations, runTool } from "./tools";
 
-const deye5k = makeProduct("inverters", "Deye: 5Kw Single Phase Hybrid Inverter (NEW) – VOC: 500V Battery: 48V CT&WIFI Incl (SUN-5K-SG04LP1-EU-SM2)", {
-  sku: "SUN-5K-SG04LP1-EU-SM2",
-  priceInclVat: 21000,
-});
+const deye5k = makeProduct(
+  "inverters",
+  "Deye: 5Kw Single Phase Hybrid Inverter (NEW) – VOC: 500V Battery: 48V CT&WIFI Incl (SUN-5K-SG04LP1-EU-SM2)",
+  {
+    sku: "SUN-5K-SG04LP1-EU-SM2",
+    priceInclVat: 21000,
+  },
+);
 const lux24 = makeProduct("inverters", "Lux Power: Inverter GETA 3.6Kw Off Grid Hybrid Single Phase CT&WIFI Incl (24V) (GETA-LB-EU3.6K/24V)", {
   sku: "GETA-LB-EU3.6K/24V",
   priceInclVat: 6000,
@@ -17,9 +21,13 @@ const deyeLv = makeProduct("batteries", "Deye: LV Battery Lithium Ion Low Voltag
   sku: "SE-G5.1",
   priceInclVat: 18000,
 });
-const lux24Batt = makeProduct("batteries", "Lux Power: LV Battery Lithium Ion Low Voltage 7.5Kwh 25.6V 300Ah (Rack, Wall & Floor Mount) (LUX-Li-7.5e)", {
-  sku: "LUX-Li-7.5e",
-});
+const lux24Batt = makeProduct(
+  "batteries",
+  "Lux Power: LV Battery Lithium Ion Low Voltage 7.5Kwh 25.6V 300Ah (Rack, Wall & Floor Mount) (LUX-Li-7.5e)",
+  {
+    sku: "LUX-Li-7.5e",
+  },
+);
 const ctx = { catalogue: [deye5k, lux24, deyeLv, lux24Batt], overrides: [] };
 
 describe("estimateSystem", () => {
@@ -57,7 +65,9 @@ describe("advisor tools", () => {
     expect(deye.products[0]).toMatchObject({ sku: "SE-G5.1", price_incl_vat: 18000 });
   });
   it("checks compatibility with the shared engine", () => {
-    expect(runTool("check_compatibility", { inverter_sku: "sun-5k-sg04lp1-eu-sm2", battery_sku: "SE-G5.1" }, ctx)).toMatchObject({ status: "likely" });
+    expect(runTool("check_compatibility", { inverter_sku: "sun-5k-sg04lp1-eu-sm2", battery_sku: "SE-G5.1" }, ctx)).toMatchObject({
+      status: "likely",
+    });
     expect(runTool("check_compatibility", { inverter_sku: "SUN-5K-SG04LP1-EU-SM2", battery_sku: "LUX-Li-7.5e" }, ctx)).toMatchObject({
       status: "incompatible",
     });
@@ -103,7 +113,7 @@ describe("runAdvisor", () => {
       { candidates: [{ content: { role: "model", parts: [{ text: "Try the Deye battery [[SE-G5.1]]." }] }, finishReason: "STOP" }] },
     ]);
     const r = await runAdvisor({ ...base, history: [{ role: "user", text: "Which battery?" }], fetchImpl });
-    expect(r).toEqual({ text: "Try the Deye battery [[SE-G5.1]].", toolsUsed: ["search_products"] });
+    expect(r).toEqual({ text: "Try the Deye battery [[SE-G5.1]].", toolsUsed: ["search_products"], model: "gemini-2.5-flash" });
     // The second request echoes the model turn (with its signature) and the tool result.
     const second = requests[1].contents;
     expect(second[1]).toMatchObject({ role: "model", parts: [{ thoughtSignature: "sig" }] });
@@ -114,12 +124,26 @@ describe("runAdvisor", () => {
     await expect(runAdvisor({ ...base, history: [{ role: "user", text: "hi" }], fetchImpl: fakeGemini([429]).fetchImpl })).rejects.toMatchObject({
       kind: "limit",
     });
-    await expect(runAdvisor({ ...base, history: [{ role: "user", text: "hi" }], fetchImpl: fakeGemini([404]).fetchImpl })).rejects.toBeInstanceOf(
-      AdvisorError,
-    );
+    const bothMissing = runAdvisor({ ...base, history: [{ role: "user", text: "hi" }], fetchImpl: fakeGemini([404, 404]).fetchImpl });
+    await expect(bothMissing).rejects.toBeInstanceOf(AdvisorError);
+    await expect(bothMissing).rejects.toMatchObject({ code: "model_not_found" });
     await expect(
-      runAdvisor({ ...base, history: [{ role: "user", text: "hi" }], fetchImpl: fakeGemini([{ promptFeedback: { blockReason: "SAFETY" } }]).fetchImpl }),
+      runAdvisor({
+        ...base,
+        history: [{ role: "user", text: "hi" }],
+        fetchImpl: fakeGemini([{ promptFeedback: { blockReason: "SAFETY" } }]).fetchImpl,
+      }),
     ).rejects.toMatchObject({ kind: "blocked" });
+  });
+
+  it("falls back to the current Flash model when the configured one is unavailable", async () => {
+    const { fetchImpl, requests } = fakeGemini([404, { candidates: [{ content: { parts: [{ text: "Hello!" }] } }] }]);
+    const urls: string[] = [];
+    const spy = ((url: string, init: RequestInit) => (urls.push(url), fetchImpl(url, init))) as typeof fetch;
+    const r = await runAdvisor({ ...base, history: [{ role: "user", text: "hi" }], fetchImpl: spy });
+    expect(r).toMatchObject({ text: "Hello!", model: "gemini-flash-latest" });
+    expect(urls[1]).toContain("/gemini-flash-latest:generateContent");
+    expect(requests).toHaveLength(2);
   });
 
   it("forces a written answer after too many tool rounds", async () => {

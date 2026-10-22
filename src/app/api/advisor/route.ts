@@ -57,10 +57,19 @@ export async function POST(request: NextRequest) {
     if (e instanceof AdvisorError) {
       if (e.kind === "config" || e.kind === "upstream") console.error(`[advisor] ${e.message}`);
       const message =
-        e.kind === "config" || e.kind === "upstream" ? "The advisor is having trouble right now. Please try again shortly, or contact us." : e.message;
-      return json({ error: message }, e.kind === "limit" ? 429 : e.kind === "blocked" ? 400 : 502);
+        e.kind === "config" || e.kind === "upstream"
+          ? "The advisor is having trouble right now. Please try again shortly, or contact us."
+          : e.message;
+      return json({ error: message, code: e.code }, e.kind === "limit" ? 429 : e.kind === "blocked" ? 400 : 502);
     }
     console.error("[advisor]", e);
-    return json({ error: "Something went wrong. Please try again." }, 500);
+    const timedOut = e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError");
+    return json(
+      {
+        error: timedOut ? "The advisor took too long to answer. Please try again." : "Something went wrong. Please try again.",
+        code: timedOut ? "timeout" : "error",
+      },
+      timedOut ? 504 : 500,
+    );
   }
 }

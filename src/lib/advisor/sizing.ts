@@ -67,8 +67,7 @@ export function estimateSystem(input: SizingInput): SizingResult {
   const kwp = daily === null ? null : (daily * offset) / (a.peakSunHours * a.systemEfficiency);
   const panels = kwp === null ? null : Math.max(1, Math.ceil((kwp * 1000) / a.typicalPanelW));
   const actualKwp = panels === null ? null : (panels * a.typicalPanelW) / 1000;
-  const savings =
-    actualKwp === null ? null : actualKwp * a.peakSunHours * a.systemEfficiency * 30 * a.selfConsumption * tariff;
+  const savings = actualKwp === null ? null : actualKwp * a.peakSunHours * a.systemEfficiency * 30 * a.selfConsumption * tariff;
 
   const assumptions = [
     `Inverter: ${Math.round((a.inverterHeadroom - 1) * 100)}% headroom over what runs at once, surges up to ${a.inverterSurgeFactor}× its rating.`,

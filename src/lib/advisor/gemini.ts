@@ -16,29 +16,41 @@ export class AdvisorError extends Error {
   constructor(
     message: string,
     readonly kind: "config" | "upstream" | "blocked" | "limit",
+    /** Short reason safe to show publicly, for diagnosing a deployment. */
+    readonly code: string = kind,
   ) {
     super(message);
   }
 }
 
+/** Used when the configured model isn't available to the key. Always points at Google's current Flash model. */
+export const FALLBACK_MODEL = "gemini-flash-latest";
+
 const API = "https://generativelanguage.googleapis.com/v1beta/models";
 const MAX_TOOL_ROUNDS = 6;
 
-export async function runAdvisor({
-  apiKey,
-  model,
-  system,
-  history,
-  ctx,
-  fetchImpl = fetch,
-}: {
+type RunOptions = {
   apiKey: string;
   model: string;
   system: string;
   history: ChatTurn[];
   ctx: ToolContext;
   fetchImpl?: typeof fetch;
-}): Promise<{ text: string; toolsUsed: string[] }> {
+};
+
+/** Runs the conversation, retrying once on the fallback model if the configured one isn't available. */
+export async function runAdvisor(opts: RunOptions): Promise<{ text: string; toolsUsed: string[]; model: string }> {
+  try {
+    return { ...(await runWithModel(opts)), model: opts.model };
+  } catch (e) {
+    const unavailable = e instanceof AdvisorError && (e.code === "model_not_found" || e.code === "no_model_access");
+    if (!unavailable || opts.model === FALLBACK_MODEL) throw e;
+    console.warn(`[advisor] ${e.message} Falling back to ${FALLBACK_MODEL}.`);
+    return { ...(await runWithModel({ ...opts, model: FALLBACK_MODEL })), model: FALLBACK_MODEL };
+  }
+}
+
+async function runWithModel({ apiKey, model, system, history, ctx, fetchImpl = fetch }: RunOptions): Promise<{ text: string; toolsUsed: string[] }> {
   const contents: Content[] = history.map((t) => ({ role: t.role === "assistant" ? "model" : "user", parts: [{ text: t.text }] }));
   const toolsUsed: string[] = [];
 
@@ -57,7 +69,7 @@ export async function runAdvisor({
           maxOutputTokens: 4096,
           // Flash answers this kind of question well without extended thinking,
           // and replies come back several times faster (hosting functions time out).
-          ...(/flash/i.test(model) ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+          ...(/2\.5-flash/i.test(model) ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
         },
       }),
       signal: AbortSignal.timeout(25_000),
@@ -65,11 +77,14 @@ export async function runAdvisor({
 
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
-      if (res.status === 400 && /API key/i.test(detail)) throw new AdvisorError("The Gemini API key was rejected.", "config");
-      if (res.status === 403) throw new AdvisorError("The Gemini API key doesn't have access to this model.", "config");
-      if (res.status === 404) throw new AdvisorError(`Gemini model "${model}" was not found. Set GEMINI_MODEL to an available model.`, "config");
-      if (res.status === 429) throw new AdvisorError("The advisor is busy right now. Please try again in a minute.", "limit");
-      throw new AdvisorError(`Gemini returned ${res.status}: ${detail.slice(0, 300)}`, "upstream");
+      if (/API key/i.test(detail) && (res.status === 400 || res.status === 401 || res.status === 403)) {
+        throw new AdvisorError("The Gemini API key was rejected.", "config", "key_rejected");
+      }
+      if (res.status === 403)
+        throw new AdvisorError(`The Gemini API key doesn't have access to "${model}": ${detail.slice(0, 300)}`, "config", "no_model_access");
+      if (res.status === 404) throw new AdvisorError(`Gemini model "${model}" was not found.`, "config", "model_not_found");
+      if (res.status === 429) throw new AdvisorError("The advisor is busy right now. Please try again in a minute.", "limit", "rate_limited");
+      throw new AdvisorError(`Gemini returned ${res.status}: ${detail.slice(0, 300)}`, "upstream", `gemini_${res.status}`);
     }
 
     const data = (await res.json()) as {
@@ -89,7 +104,7 @@ export async function runAdvisor({
         .trim();
       if (!text) {
         if (candidate?.finishReason === "SAFETY") throw new AdvisorError("I can't help with that request.", "blocked");
-        throw new AdvisorError(`Gemini returned no answer (${candidate?.finishReason ?? "no candidate"}).`, "upstream");
+        throw new AdvisorError(`Gemini returned no answer (${candidate?.finishReason ?? "no candidate"}).`, "upstream", "empty_answer");
       }
       return { text, toolsUsed };
     }
@@ -105,5 +120,5 @@ export async function runAdvisor({
       }),
     });
   }
-  throw new AdvisorError("The advisor took too many steps. Please rephrase your question.", "upstream");
+  throw new AdvisorError("The advisor took too many steps. Please rephrase your question.", "upstream", "too_many_steps");
 }
