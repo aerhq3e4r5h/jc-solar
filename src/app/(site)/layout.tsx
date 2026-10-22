@@ -1,3 +1,4 @@
+import { CompareBar } from "@/components/compare/compare-bar";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 
@@ -9,6 +10,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         {children}
       </main>
       <SiteFooter />
+      <CompareBar />
     </div>
   );
 }

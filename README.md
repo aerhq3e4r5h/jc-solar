@@ -2,7 +2,7 @@
 
 Online shop for solar panels, lithium batteries, inverters and system kits, with optional installation by a registered technician. Built with Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui and Supabase.
 
-**Status: phase 1 of 9.** Phase 1 covers the project setup, design system, database schema and the Excel catalogue import. The shop pages, checkout, courier, installation booking, AI advisor, accounts, admin dashboard and legal pages come in later phases.
+**Status: phase 2 of 9.** Done: project setup, design system, database and Excel import (phase 1); shop, product pages, filters, compatibility engine, compare and cart (phase 2). Checkout, courier, installation booking, AI advisor, accounts, admin dashboard and legal pages come in later phases.
 
 ## Phase 1 contents
 
@@ -18,6 +18,25 @@ Online shop for solar panels, lithium batteries, inverters and system kits, with
 | Admin import page and Excel export | `/admin/import`, `/admin/catalogue/export` |
 | Sign-in (Google and email link) | `/login`, `src/app/auth/callback/` |
 | Product data file | `data/products.xlsx`, seed generated to `supabase/seed.sql` |
+
+## Phase 2 contents
+
+| Area | Where |
+|---|---|
+| Shop overview, category pages with filters and sorting | `/shop`, `/shop/[category]`, `src/lib/catalogue/filters.ts` |
+| Product pages (specs, stock, installation add-on, compatible products, reviews, JSON-LD) | `/shop/[category]/[slug]` |
+| Cached catalogue queries (refreshed on import) | `src/lib/catalogue/queries.ts` |
+| Compatibility engine (battery/inverter voltage, grid-tie, panel strings, cart checks) | `src/lib/compatibility/engine.ts` |
+| Cart (cookie with IDs and quantities only; prices and stock always read live) | `/cart`, `src/lib/cart/` |
+| Compare up to 3 products | `/compare`, `src/components/compare/` |
+
+### Compatibility rules
+
+- A battery and inverter are **likely compatible** when their battery voltages match (12, 24 or 48 V; a "60 V" inverter input is the top of the 48 V range). Battery communication (CAN/RS485) is confirmed by staff before dispatch.
+- **Not compatible:** different voltages, or any battery with a grid-tie inverter.
+- **Check with us:** high-voltage systems (need a matched battery management unit) and products whose battery voltage is not on file.
+- Pairs an admin confirms or rules out in `product_compatibility` override the rules.
+- Panel strings: cold-morning Voc is taken as Voc x 1.09 (-5 °C, -0.30 %/°C), and a string must stay under the inverter's maximum PV voltage.
 
 ## Setup
 

@@ -1,6 +1,8 @@
 import { ShoppingCart, UserRound } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 import { Logo } from "@/components/brand/logo";
+import { CartBadge } from "@/components/cart/cart-badge";
 import { ThemeToggle } from "@/components/theme";
 import { Button } from "@/components/ui/button";
 import { mainNav } from "@/config/site";
@@ -41,9 +43,12 @@ export function SiteHeader() {
               <UserRound />
             </Link>
           </Button>
-          <Button asChild variant="ghost" size="icon">
+          <Button asChild variant="ghost" size="icon" className="relative">
             <Link href="/cart" aria-label="Cart">
               <ShoppingCart />
+              <Suspense>
+                <CartBadge />
+              </Suspense>
             </Link>
           </Button>
         </div>

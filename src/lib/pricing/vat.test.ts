@@ -12,7 +12,11 @@ describe("VAT", () => {
     expect(vatPortion(13903.5)).toBe(1813.5);
     expect(vatPortion(27807)).toBe(3627);
   });
-  it("formats rand", () => {
-    expect(formatRand(13903.5).replace(/\s/g, " ")).toMatch(/R\s?13[ ,]903[.,]50/);
+  it("formats rand the same way on server and browser", () => {
+    expect(formatRand(13903.5)).toBe("R13,903.50");
+    expect(formatRand(1220006.25)).toBe("R1,220,006.25");
+    expect(formatRand(0.36)).toBe("R0.36");
+    expect(formatRand(999.999)).toBe("R1,000.00");
+    expect(formatRand(-50)).toBe("-R50.00");
   });
 });

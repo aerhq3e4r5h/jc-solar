@@ -22,10 +22,15 @@ export function vatPortion(amountInclVat: number, rate = VAT_RATE): number {
   return fromCents(Math.round((cents * rate) / (1 + rate)));
 }
 
+/**
+ * "R14,375.00". Formatted by hand rather than with Intl, because Node and
+ * browsers ship different en-ZA rules ("R 14 375,00" vs "R 14,375.00"),
+ * which would show two formats on one page and break hydration.
+ */
 export function formatRand(amount: number): string {
-  return new Intl.NumberFormat("en-ZA", {
-    style: "currency",
-    currency: "ZAR",
-    minimumFractionDigits: 2,
-  }).format(amount);
+  const cents = Math.round(Math.abs(amount) * 100);
+  const whole = Math.floor(cents / 100)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return `${amount < 0 ? "-" : ""}R${whole}.${String(cents % 100).padStart(2, "0")}`;
 }

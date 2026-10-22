@@ -1,10 +1,11 @@
 "use server";
 
 import { createHash } from "node:crypto";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { buildImport, type RowIssue } from "@/lib/catalogue/build-import";
 import { buildPayload, type ImportOutcome } from "@/lib/catalogue/payload";
+import { CATALOGUE_TAG } from "@/lib/catalogue/queries";
 import { planImport, type ExistingProduct, type FieldChange } from "@/lib/catalogue/plan";
 import { readCatalogueFile, type SheetSummary } from "@/lib/catalogue/workbook";
 import { createClient } from "@/lib/supabase/server";
@@ -119,6 +120,7 @@ export async function applyImport(formData: FormData): Promise<ApplyResult> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("import_catalogue", { p_payload: payload });
   if (error) return { ok: false, error: `Import failed and nothing was saved: ${error.message}` };
+  revalidateTag(CATALOGUE_TAG, "max");
   revalidatePath("/shop", "layout");
   return { ok: true, ...(data as unknown as ImportOutcome) };
 }
