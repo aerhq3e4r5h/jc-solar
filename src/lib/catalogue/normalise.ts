@@ -84,6 +84,7 @@ const BRAND_ALIASES: Record<string, string> = {
   "tcl solar": "TCL Solar",
   trina: "Trina",
   risen: "Risen",
+  shoto: "Shoto",
 };
 
 // Spreadsheet values that are not real brands.

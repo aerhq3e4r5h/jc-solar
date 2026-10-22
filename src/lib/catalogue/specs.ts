@@ -126,7 +126,17 @@ function panelSpecs(name: string): SpecResult {
 function batterySpecs(name: string): SpecResult {
   const n = name.toLowerCase();
   const list = new SpecList();
-  list.addNumber("capacity_kwh", num(n, new RegExp(String.raw`${NUM}\s?kwh`)), "kWh");
+  const warnings: string[] = [];
+  let kwh = num(n, new RegExp(String.raw`${NUM}\s?kwh`));
+  if (kwh === null) {
+    // "Battery Lithium Ion 5.1Kw" is a typo for kWh in the source data.
+    const typo = num(n, new RegExp(String.raw`${NUM}\s?kw\b`));
+    if (typo !== null) {
+      kwh = typo;
+      warnings.push(`Capacity written as "${typo}Kw"; read as ${typo} kWh`);
+    }
+  }
+  list.addNumber("capacity_kwh", kwh, "kWh");
   list.addNumber("nominal_voltage_v", num(n, new RegExp(String.raw`${NUM}\s?v\b`)), "V");
   list.addNumber("capacity_ah", num(n, new RegExp(String.raw`${NUM}\s?ah\b`)), "Ah");
   let chemistry: string | null = null;
@@ -135,7 +145,7 @@ function batterySpecs(name: string): SpecResult {
   list.addText("chemistry", chemistry);
   list.addText("voltage_class", voltageClass(n));
   if (/stack/.test(n)) list.addText("stackable", "Yes");
-  const warnings = chemistry === "Lithium-ion" ? ["Chemistry given only as lithium-ion; confirm if LFP"] : [];
+  if (chemistry === "Lithium-ion") warnings.push("Chemistry given only as lithium-ion; confirm if LFP");
   return { specs: list.specs, warnings };
 }
 

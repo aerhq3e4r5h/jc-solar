@@ -11,9 +11,19 @@ export type Classification =
 // Parts and accessories that mention "inverter" or "battery" in their name
 // but are not one.
 const ACCESSORY =
-  /accessor|cable|meter\b|logger|module for|\bpcs\b|sts module|mppt module|bracket|dongle|pump|\bvsd\b|variable speed|charge controller|rack|cabinet door|control box|\bbmu\b|distribution unit|expansion|crane|wheel|\bpdu\b|clip|tester|optimi[sz]er|clean|stand\b|cover\b|export manager|\bfan\b|base\b|isolator|breaker|fuse|surge|changeover|current transformer|wall mount (battery|switchgear) box|wall mount cabinet/;
+  /battery box|\bfits \d|accessor|cable|meter\b|logger|module for|\bpcs\b|sts module|mppt module|bracket|dongle|pump|\bvsd\b|variable speed|charge controller|rack|cabinet door|control box|\bbmu\b|distribution unit|expansion|crane|wheel|\bpdu\b|clip|tester|optimi[sz]er|clean|stand\b|cover\b|export manager|\bfan\b|base\b|isolator|breaker|fuse|surge|changeover|current transformer|wall mount (battery|switchgear) box|wall mount cabinet/;
 
 const NOT_SOLAR = /geely|electric suv|plug-in hybrid suv|generator/;
+
+// Mounting options and "what's included" notes describe a product rather
+// than make it an accessory: "(Wall, Stack & Rack Mount)", "(Incl. ...
+// Accessories)", "CT, WIFI & Breaker Incl". Removed before the accessory test.
+function withoutMountingAndInclusions(n: string): string {
+  return n
+    .replace(/\([^()]*\bmount[^()]*\)/g, " ")
+    .replace(/\([^()]*\bincl[^()]*\)/g, " ")
+    .replace(/\b(ct|wifi|bt|breaker)\b[\w\s,&]*\bincl\b/g, " ");
+}
 
 const KIT =
   /web special|(&|\+)[^&+]*\d+(\.\d+)?\s?kwh|all-in-one stack|all in one hess|all-in-1\)/;
@@ -23,13 +33,16 @@ export function classifyRow(name: string, categoryLabels: string[]): Classificat
   const labels = new Set(categoryLabels.map((c) => c.trim().toLowerCase()));
 
   if (NOT_SOLAR.test(n)) return { category: null, reason: "Not a solar product (vehicle or generator)" };
+  if (/\bled\b|\blamp\b|solar light|flood ?light/.test(n)) return { category: null, reason: "Solar light, not a panel" };
   if (KIT.test(n)) return { category: "kits" };
-  if (ACCESSORY.test(n)) return { category: null, reason: "Accessory or spare part" };
+  if (ACCESSORY.test(withoutMountingAndInclusions(n))) return { category: null, reason: "Accessory or spare part" };
 
   if (/\binverter\b/.test(n) && /\d+(\.\d+)?\s?k(w|va)\b/.test(n)) return { category: "inverters" };
   if (/\bbattery\b/.test(n) && /\d+(\.\d+)?\s?kwh/.test(n)) return { category: "batteries" };
+  // "Battery Lithium Ion 5.1Kw" is a kWh typo in the source data.
+  if (/\bbattery lithium\b/.test(n) && /\d+(\.\d+)?\s?kw\b/.test(n)) return { category: "batteries" };
   if (
-    labels.has("solar panels") &&
+    (labels.has("solar panels") || /solar panel/.test(n)) &&
     /\b\d{2,3}\s?w\b/.test(n) &&
     /mono|bifacial|n-type|poly|topcon|half|module|panel|glass|crystal/.test(n)
   ) {

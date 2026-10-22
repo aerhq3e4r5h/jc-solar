@@ -74,6 +74,13 @@ describe("classifyRow", () => {
     ["Web Special: Deye 6Kw Single Phase Off-Grid Hybrid Inverter & Deye LV 5.12KWH Battery (Web-Deye-Deye)", [], "kits"],
     ["Lux Power: ECO Beast All-In-One Stack – 6Kw Inverter & 5.12Kwh 51.2V 100Ah Battery", [], "kits"],
     ["SRNE: Vertical Energy Storage System 48V (All-In-1) (Inverter: 5KW / Battery: 5.12KW) (SR-EOV05S-220)", [], "kits"],
+    // Mounting options and included parts do not make a product an accessory.
+    ["Deye: LV Battery Lithium Ion Low Voltage 5.12Kwh 51.2V 100Ah (Wall, Stack & Rack Mount) (SE-G5.1)", [], "batteries"],
+    ["Lux Power: LV Battery Lithium Ion Low Voltage 15Kwh 51.2V 300Ah (Rack, Wall & Floor Mount) (LUX-Li-15e)", [], "batteries"],
+    ["Deye: Bos-B Pro 241.2Kwh High Voltage Battery Pack (Incl. 16.08Kwh Batteries, BDU and Accessories) (Bos-B-PRO-241.2Kwh)", [], "batteries"],
+    ["Lux Power: Inverter 12Kw Off Grid ECO Hybrid Single Phase CT, WIFI & Breaker Incl (LUX-SNA-EU-12K)", [], "inverters"],
+    ["Shoto: Battery Lithium Ion 5.1Kw 16Cell (Rack Mount) (SDC10-Box5)", [], "batteries"],
+    ["CNBM: 335W Solar Panel High Voltage Mono Crystalline – VOC: 100.14V / ISC: 4.04A (CNBM10M-335)", ["CNBM"], "solar-panels"],
     // A Deye inverter whose name contains "&" and "Battery:" is not a kit.
     ["Deye: 6Kw Single Phase Off-Grid Hybrid Inverter Dual MPPT (18A+18A) & Integrated WIFI – VOC: 500V Battery: 48V", [], "inverters"],
   ])("puts %s in %s", (name, labels, expected) => {
@@ -89,6 +96,13 @@ describe("classifyRow", () => {
     "Inge: Solar Panel Water Drainage Clip (30mm Plastic) (SOLPAN-WDC-30P)",
     "INVT: Solar Pump Inverter 2.2KW (GD100-2R2G-SS2-PV)",
     "Etek: AC LED Voltage Meter 22mm Square 500VAC GREEN (EKLV22-SAV-500G)",
+    "Deye: High Voltage Battery Rack (13 x HV 7.68Kwh Batteries & 1 x HV Cluster Control Box) (BOS-A-RACK14)",
+    "Shoto Battery Box Fits 2 x 5.12Kw Shoto Batteries (Colour White) (S2B5.1-W)",
+    "Dyness: Battery Vertical Stacking Bracket Set for B3 Batteries 3.6KWH (DS006)",
+    "Inge: Deye 8KW/12KW Inverter Wall Mount Battery Box Base Plate (Inge-Deye-8KW/12KW-BBBP)",
+    "INVT: DC Solar Pump Inverter Three Phase 380V 4KW (SP100-004-D4-6-S)",
+    "Inge: LED Solar Light 100W 1097lm Cool White Motion Sensor 15Ah Battery 18W Solar Panel (IS-FL100)",
+    "Inge: LED Post Lamp 800W 2029lm RGB Motion Sensor 32Ah Battery 32W Solar Panel (IS-PL800)",
   ])("skips %s", (name) => {
     expect(classifyRow(name, ["Solar Panels"]).category).toBeNull();
   });
@@ -118,6 +132,11 @@ describe("extractSpecs", () => {
       chemistry: "LiFePO4 (LFP)",
       capacity_kwh: 4.01,
     });
+  });
+  it("reads a battery capacity written as Kw and warns", () => {
+    const result = extractSpecs("batteries", "Shoto: Battery Lithium Ion 5.1Kw 16Cell (Rack Mount) (SDC10-Box5)");
+    expect(result.specs.find((s) => s.key === "capacity_kwh")?.valueNum).toBe(5.1);
+    expect(result.warnings).toContain('Capacity written as "5.1Kw"; read as 5.1 kWh');
   });
   it("reads inverter specs", () => {
     expect(spec("inverters", "Deye: 10Kw Single Phase LV Hybrid Inverter Tri-MPPT IP65 Integrated WIFI – VOC: 500V Battery: 48V CT Incl")).toMatchObject({
