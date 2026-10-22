@@ -30,7 +30,10 @@ export const addressSchema = z.object({
   suburb: z.string().trim().max(80).optional().default(""),
   city: text("town or city", 80),
   province: z.enum(PROVINCES, { message: "Choose a province" }),
-  postalCode: z.string().trim().regex(/^\d{4}$/, "Postal codes have 4 digits"),
+  postalCode: z
+    .string()
+    .trim()
+    .regex(/^\d{4}$/, "Postal codes have 4 digits"),
 });
 
 export const checkoutSchema = z.object({
@@ -50,8 +53,15 @@ export type CheckoutInput = z.input<typeof checkoutSchema>;
 export const quoteRequestSchema = z.object({
   name: text("name", 100),
   email: z.email("Enter a valid email address").max(120),
-  phone: z.union([saPhone, z.literal("")]).optional().default(""),
+  phone: z
+    .union([saPhone, z.literal("")])
+    .optional()
+    .default(""),
   company: z.string().trim().max(120).optional().default(""),
+  province: z
+    .union([z.enum(PROVINCES), z.literal("")])
+    .optional()
+    .default(""),
   marketingOptIn: z.boolean().default(false),
 });
 

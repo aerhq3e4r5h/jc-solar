@@ -9,12 +9,14 @@ import { requireRole } from "@/lib/auth";
 export const metadata: Metadata = { title: "Admin", robots: { index: false, follow: false } };
 
 const nav = [
+  { href: "/admin/orders", label: "Orders" },
+  { href: "/admin/delivery", label: "Delivery" },
   { href: "/admin/import", label: "Import products" },
   { href: "/admin/catalogue/export", label: "Export to Excel", download: true },
 ];
 
 async function StaffGate({ children }: { children: React.ReactNode }) {
-  await requireRole(["admin", "sales"], "/admin/import");
+  await requireRole(["admin", "sales"], "/admin/orders");
   return children;
 }
 

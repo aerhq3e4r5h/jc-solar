@@ -21,10 +21,17 @@ function friendly(message: string, names: Map<string, string>): string {
   if (stock) return `Sorry, we no longer have enough of ${names.get(stock[1]) ?? stock[1]} in stock. Please lower the quantity.`;
   if (message.includes("product_unavailable")) return "One of the products in your cart is no longer available. Please remove it and try again.";
   if (message.includes("empty_cart")) return "Your cart is empty.";
+  if (message.includes("delivery_unavailable"))
+    return "We can't deliver this order to your area online yet. Please download a quotation and we'll arrange delivery.";
+  if (message.includes("address_required") || message.includes("invalid_postal_code")) return "Please check your delivery address.";
   return "Something went wrong and nothing was charged. Please try again, or contact us.";
 }
 
-async function recordConsents(subject: { userId: string | null; anonymousId: string }, consents: { type: "terms" | "marketing_email"; granted: boolean; version?: string }[], source: string) {
+async function recordConsents(
+  subject: { userId: string | null; anonymousId: string },
+  consents: { type: "terms" | "marketing_email"; granted: boolean; version?: string }[],
+  source: string,
+) {
   const admin = createAdminClient();
   await admin.from("consent_records").insert(
     consents.map((c) => ({
@@ -70,7 +77,13 @@ export async function placeOrder(input: CheckoutInput): Promise<ActionResult<{ u
   if (error || !data) {
     return { ok: false, error: friendly(error?.message ?? "", new Map(cart.items.map((i) => [i.product.sku, i.product.name]))) };
   }
-  const { orderId, orderNumber, total } = data as { orderId: string; orderNumber: string; total: number };
+  const { orderId, orderNumber, total, shipping, deliveryPending } = data as {
+    orderId: string;
+    orderNumber: string;
+    total: number;
+    shipping: number;
+    deliveryPending: boolean;
+  };
 
   await rememberAccess("o", orderId, token);
   await writeCart([]);
@@ -94,6 +107,16 @@ export async function placeOrder(input: CheckoutInput): Promise<ActionResult<{ u
       paymentMethod: f.paymentMethod,
       bank: eftDetails(),
       installationRequested: cart.installationRequested,
+      delivery: {
+        amount: Number(shipping),
+        label:
+          cart.installationRequested && Number(shipping) === 0 && !deliveryPending
+            ? "Free with installation"
+            : deliveryPending
+              ? "To be confirmed"
+              : "Free",
+        pending: deliveryPending,
+      },
     }),
   );
 
@@ -133,6 +156,7 @@ export async function requestQuote(input: QuoteRequestInput): Promise<ActionResu
       email: f.email,
       phone: f.phone,
       company: f.company,
+      province: f.province,
       marketingOptIn: f.marketingOptIn,
       accessTokenHash: hash,
       validDays: 7,
@@ -150,6 +174,8 @@ export async function requestQuote(input: QuoteRequestInput): Promise<ActionResu
   }
   const pdfPath = `/api/quotes/${quoteId}/pdf?t=${encodeURIComponent(token)}`;
   const validUntil = new Date(Date.now() + 7 * 86_400_000).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
-  await sendEmail(quoteEmail({ to: f.email, name: f.name, quoteCode, pdfUrl: `${siteUrl()}${pdfPath}`, total: Number(total), validUntil, bank: eftDetails() }));
+  await sendEmail(
+    quoteEmail({ to: f.email, name: f.name, quoteCode, pdfUrl: `${siteUrl()}${pdfPath}`, total: Number(total), validUntil, bank: eftDetails() }),
+  );
   return { ok: true, pdfUrl: `${pdfPath}&download=1`, code: quoteCode };
 }

@@ -30,7 +30,14 @@ const C = {
 
 const s = StyleSheet.create({
   page: { fontFamily: "Geist", fontSize: 9, color: C.ink, paddingBottom: 56 },
-  band: { backgroundColor: C.navy, paddingHorizontal: 40, paddingVertical: 22, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  band: {
+    backgroundColor: C.navy,
+    paddingHorizontal: 40,
+    paddingVertical: 22,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   brand: { flexDirection: "row", alignItems: "center" },
   brandName: { color: "#ffffff", fontSize: 20, fontWeight: 700, marginLeft: 10 },
   brandSun: { color: C.sun },
@@ -61,7 +68,16 @@ const s = StyleSheet.create({
   totals: { width: 220, marginLeft: "auto" },
   totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3 },
   totalMuted: { color: C.muted },
-  grand: { flexDirection: "row", justifyContent: "space-between", backgroundColor: C.navy, color: "#ffffff", paddingHorizontal: 12, paddingVertical: 10, borderRadius: 6, marginTop: 6 },
+  grand: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    backgroundColor: C.navy,
+    color: "#ffffff",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 6,
+    marginTop: 6,
+  },
   grandLabel: { fontSize: 10, fontWeight: 600, color: "#ffffff" },
   grandValue: { fontSize: 14, fontWeight: 700, color: C.sun },
   pay: { flex: 1, backgroundColor: C.sunPale, borderRadius: 6, padding: 12, marginRight: 24 },
@@ -72,7 +88,16 @@ const s = StyleSheet.create({
   paid: { flex: 1, borderRadius: 6, padding: 12, borderWidth: 1, borderColor: "#2f8f5b", marginRight: 24, alignSelf: "flex-start" },
   notes: { marginTop: 16, borderTopWidth: 1, borderColor: C.line, paddingTop: 10 },
   note: { color: C.muted, fontSize: 7.5, marginBottom: 2.5 },
-  footer: { position: "absolute", bottom: 22, left: 40, right: 40, flexDirection: "row", justifyContent: "space-between", fontSize: 7, color: C.muted },
+  footer: {
+    position: "absolute",
+    bottom: 22,
+    left: 40,
+    right: 40,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    fontSize: 7,
+    color: C.muted,
+  },
   link: { color: "#9a5b00", textDecoration: "none" },
 });
 
@@ -101,6 +126,9 @@ export type SalesDocumentProps = {
   supplier: { name: string; lines: string[]; vatNumber: string | null; website: string };
   customer: { name: string; company?: string | null; email: string; phone?: string | null; address?: string[] };
   items: { sku: string; name: string; quantity: number; unitPrice: number; lineTotal: number; installation?: boolean }[];
+  productsTotal: number;
+  /** amount 0 with a label such as "Free" or "To be confirmed". */
+  delivery: { amount: number; label: string; pending: boolean; note?: string };
   total: number;
   vat: number;
   installationRequested: boolean;
@@ -256,11 +284,13 @@ export function SalesDocument(p: SalesDocumentProps) {
             <View style={s.totals}>
               <View style={s.totalRow}>
                 <Text>Products</Text>
-                <Text>{formatRand(p.total)}</Text>
+                <Text>{formatRand(p.productsTotal)}</Text>
               </View>
               <View style={s.totalRow}>
-                <Text style={s.totalMuted}>Delivery</Text>
-                <Text style={s.totalMuted}>To be confirmed</Text>
+                <Text style={p.delivery.amount > 0 ? undefined : s.totalMuted}>Delivery</Text>
+                <Text style={p.delivery.amount > 0 ? undefined : s.totalMuted}>
+                  {p.delivery.amount > 0 ? formatRand(p.delivery.amount) : p.delivery.label}
+                </Text>
               </View>
               {p.installationRequested && (
                 <View style={s.totalRow}>
@@ -283,18 +313,31 @@ export function SalesDocument(p: SalesDocumentProps) {
             <Text style={s.label}>Notes</Text>
             {p.kind === "quote" && (
               <>
-                <Text style={s.note}>• Prices are valid until the date above and include 15% VAT. Stock is not reserved until payment is received.</Text>
+                <Text style={s.note}>
+                  • Prices are valid until the date above and include 15% VAT. Stock is not reserved until payment is received.
+                </Text>
                 <Text style={s.note}>• Please use the payment reference above and email your proof of payment so we can process your order.</Text>
               </>
             )}
             {p.kind === "proforma" && (
               <Text style={s.note}>• Your stock is held for 48 hours. Please pay using the reference above and email your proof of payment.</Text>
             )}
-            <Text style={s.note}>• Delivery is charged separately; we confirm the cost for your address before dispatch.</Text>
-            {p.installationRequested && (
-              <Text style={s.note}>• Installation is by our registered technician and is quoted after a site assessment. You only pay for it once you accept that quote.</Text>
+            {p.delivery.note && <Text style={s.note}>• {p.delivery.note}</Text>}
+            {p.delivery.pending && (
+              <Text style={s.note}>
+                • {p.delivery.amount > 0 ? "Part of the delivery" : "Delivery"} is not included yet: we confirm the cost for your address before
+                dispatch.
+              </Text>
             )}
-            <Text style={s.note}>• Goods carry the manufacturer&apos;s warranty, plus your right under the Consumer Protection Act to return defective goods within 6 months.</Text>
+            {p.installationRequested && (
+              <Text style={s.note}>
+                • Installation is by our registered technician and is quoted after a site assessment. You only pay for it once you accept that quote.
+              </Text>
+            )}
+            <Text style={s.note}>
+              • Goods carry the manufacturer&apos;s warranty, plus your right under the Consumer Protection Act to return defective goods within 6
+              months.
+            </Text>
             {p.kind !== "invoice" && <Text style={s.note}>• This is not a tax invoice. E&amp;OE.</Text>}
           </View>
         </View>

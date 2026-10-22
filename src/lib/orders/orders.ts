@@ -39,6 +39,20 @@ export async function rememberAccess(kind: "o" | "q", id: string, token: string)
 
 type OrderRow = Database["public"]["Tables"]["orders"]["Row"];
 type ItemRow = Database["public"]["Tables"]["order_items"]["Row"];
+type ShipmentRow = Database["public"]["Tables"]["shipments"]["Row"];
+
+export type ShipmentView = {
+  id: string;
+  provider: string;
+  shippingClass: ShipmentRow["shipping_class"];
+  status: ShipmentRow["status"];
+  trackingNumber: string | null;
+  waybillNumber: string | null;
+  trackingUrl: string | null;
+  bookedAt: string | null;
+  deliveredAt: string | null;
+  events: { status: string; at: string; note?: string | null }[];
+};
 
 export type OrderView = {
   id: string;
@@ -55,15 +69,23 @@ export type OrderView = {
   installationRequested: boolean;
   deliveryPending: boolean;
   subtotal: number;
+  shipping: number;
   total: number;
   vat: number;
+  shipments: ShipmentView[];
   items: { sku: string; name: string; unitPrice: number; quantity: number; lineTotal: number; lineVat: number }[];
   invoice: { number: number; code: string; issuedAt: string } | null;
   /** Secret for building links when the viewer arrived with one. */
   token: string | null;
 };
 
-function toView(o: OrderRow, items: ItemRow[], invoice: { invoice_number: number; invoice_code: string | null; issued_at: string } | null, token: string | null): OrderView {
+function toView(
+  o: OrderRow,
+  items: ItemRow[],
+  invoice: { invoice_number: number; invoice_code: string | null; issued_at: string } | null,
+  token: string | null,
+  shipments: ShipmentRow[] = [],
+): OrderView {
   return {
     id: o.id,
     orderNumber: o.order_number,
@@ -79,6 +101,7 @@ function toView(o: OrderRow, items: ItemRow[], invoice: { invoice_number: number
     installationRequested: o.installation_requested,
     deliveryPending: o.delivery_pending,
     subtotal: Number(o.subtotal_incl_vat),
+    shipping: Number(o.shipping_incl_vat),
     total: Number(o.total_incl_vat),
     vat: Number(o.vat_amount),
     items: items.map((i) => ({
@@ -90,6 +113,20 @@ function toView(o: OrderRow, items: ItemRow[], invoice: { invoice_number: number
       lineVat: Number(i.line_vat_amount),
     })),
     invoice: invoice ? { number: invoice.invoice_number, code: invoice.invoice_code ?? "", issuedAt: invoice.issued_at } : null,
+    shipments: shipments
+      .filter((s) => s.status !== "cancelled")
+      .map((s) => ({
+        id: s.id,
+        provider: s.provider,
+        shippingClass: s.shipping_class,
+        status: s.status,
+        trackingNumber: s.tracking_number,
+        waybillNumber: s.waybill_number,
+        trackingUrl: s.tracking_url,
+        bookedAt: s.booked_at,
+        deliveredAt: s.delivered_at,
+        events: Array.isArray(s.events) ? (s.events as ShipmentView["events"]) : [],
+      })),
     token,
   };
 }
@@ -111,11 +148,12 @@ export async function loadOrderForViewer(orderId: string, tokenFromLink?: string
     if (!user || user.id !== order.user_id) return null;
   }
 
-  const [{ data: items }, { data: invoice }] = await Promise.all([
+  const [{ data: items }, { data: invoice }, { data: shipments }] = await Promise.all([
     admin.from("order_items").select("*").eq("order_id", orderId).order("name"),
     admin.from("invoices").select("invoice_number, invoice_code, issued_at").eq("order_id", orderId).maybeSingle(),
+    admin.from("shipments").select("*").eq("order_id", orderId).order("created_at"),
   ]);
-  return toView(order, items ?? [], invoice ?? null, token);
+  return toView(order, items ?? [], invoice ?? null, token, shipments ?? []);
 }
 
 /** Server-side only (webhooks): the order without any viewer check. */
@@ -123,11 +161,12 @@ export async function loadOrderInternal(orderId: string): Promise<OrderView | nu
   const admin = createAdminClient();
   const { data: order } = await admin.from("orders").select("*").eq("id", orderId).maybeSingle();
   if (!order) return null;
-  const [{ data: items }, { data: invoice }] = await Promise.all([
+  const [{ data: items }, { data: invoice }, { data: shipments }] = await Promise.all([
     admin.from("order_items").select("*").eq("order_id", orderId).order("name"),
     admin.from("invoices").select("invoice_number, invoice_code, issued_at").eq("order_id", orderId).maybeSingle(),
+    admin.from("shipments").select("*").eq("order_id", orderId).order("created_at"),
   ]);
-  return toView(order, items ?? [], invoice ?? null, null);
+  return toView(order, items ?? [], invoice ?? null, null, shipments ?? []);
 }
 
 export type QuoteView = {
@@ -139,8 +178,20 @@ export type QuoteView = {
   email: string;
   phone: string | null;
   company: string | null;
-  items: { productId: string; sku: string; name: string; unitPrice: number; quantity: number; lineTotal: number; lineVat: number; installation: boolean }[];
+  items: {
+    productId: string;
+    sku: string;
+    name: string;
+    unitPrice: number;
+    quantity: number;
+    lineTotal: number;
+    lineVat: number;
+    installation: boolean;
+  }[];
   subtotal: number;
+  shipping: number;
+  deliveryPending: boolean;
+  deliveryProvince: string | null;
   vat: number;
   total: number;
   installationRequested: boolean;
@@ -165,8 +216,16 @@ export async function loadQuoteForViewer(quoteId: string, tokenFromLink?: string
     email: q.email,
     phone: q.phone,
     company: q.company,
-    items: (q.items as QuoteView["items"]).map((i) => ({ ...i, unitPrice: Number(i.unitPrice), lineTotal: Number(i.lineTotal), lineVat: Number(i.lineVat) })),
+    items: (q.items as QuoteView["items"]).map((i) => ({
+      ...i,
+      unitPrice: Number(i.unitPrice),
+      lineTotal: Number(i.lineTotal),
+      lineVat: Number(i.lineVat),
+    })),
     subtotal: Number(q.subtotal_incl_vat),
+    shipping: Number(q.shipping_incl_vat ?? 0),
+    deliveryPending: q.delivery_pending ?? true,
+    deliveryProvince: q.delivery_province ?? null,
     vat: Number(q.vat_amount),
     total: Number(q.total_incl_vat),
     installationRequested: q.installation_requested,

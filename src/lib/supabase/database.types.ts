@@ -1488,6 +1488,8 @@ export type Database = {
           converted_order_id: string | null;
           created_at: string;
           customer_name: string;
+          delivery_pending: boolean;
+          delivery_province: string | null;
           email: string;
           id: string;
           installation_requested: boolean;
@@ -1496,6 +1498,7 @@ export type Database = {
           phone: string | null;
           quote_code: string | null;
           quote_number: number;
+          shipping_incl_vat: number;
           subtotal_incl_vat: number;
           total_incl_vat: number;
           user_id: string | null;
@@ -1509,6 +1512,8 @@ export type Database = {
           converted_order_id?: string | null;
           created_at?: string;
           customer_name: string;
+          delivery_pending?: boolean;
+          delivery_province?: string | null;
           email: string;
           id?: string;
           installation_requested?: boolean;
@@ -1517,6 +1522,7 @@ export type Database = {
           phone?: string | null;
           quote_code?: never;
           quote_number?: number;
+          shipping_incl_vat?: number;
           subtotal_incl_vat: number;
           total_incl_vat: number;
           user_id?: string | null;
@@ -1529,6 +1535,8 @@ export type Database = {
           converted_order_id?: string | null;
           created_at?: string;
           customer_name?: string;
+          delivery_pending?: boolean;
+          delivery_province?: string | null;
           email?: string;
           id?: string;
           installation_requested?: boolean;
@@ -1537,6 +1545,7 @@ export type Database = {
           phone?: string | null;
           quote_code?: never;
           quote_number?: number;
+          shipping_incl_vat?: number;
           subtotal_incl_vat?: number;
           total_incl_vat?: number;
           user_id?: string | null;
@@ -1752,7 +1761,7 @@ export type Database = {
           parcels: NonNullable<Json>;
           provider: string;
           service_code: string | null;
-          shipping_class: Database["public"]["Enums"]["shipping_class"];
+          shipping_class: Database["public"]["Enums"]["shipping_class"] | null;
           status: Database["public"]["Enums"]["shipment_status"];
           tracking_number: string | null;
           tracking_url: string | null;
@@ -1772,7 +1781,7 @@ export type Database = {
           parcels?: NonNullable<Json>;
           provider: string;
           service_code?: string | null;
-          shipping_class: Database["public"]["Enums"]["shipping_class"];
+          shipping_class?: Database["public"]["Enums"]["shipping_class"] | null;
           status?: Database["public"]["Enums"]["shipment_status"];
           tracking_number?: string | null;
           tracking_url?: string | null;
@@ -1791,7 +1800,7 @@ export type Database = {
           parcels?: NonNullable<Json>;
           provider?: string;
           service_code?: string | null;
-          shipping_class?: Database["public"]["Enums"]["shipping_class"];
+          shipping_class?: Database["public"]["Enums"]["shipping_class"] | null;
           status?: Database["public"]["Enums"]["shipment_status"];
           tracking_number?: string | null;
           tracking_url?: string | null;
@@ -1926,31 +1935,40 @@ export type Database = {
       };
       shipping_settings: {
         Row: {
+          carrier_name: string;
           collection_address: string | null;
           collection_enabled: boolean;
+          dispatch_from: string;
           free_delivery_threshold_incl_vat: number | null;
           free_delivery_with_installation: boolean;
           id: boolean;
           quote_after_order_when_unavailable: boolean;
+          tracking_url_template: string | null;
           updated_at: string;
         };
         ComputedFields: never;
         Insert: {
+          carrier_name?: string;
           collection_address?: string | null;
           collection_enabled?: boolean;
+          dispatch_from?: string;
           free_delivery_threshold_incl_vat?: number | null;
           free_delivery_with_installation?: boolean;
           id?: boolean;
           quote_after_order_when_unavailable?: boolean;
+          tracking_url_template?: string | null;
           updated_at?: string;
         };
         Update: {
+          carrier_name?: string;
           collection_address?: string | null;
           collection_enabled?: boolean;
+          dispatch_from?: string;
           free_delivery_threshold_incl_vat?: number | null;
           free_delivery_with_installation?: boolean;
           id?: boolean;
           quote_after_order_when_unavailable?: boolean;
+          tracking_url_template?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -2184,10 +2202,7 @@ export type Database = {
       create_checkout_order: { Args: { p: Json }; Returns: Json };
       create_quote: { Args: { p: Json }; Returns: Json };
       current_technician_id: { Args: Record<PropertyKey, never>; Returns: string };
-      current_user_role: {
-        Args: Record<PropertyKey, never>;
-        Returns: Database["public"]["Enums"]["user_role"];
-      };
+      current_user_role: { Args: Record<PropertyKey, never>; Returns: Database["public"]["Enums"]["user_role"] };
       import_catalogue: { Args: { p_payload: Json }; Returns: Json };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_staff: { Args: Record<PropertyKey, never>; Returns: boolean };
@@ -2205,12 +2220,15 @@ export type Database = {
           unit_price: number;
         }[];
       };
-      refresh_incomplete_fields: {
-        Args: { p_product_ids: string[]; p_required: Json };
-        Returns: undefined;
-      };
+      quote_delivery: { Args: { p_address: Json; p_items: Json; p_method?: string }; Returns: Json };
+      record_shipment: { Args: { p: Json }; Returns: string };
+      refresh_incomplete_fields: { Args: { p_product_ids: string[]; p_required: Json }; Returns: undefined };
       release_expired_reservations: { Args: Record<PropertyKey, never>; Returns: number };
       reserve_order_stock: { Args: { p_minutes?: number; p_order_id: string }; Returns: undefined };
+      update_shipment_status: {
+        Args: { p_note?: string; p_shipment_id: string; p_status: Database["public"]["Enums"]["shipment_status"] };
+        Returns: undefined;
+      };
     };
     Enums: {
       compatibility_status: "proposed" | "confirmed" | "incompatible";
@@ -2225,20 +2243,8 @@ export type Database = {
       data_request_status: "received" | "in_progress" | "completed" | "rejected";
       data_request_type: "access" | "export" | "correction" | "deletion";
       delivery_method: "courier" | "own_delivery" | "collection" | "installer_delivery";
-      installation_status:
-        | "requested"
-        | "site_assessment"
-        | "scheduled"
-        | "in_progress"
-        | "completed"
-        | "cancelled";
-      inventory_reason:
-        | "import"
-        | "manual_adjustment"
-        | "order_paid"
-        | "order_cancelled"
-        | "return"
-        | "stocktake";
+      installation_status: "requested" | "site_assessment" | "scheduled" | "in_progress" | "completed" | "cancelled";
+      inventory_reason: "import" | "manual_adjustment" | "order_paid" | "order_cancelled" | "return" | "stocktake";
       order_status:
         | "pending_payment"
         | "paid"
@@ -2260,14 +2266,7 @@ export type Database = {
       return_reason: "cooling_off" | "defective" | "wrong_item" | "damaged_in_transit" | "other";
       return_status: "requested" | "approved" | "received" | "refunded" | "rejected";
       review_status: "pending" | "approved" | "rejected";
-      roof_type:
-        | "ibr"
-        | "corrugated"
-        | "tile"
-        | "clip_lock"
-        | "flat_concrete"
-        | "ground_mount"
-        | "other";
+      roof_type: "ibr" | "corrugated" | "tile" | "clip_lock" | "flat_concrete" | "ground_mount" | "other";
       shipment_status:
         | "pending"
         | "booked"
@@ -2305,12 +2304,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
@@ -2327,14 +2326,12 @@ export type Tables<
     : never;
 
 export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I;
@@ -2350,14 +2347,12 @@ export type TablesInsert<
     : never;
 
 export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U;
@@ -2373,14 +2368,12 @@ export type TablesUpdate<
     : never;
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+  DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
@@ -2391,11 +2384,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never) = never,
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
@@ -2418,22 +2411,8 @@ export const Constants = {
       data_request_status: ["received", "in_progress", "completed", "rejected"],
       data_request_type: ["access", "export", "correction", "deletion"],
       delivery_method: ["courier", "own_delivery", "collection", "installer_delivery"],
-      installation_status: [
-        "requested",
-        "site_assessment",
-        "scheduled",
-        "in_progress",
-        "completed",
-        "cancelled",
-      ],
-      inventory_reason: [
-        "import",
-        "manual_adjustment",
-        "order_paid",
-        "order_cancelled",
-        "return",
-        "stocktake",
-      ],
+      installation_status: ["requested", "site_assessment", "scheduled", "in_progress", "completed", "cancelled"],
+      inventory_reason: ["import", "manual_adjustment", "order_paid", "order_cancelled", "return", "stocktake"],
       order_status: [
         "pending_payment",
         "paid",
@@ -2456,15 +2435,7 @@ export const Constants = {
       return_reason: ["cooling_off", "defective", "wrong_item", "damaged_in_transit", "other"],
       return_status: ["requested", "approved", "received", "refunded", "rejected"],
       review_status: ["pending", "approved", "rejected"],
-      roof_type: [
-        "ibr",
-        "corrugated",
-        "tile",
-        "clip_lock",
-        "flat_concrete",
-        "ground_mount",
-        "other",
-      ],
+      roof_type: ["ibr", "corrugated", "tile", "clip_lock", "flat_concrete", "ground_mount", "other"],
       shipment_status: [
         "pending",
         "booked",

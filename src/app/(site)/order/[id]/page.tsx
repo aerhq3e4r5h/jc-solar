@@ -4,6 +4,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { OrderSummary } from "@/components/checkout/order-summary";
+import { ShipmentTracking } from "@/components/order/shipment-tracking";
+import { orderDeliverySummary } from "@/lib/shipping/format";
 import { AwaitPayment, ChangeOrderButton } from "@/components/order/order-actions";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -149,6 +151,8 @@ async function OrderContents({ params, searchParams }: Props) {
             </section>
           )}
 
+          <ShipmentTracking shipments={order.shipments} />
+
           <section className="grid gap-4 rounded-2xl border bg-card p-6 text-sm sm:grid-cols-2" aria-label="Order details">
             <div>
               <h2 className="mb-2 font-sans font-semibold">Contact</h2>
@@ -185,9 +189,10 @@ async function OrderContents({ params, searchParams }: Props) {
         <aside aria-label="Order summary" className="lg:sticky lg:top-24 lg:self-start">
           <OrderSummary
             title="Your order"
+            totalLabel={pending ? "Total to pay now" : paid ? "Total paid" : "Total"}
             lines={order.items.map((i) => ({ key: i.sku, name: i.name, quantity: i.quantity, lineTotal: i.lineTotal }))}
-            total={order.total}
-            vat={order.vat}
+            productsTotal={order.subtotal}
+            delivery={orderDeliverySummary(order)}
             installationRequested={order.installationRequested}
           />
         </aside>

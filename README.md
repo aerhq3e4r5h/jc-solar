@@ -69,6 +69,36 @@ Guests reach their order with a secret link (emailed) or a cookie set at checkou
 
 Note: PayFast's shared public sandbox merchant (10000100) currently rejects signatures made with its documented passphrase, so it can't be used to test signed payments. Use your own sandbox account.
 
+## Phase 4 contents: delivery (DSV)
+
+| Area | Where |
+|---|---|
+| Delivery priced in the database from an editable rate table, per shipment type | `supabase/migrations/20261022000009_shipping.sql` (`quote_delivery()`) |
+| Delivery options and cost at checkout, in order totals, VAT, quotes, PDFs and emails | `src/components/checkout/`, `src/lib/shipping/`, `src/lib/pdf/` |
+| Admin: orders to dispatch, record DSV waybill/tracking, status updates, tracking email | `/admin/orders`, `/admin/orders/[id]` |
+| Admin: delivery rates and settings | `/admin/delivery` |
+| Customer tracking on the order page; public rate table | `/order/[id]`, `/delivery` |
+| Courier interface (DSV now manual; booking, tracking and live rates plug in later) | `src/lib/shipping/types.ts`, `src/lib/shipping/providers.ts` |
+
+### How delivery is priced
+
+- Each shipping class in the cart is its own shipment: **parcel** (inverters, accessories), **oversized** (solar panels on a pallet) and **dangerous goods** (lithium batteries, UN3480 Class 9).
+- Price per shipment = first item + each extra item + per kg (if products have weights), from the row for the customer's province. A row for a postal-code range (e.g. remote towns) beats the province row.
+- Free when installation is booked (the installer brings it), above an optional order value, or for collection, all switchable in `/admin/delivery`.
+- No rate for an area: the order goes through with that part "quoted after order" (or checkout refuses, if you switch that off).
+- The same database function prices the checkout display and the order itself, so the browser can never change the delivery charge. A snapshot of how delivery was priced is kept per order (`shipping_quotes`).
+- **The starter rates are estimates** (Gauteng parcels R250, panel pallets R950 + R25 a panel, batteries R450 + R150 each; more for further provinces). Replace them with your DSV prices in `/admin/delivery`.
+
+### Dispatching with DSV
+
+1. Open `/admin/orders`: paid orders waiting for dispatch are listed oldest first.
+2. Book the collection from the Solar Europe warehouse with DSV (batteries on a dangerous-goods service).
+3. On the order, enter DSV's tracking number (and waybill if different). The order becomes "shipped" and the customer is emailed the tracking number (needs `RESEND_API_KEY`).
+4. Move the shipment along (in transit, out for delivery, delivered). The customer sees the progress on their order page; the order becomes "delivered" when every shipment is.
+5. Optional: in `/admin/delivery`, paste DSV's tracking link with `{tracking}` in place of the number, so customers get a clickable link.
+
+DSV publishes booking and tracking APIs on its developer portal (https://developer.dsv.com) once your DSV account is given API subscription keys. When you have them, they plug into `src/lib/shipping/providers.ts` (`bookShipment`, `trackShipment`) without changing checkout.
+
 ## Setup
 
 Requirements: Node 22+, a Supabase project (or the Supabase CLI with Docker for local development).

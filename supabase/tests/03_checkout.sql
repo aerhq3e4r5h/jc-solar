@@ -30,7 +30,7 @@ select pg_temp.expect_error(
   $$select public.create_checkout_order('{"termsVersion": "v1", "email": "a@b.co", "items": [{"productId": "20000000-0000-0000-0000-000000000002", "quantity": 1}]}')$$,
   'inactive product', 'product_unavailable');
 select pg_temp.expect_error(
-  $$select public.create_checkout_order('{"termsVersion": "v1", "email": "a@b.co", "items": [{"productId": "70000000-0000-0000-0000-000000000001", "quantity": 6}]}')$$,
+  $$select public.create_checkout_order('{"termsVersion": "v1", "email": "a@b.co", "shippingAddress": {"province": "Gauteng"}, "items": [{"productId": "70000000-0000-0000-0000-000000000001", "quantity": 6}]}')$$,
   'more than in stock', 'insufficient_stock:CHK-INV');
 
 do $$
@@ -101,6 +101,7 @@ declare
 begin
   r := public.create_checkout_order($j${
     "termsVersion": "terms-2026-10", "email": "eft@example.com", "customerName": "Sipho EFT", "paymentMethod": "eft",
+    "shippingAddress": {"province": "Gauteng", "postalCode": "0001"},
     "items": [{"productId": "70000000-0000-0000-0000-000000000001", "quantity": 2}]}$j$);
   if (select expires_at from public.stock_reservations where order_id = (r ->> 'orderId')::uuid) < now() + interval '47 hours' then
     raise exception 'FAIL: EFT reservation should be 48 hours';

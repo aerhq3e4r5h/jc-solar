@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { CheckoutForm } from "@/components/checkout/checkout-form";
-import { OrderSummary } from "@/components/checkout/order-summary";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth";
@@ -23,22 +22,12 @@ async function Checkout() {
     );
   }
   return (
-    <div className="grid gap-10 lg:grid-cols-[1fr_400px]">
-      <CheckoutForm defaultEmail={user?.email} />
-      <aside aria-label="Order summary" className="lg:sticky lg:top-24 lg:self-start">
-        <OrderSummary
-          lines={cart.items.map((i) => ({ key: i.product.id, name: i.product.name, quantity: i.quantity, lineTotal: i.lineTotal }))}
-          total={cart.subtotalInclVat}
-          vat={cart.vatIncluded}
-          installationRequested={cart.installationRequested}
-        />
-        <p className="mt-3 text-center text-sm">
-          <Link href="/cart" className="underline underline-offset-4">
-            Edit cart
-          </Link>
-        </p>
-      </aside>
-    </div>
+    <CheckoutForm
+      defaultEmail={user?.email}
+      lines={cart.items.map((i) => ({ key: i.product.id, name: i.product.name, quantity: i.quantity, lineTotal: i.lineTotal }))}
+      productsTotal={cart.subtotalInclVat}
+      installationRequested={cart.installationRequested}
+    />
   );
 }
 

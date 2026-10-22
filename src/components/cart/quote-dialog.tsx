@@ -7,12 +7,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { requestQuote } from "@/lib/checkout/actions";
+import { PROVINCES } from "@/lib/checkout/schema";
 
 export function QuoteDialog() {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
-  const [v, setV] = useState({ name: "", email: "", phone: "", company: "", marketingOptIn: false });
+  const [v, setV] = useState({ name: "", email: "", phone: "", company: "", province: "" as (typeof PROVINCES)[number] | "", marketingOptIn: false });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ pdfUrl: string; code: string } | null>(null);
@@ -91,7 +93,27 @@ export function QuoteDialog() {
               {field("phone", "Phone (optional)", "tel", "tel")}
               {field("company", "Company (optional)", "text", "organization")}
             </div>
-            <p className="text-xs text-muted-foreground">We use these details to prepare and email your quotation, and may follow up about it once.</p>
+            <div className="space-y-1.5">
+              <Label htmlFor="q-province">Deliver to (optional)</Label>
+              <Select value={v.province} onValueChange={(province) => setV((s) => ({ ...s, province: province as (typeof PROVINCES)[number] }))}>
+                <SelectTrigger id="q-province" className="w-full" aria-describedby="q-province-hint">
+                  <SelectValue placeholder="Choose a province to include delivery" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROVINCES.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {p}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p id="q-province-hint" className="text-xs text-muted-foreground">
+                Adds the delivery cost to the quotation, so you know the full amount to pay.
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              We use these details to prepare and email your quotation, and may follow up about it once.
+            </p>
             <div className="flex items-start gap-3">
               <Checkbox id="q-marketing" checked={v.marketingOptIn} onCheckedChange={(c) => setV((s) => ({ ...s, marketingOptIn: c === true }))} />
               <Label htmlFor="q-marketing" className="font-normal text-muted-foreground">

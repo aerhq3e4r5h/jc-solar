@@ -18,10 +18,14 @@ function layout(title: string, body: string) {
 </table></td></tr></table></body></html>`;
 }
 
-function itemsTable(lines: Line[], total: number) {
-  const rows = lines
-    .map((l) => `<tr><td style="padding:8px 0;border-bottom:1px solid #eee">${l.quantity} x ${esc(l.name)}</td><td align="right" style="padding:8px 0;border-bottom:1px solid #eee;white-space:nowrap">${formatRand(l.lineTotal)}</td></tr>`)
-    .join("");
+type DeliveryLine = { amount: number | null; label: string; pending?: boolean };
+
+function itemsTable(lines: Line[], total: number, delivery?: DeliveryLine) {
+  const row = (name: string, value: string) =>
+    `<tr><td style="padding:8px 0;border-bottom:1px solid #eee">${name}</td><td align="right" style="padding:8px 0;border-bottom:1px solid #eee;white-space:nowrap">${value}</td></tr>`;
+  const rows =
+    lines.map((l) => row(`${l.quantity} x ${esc(l.name)}`, formatRand(l.lineTotal))).join("") +
+    (delivery ? row("Delivery", delivery.amount ? formatRand(delivery.amount) : esc(delivery.label)) : "");
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;margin:16px 0">${rows}
 <tr><td style="padding:10px 0;font-weight:bold">Total (incl. VAT)</td><td align="right" style="padding:10px 0;font-weight:bold">${formatRand(total)}</td></tr></table>`;
 }
@@ -52,11 +56,14 @@ export function orderReceivedEmail(o: {
   paymentMethod: "payfast" | "eft";
   bank: Bank;
   installationRequested: boolean;
+  delivery: DeliveryLine;
 }): Email {
   const eft = o.paymentMethod === "eft";
+  const deliveryNote = o.delivery.pending ? "Part of the delivery isn't priced yet: we'll confirm it for your address before dispatch. " : "";
+  const installNote = o.installationRequested ? "Our technician will contact you to arrange a site assessment and quote the installation." : "";
   const body = `<p style="font-size:14px">Hi ${esc(o.name)}, thank you for your order <strong>${esc(o.orderNumber)}</strong>.</p>
-${itemsTable(o.lines, o.total)}
-<p style="font-size:14px">Delivery is not included yet: we'll confirm the delivery cost for your address before dispatch.${o.installationRequested ? " Our technician will contact you to arrange a site assessment and quote the installation." : ""}</p>
+${itemsTable(o.lines, o.total, o.delivery)}
+${deliveryNote || installNote ? `<p style="font-size:14px">${deliveryNote}${installNote}</p>` : ""}
 ${eft ? `<p style="font-size:14px">Please pay <strong>${formatRand(o.total)}</strong> by EFT within 48 hours. We hold your stock until then.</p>${bankBlock(o.bank, o.orderNumber)}` : `<p style="font-size:14px">If you haven't finished paying, you can do so from your order page.</p>`}
 ${button(o.orderUrl, "View your order")}`;
   return {
@@ -69,7 +76,7 @@ ${button(o.orderUrl, "View your order")}`;
 
 export function paymentReceivedEmail(o: { to: string; name: string; orderNumber: string; orderUrl: string; total: number }): Email {
   const body = `<p style="font-size:14px">Hi ${esc(o.name)}, we've received your payment of <strong>${formatRand(o.total)}</strong> for order <strong>${esc(o.orderNumber)}</strong>.</p>
-<p style="font-size:14px">We'll confirm delivery and let you know as soon as your order is on its way.</p>
+<p style="font-size:14px">We'll email your tracking number as soon as your order is on its way.</p>
 <p style="font-size:14px">Your invoice is attached. Keep it for your warranty records.</p>
 ${button(o.orderUrl, "View your order")}`;
   return {
@@ -85,5 +92,34 @@ export function quoteEmail(o: { to: string; name: string; quoteCode: string; pdf
 ${button(o.pdfUrl, "Download the quotation (PDF)")}
 <p style="font-size:14px">To order, check out on our website, or pay by EFT and email us your proof of payment.</p>
 ${bankBlock(o.bank, o.quoteCode)}`;
-  return { to: o.to, subject: `Your JC Solar quotation ${o.quoteCode}`, html: layout("Your quotation", body), text: `Quotation ${o.quoteCode}: ${formatRand(o.total)} incl. VAT, valid until ${o.validUntil}. Download: ${o.pdfUrl}` };
+  return {
+    to: o.to,
+    subject: `Your JC Solar quotation ${o.quoteCode}`,
+    html: layout("Your quotation", body),
+    text: `Quotation ${o.quoteCode}: ${formatRand(o.total)} incl. VAT, valid until ${o.validUntil}. Download: ${o.pdfUrl}`,
+  };
+}
+
+export function shipmentBookedEmail(o: {
+  to: string;
+  name: string;
+  orderNumber: string;
+  /** Null for guest orders: they open the order from the link in their confirmation email. */
+  orderUrl: string | null;
+  carrier: string;
+  trackingNumber: string;
+  trackingUrl: string | null;
+  what: string | null;
+}): Email {
+  const body = `<p style="font-size:14px">Hi ${esc(o.name)}, ${o.what ? `the ${esc(o.what.toLowerCase())} from` : ""} your order <strong>${esc(o.orderNumber)}</strong> is on its way with ${esc(o.carrier)}.</p>
+<p style="font-size:14px">Tracking number: <strong>${esc(o.trackingNumber)}</strong></p>
+${o.trackingUrl ? button(o.trackingUrl, `Track with ${o.carrier}`) : ""}
+<p style="font-size:14px">The courier may phone you to arrange delivery. Please check the boxes for damage before signing for them.</p>
+${o.orderUrl ? button(o.orderUrl, "View your order") : `<p style="font-size:14px">You can follow your order from the link in your order confirmation email.</p>`}`;
+  return {
+    to: o.to,
+    subject: `Order ${o.orderNumber} is on its way`,
+    html: layout("Your order is on its way", body),
+    text: `Order ${o.orderNumber} is on its way with ${o.carrier}. Tracking number ${o.trackingNumber}.${o.trackingUrl ? ` Track: ${o.trackingUrl}` : ""}${o.orderUrl ? ` Order: ${o.orderUrl}` : ""}`,
+  };
 }
