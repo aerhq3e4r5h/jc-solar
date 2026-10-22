@@ -1,10 +1,12 @@
 import { ArrowRight, Sparkles } from "lucide-react";
+import { AdvisorChat } from "@/components/advisor/advisor-chat";
 import type { Metadata } from "next";
 import Link from "next/link";
 import bannerImage from "@/assets/backgrounds/field-array.webp";
 import { PhotoBanner } from "@/components/layout/photo-banner";
 import { Prose } from "@/components/content/prose";
 import { Button } from "@/components/ui/button";
+import { geminiConfig } from "@/lib/env.server";
 
 export const metadata: Metadata = {
   title: "Solar Advisor: size your system",
@@ -15,13 +17,17 @@ export const metadata: Metadata = {
 export default function AdvisorPage() {
   return (
     <>
-      <PhotoBanner image={bannerImage} eyebrow="Solar Advisor" title="Size your system">
+      <PhotoBanner image={bannerImage} eyebrow="Solar Advisor" title="Size your system" className="pb-20 sm:pb-24">
         <p>
-          Our AI Solar Advisor is on its way. It will ask about your home, bill and appliances and recommend a matched system from our stock. Until
-          then, here&apos;s how sizing works, and we&apos;re happy to size it for you.
+          Tell our AI Solar Advisor what you need to keep running, or what you pay for electricity. It sizes your system and recommends matched,
+          compatible products from our live stock, with prices.
         </p>
       </PhotoBanner>
       <div className="container-page py-14">
+        <div className="relative z-10 mx-auto -mt-28 max-w-5xl sm:-mt-32">
+          <AdvisorChat enabled={geminiConfig() !== null} />
+        </div>
+        <h2 className="mt-20 mb-6 text-3xl font-semibold">Prefer to talk to a person?</h2>
         <div className="mb-12 flex flex-wrap gap-3">
           <Button asChild size="lg">
             <Link href="/contact">

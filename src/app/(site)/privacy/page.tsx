@@ -27,7 +27,7 @@ export default function PrivacyPage() {
         <h2>Cookies</h2>
         <p>We use essential cookies to keep your cart, your order link and your sign-in working. We will ask before using any analytics or marketing cookies.</p>
         <h2>Who we share it with</h2>
-        <p>Only service providers that help us run the shop: Supabase (database hosting), Netlify (website hosting), PayFast (payments), our email provider, and couriers for delivery. When the AI Solar Advisor launches, conversations will be processed by Google Gemini, and we will tell you before you use it.</p>
+        <p>Only service providers that help us run the shop: Supabase (database hosting), Netlify (website hosting), PayFast (payments), our email provider, and couriers for delivery. Conversations with the AI Solar Advisor are sent to Google (Gemini API) to generate replies. We do not store them, and the advisor asks you not to share personal details.</p>
         <h2>How long we keep it</h2>
         <p>Order and invoice records are kept as long as tax law requires. Other information is kept only as long as needed for the purpose above.</p>
         <h2>Your rights</h2>

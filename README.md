@@ -123,6 +123,8 @@ The repo includes `netlify.toml`; Netlify builds it with its official Next.js ad
 | `PAYFAST_SANDBOX`, `PAYFAST_MERCHANT_ID`, `PAYFAST_MERCHANT_KEY`, `PAYFAST_PASSPHRASE` | from your PayFast (sandbox) account | Secret |
 | `EFT_BANK_NAME`, `EFT_ACCOUNT_NAME`, `EFT_ACCOUNT_NUMBER`, `EFT_BRANCH_CODE`, `EFT_ACCOUNT_TYPE` | your banking details | Printed on quotes and pro forma invoices |
 | `RESEND_API_KEY`, `EMAIL_FROM` | from Resend | Optional; emails are logged without it |
+| `GEMINI_API_KEY` | from [Google AI Studio](https://aistudio.google.com/apikey) | Secret. Turns on the Solar Advisor |
+| `GEMINI_MODEL` | optional, default `gemini-2.5-flash` | |
 
 `NEXT_PUBLIC_*` values are built into the pages, so redeploy after changing them. In Supabase, add the Netlify address under **Authentication > URL Configuration** (site URL and redirect URL `https://<your-site>/auth/callback`).
 
@@ -132,6 +134,19 @@ The repo includes `netlify.toml`; Netlify builds it with its official Next.js ad
 npm run dev        # http://localhost:3000
 npm run build && npm start
 ```
+
+## Solar Advisor (AI)
+
+`/advisor` is a chat with Google Gemini that sizes a system and recommends products. It can't make anything up about the shop: the model calls server-side tools (`src/lib/advisor/tools.ts`) for everything factual.
+
+- `search_products` and `get_product` read the same cached catalogue as the shop (live prices and stock).
+- `check_compatibility` uses the same engine as the cart.
+- `estimate_system` (`src/lib/advisor/sizing.ts`) does the sizing maths deterministically, with its assumptions listed in the result.
+- Recommended products come back as `[[SKU]]` markers. The server keeps only SKUs that exist and shows them as cards with **Add to cart** and **Add all to cart**.
+- The key stays on the server (`/api/advisor`). Requests are size-limited and rate-limited per visitor (20 per 10 minutes per server instance), and only accepted from the site's own pages.
+- Conversations are not stored; the browser keeps the current chat for that tab only.
+- Without `GEMINI_API_KEY` the page still loads and says the advisor isn't switched on.
+- The key is read at build time for the page and at request time for the API, so **redeploy after adding it**.
 
 ## Products: import, update and export
 

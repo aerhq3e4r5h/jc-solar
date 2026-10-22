@@ -39,3 +39,10 @@ export function eftDetails() {
   };
   return d.bank && d.accountNumber ? d : null;
 }
+
+/** Google Gemini for the Solar Advisor. Null when no key is set. */
+export function geminiConfig() {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) return null;
+  return { apiKey, model: process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash" };
+}
