@@ -113,12 +113,11 @@ async function runWithModel({ apiKey, model, system, history, ctx, fetchImpl = f
         }),
         signal: AbortSignal.timeout(remaining),
       });
-      if (thinking && res.status === 400) {
-        const detail = await res.clone().text();
-        if (/thinking/i.test(detail)) {
-          noThinkingConfig.add(model);
-          return request(round);
-        }
+      // Newer models reject thinkingBudget with a generic "invalid argument",
+      // so any 400 gets one retry without it.
+      if (thinking && res.status === 400 && !/API key/i.test(await res.clone().text())) {
+        noThinkingConfig.add(model);
+        return request(round);
       }
       return res;
     } catch (e) {

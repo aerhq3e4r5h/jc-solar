@@ -158,7 +158,7 @@ describe("runAdvisor", () => {
   it("retries without the thinking setting when a model rejects it", async () => {
     const requests: { generationConfig: Record<string, unknown> }[] = [];
     const replies = [
-      new Response(JSON.stringify({ error: { message: "thinking_budget is not supported" } }), { status: 400 }),
+      new Response(JSON.stringify({ error: { message: "Request contains an invalid argument." } }), { status: 400 }),
       Response.json({ candidates: [{ content: { parts: [{ text: "Sure." }] } }] }),
     ];
     const fetchImpl = (async (_u: string, init: RequestInit) => (requests.push(JSON.parse(init.body as string)), replies.shift()!)) as typeof fetch;
