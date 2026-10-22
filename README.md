@@ -124,7 +124,7 @@ The repo includes `netlify.toml`; Netlify builds it with its official Next.js ad
 | `EFT_BANK_NAME`, `EFT_ACCOUNT_NAME`, `EFT_ACCOUNT_NUMBER`, `EFT_BRANCH_CODE`, `EFT_ACCOUNT_TYPE` | your banking details | Printed on quotes and pro forma invoices |
 | `RESEND_API_KEY`, `EMAIL_FROM` | from Resend | Optional; emails are logged without it |
 | `GEMINI_API_KEY` | from [Google AI Studio](https://aistudio.google.com/apikey) | Secret. Turns on the Solar Advisor |
-| `GEMINI_MODEL` | optional, default `gemini-2.5-flash` | |
+| `GEMINI_MODEL` | optional, default `gemini-flash-latest` (falls back to Flash-Lite and 2.5 Flash when busy) | |
 
 `NEXT_PUBLIC_*` values are built into the pages, so redeploy after changing them. In Supabase, add the Netlify address under **Authentication > URL Configuration** (site URL and redirect URL `https://<your-site>/auth/callback`).
 

@@ -23,11 +23,28 @@ export class AdvisorError extends Error {
   }
 }
 
-/** Used when the configured model isn't available to the key. Always points at Google's current Flash model. */
-export const FALLBACK_MODEL = "gemini-flash-latest";
+/**
+ * Models tried in order after the configured one, when it is missing,
+ * overloaded or too slow. The "-latest" aliases always point at Google's
+ * current Flash and Flash-Lite models.
+ */
+export const FALLBACK_MODELS = ["gemini-flash-latest", "gemini-flash-lite-latest", "gemini-2.5-flash"];
 
 const API = "https://generativelanguage.googleapis.com/v1beta/models";
 const MAX_TOOL_ROUNDS = 6;
+/** Whole answer, all retries included; hosting functions are stopped at about 26 s. */
+const DEADLINE_MS = 23_000;
+/** Errors worth trying another model for. */
+const SWITCH_CODES = new Set([
+  "model_not_found",
+  "no_model_access",
+  "rate_limited",
+  "timeout",
+  "gemini_500",
+  "gemini_502",
+  "gemini_503",
+  "gemini_504",
+]);
 
 type RunOptions = {
   apiKey: string;
@@ -36,44 +53,78 @@ type RunOptions = {
   history: ChatTurn[];
   ctx: ToolContext;
   fetchImpl?: typeof fetch;
+  /** Milliseconds available for the whole answer. */
+  budgetMs?: number;
 };
 
-/** Runs the conversation, retrying once on the fallback model if the configured one isn't available. */
+/** Runs the conversation, moving to the next model when one is unavailable, overloaded or slow. */
 export async function runAdvisor(opts: RunOptions): Promise<{ text: string; toolsUsed: string[]; model: string }> {
-  try {
-    return { ...(await runWithModel(opts)), model: opts.model };
-  } catch (e) {
-    const unavailable = e instanceof AdvisorError && (e.code === "model_not_found" || e.code === "no_model_access");
-    if (!unavailable || opts.model === FALLBACK_MODEL) throw e;
-    console.warn(`[advisor] ${e.message} Falling back to ${FALLBACK_MODEL}.`);
-    return { ...(await runWithModel({ ...opts, model: FALLBACK_MODEL })), model: FALLBACK_MODEL };
+  const deadline = Date.now() + (opts.budgetMs ?? DEADLINE_MS);
+  const models = [opts.model, ...FALLBACK_MODELS.filter((m) => m !== opts.model)];
+  let last: unknown;
+  for (const model of models) {
+    // Not worth starting a model with too little time left for an answer.
+    if (model !== models[0] && deadline - Date.now() < 5_000) break;
+    try {
+      return { ...(await runWithModel({ ...opts, model }, deadline)), model };
+    } catch (e) {
+      last = e;
+      if (!(e instanceof AdvisorError) || !SWITCH_CODES.has(e.code)) throw e;
+      console.warn(`[advisor] ${model}: ${e.message}`);
+    }
   }
+  throw last;
 }
 
-async function runWithModel({ apiKey, model, system, history, ctx, fetchImpl = fetch }: RunOptions): Promise<{ text: string; toolsUsed: string[] }> {
+// Models that rejected the thinking setting; remembered for this server instance.
+const noThinkingConfig = new Set<string>();
+
+async function runWithModel({ apiKey, model, system, history, ctx, fetchImpl = fetch }: RunOptions, deadline: number) {
   const contents: Content[] = history.map((t) => ({ role: t.role === "assistant" ? "model" : "user", parts: [{ text: t.text }] }));
   const toolsUsed: string[] = [];
 
+  const request = async (round: number): Promise<Response> => {
+    const remaining = deadline - Date.now();
+    if (remaining < 1_000) throw new AdvisorError(`${model} ran out of time.`, "upstream", "timeout");
+    const thinking = /flash/i.test(model) && !noThinkingConfig.has(model);
+    try {
+      const res = await fetchImpl(`${API}/${encodeURIComponent(model)}:generateContent`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: system }] },
+          contents,
+          tools: [{ functionDeclarations: TOOL_DECLARATIONS }],
+          // On the last round, force a written answer instead of another tool call.
+          toolConfig: { functionCallingConfig: { mode: round === MAX_TOOL_ROUNDS ? "NONE" : "AUTO" } },
+          generationConfig: {
+            temperature: 0.4,
+            maxOutputTokens: 4096,
+            // Flash answers this kind of question well without extended thinking,
+            // and several times faster.
+            ...(thinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+          },
+        }),
+        signal: AbortSignal.timeout(remaining),
+      });
+      if (thinking && res.status === 400) {
+        const detail = await res.clone().text();
+        if (/thinking/i.test(detail)) {
+          noThinkingConfig.add(model);
+          return request(round);
+        }
+      }
+      return res;
+    } catch (e) {
+      if (e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError")) {
+        throw new AdvisorError(`${model} took too long to answer.`, "upstream", "timeout");
+      }
+      throw e;
+    }
+  };
+
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-    const res = await fetchImpl(`${API}/${encodeURIComponent(model)}:generateContent`, {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: system }] },
-        contents,
-        tools: [{ functionDeclarations: TOOL_DECLARATIONS }],
-        // On the last round, force a written answer instead of another tool call.
-        toolConfig: { functionCallingConfig: { mode: round === MAX_TOOL_ROUNDS ? "NONE" : "AUTO" } },
-        generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 4096,
-          // Flash answers this kind of question well without extended thinking,
-          // and replies come back several times faster (hosting functions time out).
-          ...(/2\.5-flash/i.test(model) ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
-        },
-      }),
-      signal: AbortSignal.timeout(25_000),
-    });
+    const res = await request(round);
 
     if (!res.ok) {
       const detail = await res.text().catch(() => "");

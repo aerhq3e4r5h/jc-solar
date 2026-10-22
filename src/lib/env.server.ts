@@ -44,5 +44,5 @@ export function eftDetails() {
 export function geminiConfig() {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) return null;
-  return { apiKey, model: process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash" };
+  return { apiKey, model: process.env.GEMINI_MODEL?.trim() || "gemini-flash-latest" };
 }

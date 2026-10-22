@@ -121,10 +121,10 @@ describe("runAdvisor", () => {
   });
 
   it("maps upstream errors to friendly kinds", async () => {
-    await expect(runAdvisor({ ...base, history: [{ role: "user", text: "hi" }], fetchImpl: fakeGemini([429]).fetchImpl })).rejects.toMatchObject({
+    await expect(runAdvisor({ ...base, history: [{ role: "user", text: "hi" }], fetchImpl: fakeGemini([429, 429, 429, 429]).fetchImpl })).rejects.toMatchObject({
       kind: "limit",
     });
-    const bothMissing = runAdvisor({ ...base, history: [{ role: "user", text: "hi" }], fetchImpl: fakeGemini([404, 404]).fetchImpl });
+    const bothMissing = runAdvisor({ ...base, history: [{ role: "user", text: "hi" }], fetchImpl: fakeGemini([404, 404, 404, 404]).fetchImpl });
     await expect(bothMissing).rejects.toBeInstanceOf(AdvisorError);
     await expect(bothMissing).rejects.toMatchObject({ code: "model_not_found" });
     await expect(
@@ -144,6 +144,36 @@ describe("runAdvisor", () => {
     expect(r).toMatchObject({ text: "Hello!", model: "gemini-flash-latest" });
     expect(urls[1]).toContain("/gemini-flash-latest:generateContent");
     expect(requests).toHaveLength(2);
+  });
+
+  it("moves to the next model when one is overloaded", async () => {
+    const urls: string[] = [];
+    const { fetchImpl } = fakeGemini([503, { candidates: [{ content: { parts: [{ text: "Hi there." }] } }] }]);
+    const spy = ((url: string, init: RequestInit) => (urls.push(url), fetchImpl(url, init))) as typeof fetch;
+    const r = await runAdvisor({ ...base, model: "gemini-flash-latest", history: [{ role: "user", text: "hi" }], fetchImpl: spy });
+    expect(r).toMatchObject({ text: "Hi there.", model: "gemini-flash-lite-latest" });
+    expect(urls.map((u) => u.split("/models/")[1])).toEqual(["gemini-flash-latest:generateContent", "gemini-flash-lite-latest:generateContent"]);
+  });
+
+  it("retries without the thinking setting when a model rejects it", async () => {
+    const requests: { generationConfig: Record<string, unknown> }[] = [];
+    const replies = [
+      new Response(JSON.stringify({ error: { message: "thinking_budget is not supported" } }), { status: 400 }),
+      Response.json({ candidates: [{ content: { parts: [{ text: "Sure." }] } }] }),
+    ];
+    const fetchImpl = (async (_u: string, init: RequestInit) => (requests.push(JSON.parse(init.body as string)), replies.shift()!)) as typeof fetch;
+    const r = await runAdvisor({ ...base, model: "gemini-flash-test", history: [{ role: "user", text: "hi" }], fetchImpl });
+    expect(r.text).toBe("Sure.");
+    expect(requests[0].generationConfig).toHaveProperty("thinkingConfig");
+    expect(requests[1].generationConfig).not.toHaveProperty("thinkingConfig");
+  });
+
+  it("gives up with a timeout code when time runs out", async () => {
+    const slow = ((_u: string, init: RequestInit) =>
+      new Promise((_, reject) => init.signal?.addEventListener("abort", () => reject(init.signal?.reason)))) as typeof fetch;
+    await expect(runAdvisor({ ...base, history: [{ role: "user", text: "hi" }], fetchImpl: slow, budgetMs: 1_200 })).rejects.toMatchObject({
+      code: "timeout",
+    });
   });
 
   it("forces a written answer after too many tool rounds", async () => {
