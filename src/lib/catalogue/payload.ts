@@ -47,7 +47,7 @@ export function formatReport(build: ImportBuild, outcome?: ImportOutcome): strin
   const c = build.totals.byCategory;
   lines.push(`Rows read:        ${build.totals.rows}`);
   lines.push(
-    `Products valid:   ${build.products.length} (panels ${c["solar-panels"]}, batteries ${c.batteries}, inverters ${c.inverters}, kits ${c.kits})`,
+    `Products valid:   ${build.products.length} (panels ${c["solar-panels"]}, batteries ${c.batteries}, inverters ${c.inverters}, kits ${c.kits}, stabilizers ${c["voltage-stabilizers"]}, aircons ${c["air-conditioners"]})`,
   );
   lines.push(`Rows skipped:     ${build.skipped.length}`);
   lines.push(`Rows invalid:     ${build.invalid.length}`);

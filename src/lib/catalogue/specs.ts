@@ -54,6 +54,19 @@ export const REQUIRED_SPECS: Record<CategorySlug, { key: string; label: string }
     { key: "inverter_power_kw", label: "Inverter size" },
     { key: "battery_capacity_kwh", label: "Battery capacity" },
   ],
+  "voltage-stabilizers": [
+    { key: "capacity_kva", label: "Capacity" },
+    { key: "phases", label: "Phases" },
+    { key: "stabilizer_type", label: "Regulation type" },
+    { key: "input_voltage_range", label: "Input voltage range" },
+    { key: "output_voltage_v", label: "Output voltage" },
+  ],
+  "air-conditioners": [
+    { key: "cooling_btu", label: "Cooling capacity" },
+    { key: "compressor", label: "Compressor" },
+    { key: "refrigerant", label: "Refrigerant" },
+    { key: "energy_rating", label: "Energy rating" },
+  ],
 };
 
 const LABELS: Record<string, string> = Object.fromEntries(
@@ -69,6 +82,10 @@ Object.assign(LABELS, {
   voltage_class: "Voltage class",
   max_pv_power_kw: "Max PV input power",
   config: "Configuration",
+  frequency: "Frequency",
+  cooling_kw: "Cooling capacity (kW)",
+  unit_type: "Unit type",
+  bracket_included: "Wall bracket included",
 });
 
 const NUM = String.raw`(\d+(?:\.\d+)?)`;
@@ -178,8 +195,7 @@ function inverterSpecs(name: string): SpecResult {
   if (pvW !== null) list.addNumber("max_pv_power_w", pvW, "W");
   else if (pvKw !== null) list.addNumber("max_pv_power_w", pvKw * 1000, "W");
 
-  const battery =
-    num(n, new RegExp(String.raw`battery:?\s*${NUM}\s?v`)) ?? num(n, /\b(12|24|48)v\b/);
+  const battery = num(n, new RegExp(String.raw`battery:?\s*${NUM}\s?v`)) ?? num(n, /\b(12|24|48)v\b/);
   list.addNumber("battery_voltage_v", battery, "V");
   list.addText("voltage_class", voltageClass(n));
   return { specs: list.specs, warnings: [] };
@@ -207,6 +223,37 @@ function kitSpecs(name: string): SpecResult {
   return { specs: list.specs, warnings };
 }
 
+function stabilizerSpecs(name: string): SpecResult {
+  const n = name.toLowerCase();
+  const list = new SpecList();
+  list.addNumber("capacity_kva", num(n, new RegExp(String.raw`${NUM}\s?kva\b`)), "kVA");
+  let phases: string | null = null;
+  if (/three phase|3 phase|3-phase/.test(n)) phases = "Three phase";
+  else if (/single phase/.test(n)) phases = "Single phase";
+  list.addText("phases", phases);
+  const type = n.match(/\b(relay|servo|static)\s+type\b/)?.[1] ?? null;
+  list.addText("stabilizer_type", type && type[0].toUpperCase() + type.slice(1));
+  const input = n.match(/input:?\s*(\d{2,3})\s*[-–]\s*(\d{2,3})\s?v/);
+  list.addText("input_voltage_range", input ? `${input[1]}–${input[2]} V AC` : null);
+  list.addNumber("output_voltage_v", num(n, /output:?\s*(\d{3})\s?v/), "V AC");
+  const hz = n.match(/(\d{2}(?:\/\d{2})?)\s?hz\b/)?.[1] ?? null;
+  list.addText("frequency", hz && `${hz} Hz`);
+  return { specs: list.specs, warnings: [] };
+}
+
+function airconSpecs(name: string): SpecResult {
+  const n = name.toLowerCase();
+  const list = new SpecList();
+  // "12 000 BTU": thousands written with a space.
+  const btu = num(n.replace(/(\d)\s(?=\d{3}\b)/g, "$1"), /(\d{4,6})\s?btu\b/);
+  list.addNumber("cooling_btu", btu, "BTU/h");
+  if (btu !== null) list.addNumber("cooling_kw", Math.round(btu * 0.000293071 * 10) / 10, "kW");
+  if (/inverter/.test(n)) list.addText("compressor", /digital inverter/.test(n) ? "Digital inverter" : "Inverter");
+  if (/split/.test(n)) list.addText("unit_type", "Wall-mounted split");
+  if (/excludes?[^)]*bracket/.test(n)) list.addText("bracket_included", "No (sold separately)");
+  return { specs: list.specs, warnings: [] };
+}
+
 export function extractSpecs(category: CategorySlug, name: string): SpecResult {
   switch (category) {
     case "solar-panels":
@@ -217,6 +264,10 @@ export function extractSpecs(category: CategorySlug, name: string): SpecResult {
       return inverterSpecs(name);
     case "kits":
       return kitSpecs(name);
+    case "voltage-stabilizers":
+      return stabilizerSpecs(name);
+    case "air-conditioners":
+      return airconSpecs(name);
   }
 }
 

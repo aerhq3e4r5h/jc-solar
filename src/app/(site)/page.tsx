@@ -201,7 +201,7 @@ export default async function HomePage() {
             View all products <ArrowRight className="size-4" />
           </Link>
         </Reveal>
-        <RevealList className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <RevealList className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {categories.map((c) => (
             <RevealItem key={c.href}>
               <Link

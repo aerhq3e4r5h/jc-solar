@@ -60,6 +60,16 @@ export const CATEGORIES: Record<CategorySlug, { name: string; singular: string; 
     singular: "Kit",
     blurb: "Inverter and battery bundles, ready to install.",
   },
+  "voltage-stabilizers": {
+    name: "Voltage stabilizers",
+    singular: "Voltage stabilizer",
+    blurb: "Lemoen relay, servo and static stabilizers that keep your supply steady through dips and surges, from 3 kVA to 100 kVA.",
+  },
+  "air-conditioners": {
+    name: "Aircons",
+    singular: "Aircon",
+    blurb: "Jetman digital inverter split aircons for cooling and heating, from 12 000 to 24 000 BTU.",
+  },
 };
 
 export function isCategorySlug(value: string): value is CategorySlug {

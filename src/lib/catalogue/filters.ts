@@ -12,6 +12,8 @@ export const SIZE_SPEC: Record<CategorySlug, { key: string; label: string; unit:
   batteries: { key: "capacity_kwh", label: "Capacity", unit: "kWh", step: 0.5 },
   inverters: { key: "rated_power_kw", label: "Power", unit: "kW", step: 0.5 },
   kits: { key: "inverter_power_kw", label: "Inverter size", unit: "kW", step: 0.5 },
+  "voltage-stabilizers": { key: "capacity_kva", label: "Capacity", unit: "kVA", step: 1 },
+  "air-conditioners": { key: "cooling_btu", label: "Cooling", unit: "BTU", step: 1000 },
 };
 
 /** The spec shown as "Type" for each category. */
@@ -19,6 +21,7 @@ export const TYPE_SPEC: Partial<Record<CategorySlug, string>> = {
   "solar-panels": "cell_type",
   inverters: "inverter_type",
   kits: "config",
+  "voltage-stabilizers": "stabilizer_type",
 };
 
 export const SORTS = {

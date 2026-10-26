@@ -94,9 +94,7 @@ function compatibleWith(product: Product, catalogue: Product[], overrides: Overr
     return { title: "Inverters that suit this battery", items: items.slice(0, 8).map((i) => i.p), note: items[0]?.r.reason };
   }
   if (product.category === "solar-panels") {
-    const items = catalogue
-      .filter((i) => i.category === "inverters" && (maxPanelsPerString(product, i) ?? 0) >= 4)
-      .sort(inStockFirst);
+    const items = catalogue.filter((i) => i.category === "inverters" && (maxPanelsPerString(product, i) ?? 0) >= 4).sort(inStockFirst);
     return {
       title: "Inverters for these panels",
       items: items.slice(0, 8),
@@ -215,11 +213,13 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
               <DeliveryEstimate
                 productId={product.id}
                 note={
-                  product.shippingClass === "oversized"
+                  product.category === "solar-panels"
                     ? "Panels travel on a pallet; extra panels add a little each."
-                    : product.isDangerousGoods
-                      ? "Lithium batteries travel as dangerous goods with an approved service."
-                      : null
+                    : product.shippingClass === "oversized"
+                      ? "Large item: travels by road freight."
+                      : product.isDangerousGoods
+                        ? "Lithium batteries travel as dangerous goods with an approved service."
+                        : null
                 }
               />
             </li>
@@ -236,15 +236,20 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
               <li className="flex gap-3">
                 <TriangleAlert className="size-5 shrink-0 text-warning" aria-hidden="true" />
                 <span>
-                  If this inverter will be connected to the grid, your municipality may require the system to be registered as a small-scale
-                  embedded generator (SSEG). Ask us if you&apos;re not sure what applies to you.
+                  If this inverter will be connected to the grid, your municipality may require the system to be registered as a small-scale embedded
+                  generator (SSEG). Ask us if you&apos;re not sure what applies to you.
                 </span>
               </li>
             )}
           </ul>
 
           {product.datasheetUrl && (
-            <a href={product.datasheetUrl} className="inline-flex items-center gap-2 text-sm font-medium underline underline-offset-4" target="_blank" rel="noopener">
+            <a
+              href={product.datasheetUrl}
+              className="inline-flex items-center gap-2 text-sm font-medium underline underline-offset-4"
+              target="_blank"
+              rel="noopener"
+            >
               <FileDown className="size-4" aria-hidden="true" /> Download the datasheet (PDF)
             </a>
           )}
@@ -258,7 +263,11 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
           </h2>
           <SpecTable product={product} />
           <p className="mt-3 text-xs text-muted-foreground">
-            Need a figure that isn&apos;t listed? <Link href="/contact" className="underline underline-offset-4">Ask us</Link> and we&apos;ll send the datasheet.
+            Need a figure that isn&apos;t listed?{" "}
+            <Link href="/contact" className="underline underline-offset-4">
+              Ask us
+            </Link>{" "}
+            and we&apos;ll send the datasheet.
           </p>
         </div>
         {product.description && (

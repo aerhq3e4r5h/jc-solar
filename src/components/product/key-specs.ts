@@ -7,6 +7,8 @@ const CARD_SPECS: Record<CategorySlug, string[]> = {
   batteries: ["capacity_kwh", "nominal_voltage_v", "voltage_class"],
   inverters: ["rated_power_kw", "inverter_type", "phases"],
   kits: ["inverter_power_kw", "battery_capacity_kwh", "config"],
+  "voltage-stabilizers": ["capacity_kva", "phases", "stabilizer_type"],
+  "air-conditioners": ["cooling_btu", "compressor"],
 };
 
 export function cardSpecs(product: Product): string[] {
@@ -23,6 +25,13 @@ export function cardSpecs(product: Product): string[] {
 
 /** Short label for the drawn product image, e.g. "590 W" or "5.12 kWh". */
 export function artLabel(product: Product): string | null {
-  const key = { "solar-panels": "wattage_w", batteries: "capacity_kwh", inverters: "rated_power_kw", kits: "inverter_power_kw" }[product.category];
+  const key = {
+    "solar-panels": "wattage_w",
+    batteries: "capacity_kwh",
+    inverters: "rated_power_kw",
+    kits: "inverter_power_kw",
+    "voltage-stabilizers": "capacity_kva",
+    "air-conditioners": "cooling_btu",
+  }[product.category];
   return spec(product, key)?.valueText ?? null;
 }

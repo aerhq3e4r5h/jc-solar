@@ -24,6 +24,8 @@ export const shopNav = [
   { href: "/shop/batteries", label: "Batteries", description: "Lithium batteries for backup and self-consumption" },
   { href: "/shop/inverters", label: "Inverters", description: "Hybrid, off-grid and grid-tie inverters" },
   { href: "/shop/kits", label: "System kits", description: "Matched inverter and battery bundles" },
+  { href: "/shop/voltage-stabilizers", label: "Voltage stabilizers", description: "Protect appliances from dips and surges" },
+  { href: "/shop/air-conditioners", label: "Aircons", description: "Jetman inverter split aircons" },
 ] as const;
 
 export const mainNav = [

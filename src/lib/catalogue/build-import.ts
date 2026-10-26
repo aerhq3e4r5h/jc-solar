@@ -38,6 +38,10 @@ function shippingFor(category: CategorySlug, name: string) {
     return { shippingClass: "dangerous_goods" as const, isDangerousGoods: true };
   }
   if (category === "solar-panels") return { shippingClass: "oversized" as const, isDangerousGoods: false };
+  // Split aircons (indoor and outdoor unit) and three-phase stabilizer cabinets go by freight.
+  if (category === "air-conditioners" || (category === "voltage-stabilizers" && /three phase|3 phase/.test(n))) {
+    return { shippingClass: "oversized" as const, isDangerousGoods: false };
+  }
   return { shippingClass: "standard" as const, isDangerousGoods: false };
 }
 
@@ -46,7 +50,14 @@ export function buildImport(rows: RawRow[]): ImportBuild {
   const skipped: RowIssue[] = [];
   const invalid: RowIssue[] = [];
   const warnings: RowIssue[] = [];
-  const byCategory: Record<CategorySlug, number> = { "solar-panels": 0, batteries: 0, inverters: 0, kits: 0 };
+  const byCategory: Record<CategorySlug, number> = {
+    "solar-panels": 0,
+    batteries: 0,
+    inverters: 0,
+    kits: 0,
+    "voltage-stabilizers": 0,
+    "air-conditioners": 0,
+  };
   const seenSkus = new Map<string, number>();
   const seenSlugs = new Set<string>();
 

@@ -18,6 +18,8 @@ export function ProductArt({ category, label, className }: { category: CategoryS
         {category === "batteries" && <BatteryGlyph />}
         {category === "inverters" && <InverterGlyph />}
         {category === "kits" && <KitGlyph />}
+        {category === "voltage-stabilizers" && <StabilizerGlyph />}
+        {category === "air-conditioners" && <AirconGlyph />}
       </svg>
       {label && (
         <span className="absolute bottom-3 left-3 rounded-md bg-background/80 px-2 py-0.5 font-mono text-[11px] font-medium text-muted-foreground backdrop-blur">
@@ -80,6 +82,45 @@ function KitGlyph() {
       <g transform="translate(70 38) scale(0.62)">
         <BatteryGlyph />
       </g>
+    </g>
+  );
+}
+
+function StabilizerGlyph() {
+  return (
+    <g>
+      <rect x="44" y="34" width="112" height="132" rx="10" fill="oklch(0.95 0.004 85)" stroke="oklch(0.8 0.01 258)" strokeWidth="2" />
+      {/* Voltmeter dial */}
+      <circle cx="100" cy="86" r="32" fill="var(--navy)" />
+      <path d="M76 92 a26 26 0 0 1 48 0" fill="none" stroke="oklch(0.45 0.05 258)" strokeWidth="5" strokeLinecap="round" />
+      <path d="M92 74 a26 26 0 0 1 16 0" fill="none" stroke="var(--sun)" strokeWidth="5" strokeLinecap="round" />
+      <path d="M100 92 L108 70" stroke="white" strokeWidth="3" strokeLinecap="round" />
+      <circle cx="100" cy="92" r="4" fill="white" />
+      {[0, 1, 2].map((i) => (
+        <rect key={i} x={66 + i * 26} y="136" width="16" height="10" rx="2" fill={i === 1 ? "oklch(0.6 0.13 152)" : "oklch(0.85 0.01 258)"} />
+      ))}
+    </g>
+  );
+}
+
+function AirconGlyph() {
+  return (
+    <g>
+      <rect x="26" y="54" width="148" height="58" rx="14" fill="oklch(0.97 0.003 85)" stroke="oklch(0.8 0.01 258)" strokeWidth="2" />
+      <rect x="38" y="94" width="124" height="6" rx="3" fill="oklch(0.85 0.01 258)" />
+      <circle cx="150" cy="70" r="3.5" fill="oklch(0.6 0.13 152)" />
+      {/* Cool air */}
+      {[0, 1, 2].map((i) => (
+        <path
+          key={i}
+          d={`M${62 + i * 38} 118 q-8 14 0 28 t0 28`}
+          fill="none"
+          stroke="var(--cell)"
+          strokeWidth="4"
+          strokeLinecap="round"
+          opacity={0.75 - i * 0.15}
+        />
+      ))}
     </g>
   );
 }

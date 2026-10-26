@@ -47,12 +47,15 @@ const BANNER: Record<CategorySlug, StaticImageData> = {
   batteries: homeImage,
   inverters: installerImage,
   kits: heroImage,
+  "voltage-stabilizers": installerImage,
+  "air-conditioners": homeImage,
 };
 
 const TYPE_LABEL: Partial<Record<CategorySlug, string>> = {
   "solar-panels": "Cell type",
   inverters: "Inverter type",
   kits: "Configuration",
+  "voltage-stabilizers": "Regulation type",
 };
 
 async function Results({ category, searchParams }: { category: CategorySlug; searchParams: Promise<SearchParams> }) {

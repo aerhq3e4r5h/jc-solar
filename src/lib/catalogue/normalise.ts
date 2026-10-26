@@ -59,6 +59,7 @@ const BRAND_ALIASES: Record<string, string> = {
   dyness: "Dyness",
   "dyness (ltl)": "Dyness",
   "hina ess": "Hina ESS",
+  jetman: "Jetman",
   hinaess: "Hina ESS",
   hina: "Hina ESS",
   lemoen: "Lemoen",

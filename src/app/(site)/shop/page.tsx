@@ -31,7 +31,7 @@ export default async function ShopPage() {
         </p>
       </PhotoBanner>
       <div className="container-page py-14">
-        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {slugs.map((slug) => {
             const items = products.filter((p) => p.category === slug);
             const inStock = items.filter((p) => availability(p).state !== "out_of_stock").length;

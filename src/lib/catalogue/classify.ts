@@ -1,8 +1,9 @@
 // Decides which shop category a spreadsheet row belongs to. JC Solar sells
-// solar panels, batteries, inverters and system kits only; every other row
-// is skipped with a reason so the import report explains it.
+// solar panels, batteries, inverters, system kits, voltage stabilizers and
+// Jetman inverter aircons; every other row is skipped with a reason so the
+// import report explains it.
 
-export type CategorySlug = "solar-panels" | "batteries" | "inverters" | "kits";
+export type CategorySlug = "solar-panels" | "batteries" | "inverters" | "kits" | "voltage-stabilizers" | "air-conditioners";
 
 export type Classification =
   | { category: CategorySlug }
@@ -34,6 +35,9 @@ export function classifyRow(name: string, categoryLabels: string[]): Classificat
 
   if (NOT_SOLAR.test(n)) return { category: null, reason: "Not a solar product (vehicle or generator)" };
   if (/\bled\b|\blamp\b|solar light|flood ?light/.test(n)) return { category: null, reason: "Solar light, not a panel" };
+  // Before the accessory test: aircon names mention the bracket they exclude.
+  if (/voltage stabili[sz]er/.test(n) && /\d+(\.\d+)?\s?kva\b/.test(n)) return { category: "voltage-stabilizers" };
+  if (/\bjetman\b/.test(n) && /aircon|air ?conditioner/.test(n) && /\bbtu\b/.test(n)) return { category: "air-conditioners" };
   if (KIT.test(n)) return { category: "kits" };
   if (ACCESSORY.test(withoutMountingAndInclusions(n))) return { category: null, reason: "Accessory or spare part" };
 
@@ -48,5 +52,5 @@ export function classifyRow(name: string, categoryLabels: string[]): Classificat
   ) {
     return { category: "solar-panels" };
   }
-  return { category: null, reason: "Outside the shop's categories (panels, batteries, inverters, kits)" };
+  return { category: null, reason: "Outside the shop's categories (panels, batteries, inverters, kits, voltage stabilizers, Jetman aircons)" };
 }

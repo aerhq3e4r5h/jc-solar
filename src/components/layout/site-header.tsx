@@ -1,4 +1,4 @@
-import { BatteryCharging, ChevronDown, Cpu, PackageCheck, PanelsTopLeft, ShoppingCart, Truck, UserRound, Wrench } from "lucide-react";
+import { AirVent, BatteryCharging, ChevronDown, Cpu, Gauge, PackageCheck, PanelsTopLeft, ShoppingCart, Truck, UserRound, Wrench } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Logo } from "@/components/brand/logo";
@@ -15,6 +15,8 @@ const SHOP_ICONS = {
   "/shop/batteries": BatteryCharging,
   "/shop/inverters": Cpu,
   "/shop/kits": PackageCheck,
+  "/shop/voltage-stabilizers": Gauge,
+  "/shop/air-conditioners": AirVent,
 } as const;
 
 const navLink =

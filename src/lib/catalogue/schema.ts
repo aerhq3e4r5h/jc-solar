@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const CATEGORY_SLUGS = ["solar-panels", "batteries", "inverters", "kits"] as const;
+export const CATEGORY_SLUGS = ["solar-panels", "batteries", "inverters", "kits", "voltage-stabilizers", "air-conditioners"] as const;
 export const SHIPPING_CLASSES = ["standard", "oversized", "dangerous_goods"] as const;
 
 export const specSchema = z.object({
