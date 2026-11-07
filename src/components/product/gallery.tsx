@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
-export function Gallery({ images, name, sale }: { images: { url: string; alt: string }[]; name: string; sale?: React.ReactNode }) {
+export function Gallery({ images, name, sale }: { images: { url: string; alt: string; sameRange?: boolean }[]; name: string; sale?: React.ReactNode }) {
   const [active, setActive] = useState(0);
   const [zoom, setZoom] = useState(false);
   const current = images[active];
@@ -15,7 +15,7 @@ export function Gallery({ images, name, sale }: { images: { url: string; alt: st
       <button
         type="button"
         onClick={() => setZoom(true)}
-        className="group relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-xl bg-shelf"
+        className="group relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-xl border bg-white"
         aria-label={`Zoom image: ${current.alt}`}
       >
         <Image
@@ -31,6 +31,9 @@ export function Gallery({ images, name, sale }: { images: { url: string; alt: st
           <ZoomIn className="size-4" aria-hidden="true" />
         </span>
       </button>
+      {current.sameRange && (
+        <p className="text-sm text-muted-foreground">Photo shows a model from the same range. The rating label on your unit will differ.</p>
+      )}
       {images.length > 1 && (
         <ul className="grid grid-cols-5 gap-2">
           {images.map((img, i) => (
@@ -41,7 +44,7 @@ export function Gallery({ images, name, sale }: { images: { url: string; alt: st
                 aria-label={`Show image ${i + 1}`}
                 aria-current={i === active}
                 className={cn(
-                  "relative block aspect-square w-full overflow-hidden rounded-md bg-shelf transition-opacity hover:opacity-100",
+                  "relative block aspect-square w-full overflow-hidden rounded-md border bg-white transition-opacity hover:opacity-100",
                   i === active ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : "opacity-60",
                 )}
               >

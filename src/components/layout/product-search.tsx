@@ -175,7 +175,7 @@ export function ProductSearch() {
                     onClick={() => go(r.url)}
                     className={cn("flex cursor-pointer items-center gap-3 rounded-xl p-2.5", i === active && "bg-muted")}
                   >
-                    <span className="relative size-14 shrink-0 overflow-hidden rounded-md bg-shelf">
+                    <span className="relative size-14 shrink-0 overflow-hidden rounded-md border bg-white">
                       {r.image && <Image src={r.image} alt="" fill sizes="56px" className="object-cover" />}
                     </span>
                     <span className="min-w-0 flex-1">

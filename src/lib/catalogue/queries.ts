@@ -6,12 +6,18 @@ import { isCategorySlug, type Product } from "./types";
 
 export const CATALOGUE_TAG = "catalogue";
 
-// Photos supplied by Solar Europe, shipped with the site under public/products.
-// Used until an admin uploads images for the product in Supabase Storage.
-const BUNDLED_IMAGES: Record<string, { src: string }[]> = productImages;
+// Photos supplied by Solar Europe, cut out onto white and shipped with the
+// site under public/products. Used until an admin uploads images for the
+// product in Supabase Storage. `sameRange` marks a sister model's photo,
+// used where Solar Europe has no photo of the exact model.
+const BUNDLED_IMAGES: Record<string, { src: string; sameRange?: boolean }[]> = productImages;
 
 function bundledImages(sku: string, name: string) {
-  return (BUNDLED_IMAGES[sku] ?? []).map((img, i) => ({ url: img.src, alt: i === 0 ? name : `${name}, view ${i + 1}` }));
+  return (BUNDLED_IMAGES[sku] ?? []).map((img, i) => ({
+    url: img.src,
+    alt: img.sameRange ? `${name} (photo of a model from the same range)` : i === 0 ? name : `${name}, view ${i + 1}`,
+    ...(img.sameRange && { sameRange: true }),
+  }));
 }
 
 /** First bundled photo for a SKU (admin lists). */

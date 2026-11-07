@@ -18,14 +18,14 @@ export function ProductCard({ product, priority = false }: { product: Product; p
   const quickAdd = canPurchase(product) ? <QuickAdd productId={product.id} name={productTitle(product)} /> : null;
   return (
     <article className="group relative flex h-full flex-col">
-      <div className="relative aspect-square overflow-hidden rounded-lg bg-shelf">
+      <div className="relative aspect-square overflow-hidden rounded-lg border bg-white transition-colors duration-300 group-hover:border-foreground/30">
         {image ? (
           <Image
             src={image.url}
             alt={image.alt}
             fill
             sizes="(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, (min-width: 640px) 33vw, 50vw"
-            className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+            className="object-contain transition-transform duration-500 ease-out group-hover:scale-[1.04]"
             priority={priority}
           />
         ) : (

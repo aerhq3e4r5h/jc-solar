@@ -35,7 +35,8 @@ export type Product = {
   shortDescription: string | null;
   description: string | null;
   datasheetUrl: string | null;
-  images: { url: string; alt: string }[];
+  /** `sameRange`: the photo shows a sister model from the same range (no photo of this exact model yet). */
+  images: { url: string; alt: string; sameRange?: boolean }[];
   specs: ProductSpec[];
   createdAt: string;
 };

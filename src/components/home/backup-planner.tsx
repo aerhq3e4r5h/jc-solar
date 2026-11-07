@@ -189,7 +189,7 @@ export function BackupPlanner({ stock }: { stock: PlannerStock }) {
                 <ul className="mt-3 space-y-2.5">
                   {plan.match.lines.map((l) => (
                     <li key={l.item.id} className="flex items-center gap-3">
-                      <span className="relative size-12 shrink-0 overflow-hidden rounded-md bg-shelf">
+                      <span className="relative size-12 shrink-0 overflow-hidden rounded-md border bg-white">
                         {l.item.image && <Image src={l.item.image} alt="" fill sizes="48px" className="object-cover" />}
                       </span>
                       <Link href={l.item.url} className="line-clamp-2 min-w-0 flex-1 text-sm leading-snug hover:underline">
