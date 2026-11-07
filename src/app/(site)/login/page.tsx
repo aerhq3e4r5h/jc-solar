@@ -10,7 +10,7 @@ export default function LoginPage() {
     <div className="container-page flex justify-center py-20">
       <div className="w-full max-w-sm space-y-8">
         <div>
-          <h1 className="text-3xl font-semibold">Sign in</h1>
+          <h1 className="type-wide text-3xl">Sign in</h1>
           <p className="mt-2 text-muted-foreground">Track orders, installations and saved quotes.</p>
         </div>
         <Suspense>

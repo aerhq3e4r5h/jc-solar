@@ -12,7 +12,7 @@ export function PaymentMethods({ className }: { className?: string }) {
       </span>
       <ul className="flex flex-wrap gap-1.5" aria-label="Payment methods">
         {METHODS.map((m) => (
-          <li key={m} className="rounded-md border bg-background px-2 py-1 text-xs font-medium">
+          <li key={m} className="rounded-sm border bg-background px-2 py-1 text-xs font-semibold">
             {m}
           </li>
         ))}

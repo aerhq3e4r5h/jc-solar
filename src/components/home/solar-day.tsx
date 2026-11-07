@@ -66,7 +66,7 @@ export function SolarDay() {
   const sky = useTransform(
     hour,
     [5, 6.5, 9, 12, 16, 18, 19.5, 21, 24],
-    ["#0d1733", "#e9976a", "#86bde8", "#5ea6e8", "#8fc1ea", "#ee8546", "#2c2552", "#0d1733", "#070d1f"],
+    ["#1c1b1e", "#ef9f6a", "#f6ead0", "#f8edcb", "#f5dfae", "#ee8546", "#3d2f36", "#1f1d20", "#161517"],
   );
   const sunX = useTransform(hour, (v) => 70 + Math.min(1, Math.max(0, (v - 6) / 12)) * 460);
   const sunY = useTransform(hour, (v) => 300 - Math.sin(Math.PI * Math.min(1, Math.max(0, (v - 6) / 12))) * 230);
@@ -85,16 +85,16 @@ export function SolarDay() {
   const lightsOn = h >= 18 || h < 6.5;
 
   return (
-    <section ref={ref} className="relative h-[340vh] bg-navy text-white lg:h-[400vh]" aria-labelledby="day-heading">
+    <section ref={ref} className="relative h-[340vh] bg-ink text-white lg:h-[400vh]" aria-labelledby="day-heading">
       <div className="sticky top-0 flex h-svh items-center overflow-hidden">
         <div className="container-page grid w-full items-center gap-6 py-6 lg:grid-cols-[1fr_1.25fr] lg:gap-14">
           <div className="order-2 lg:order-1">
-            <h2 id="day-heading" className="text-3xl font-semibold sm:text-5xl">
+            <h2 id="day-heading" className="type-wide text-3xl sm:text-5xl">
               24 hours on solar
             </h2>
             <p className="mt-2 text-sm text-white/60 sm:text-base">Scroll through a day with a 5 kW system and a 10 kWh battery.</p>
 
-            <p className="num mt-5 font-display text-6xl leading-none font-semibold text-sun sm:text-8xl" aria-hidden="true">
+            <p className="num type-wide mt-5 text-6xl leading-none text-sun sm:text-8xl" aria-hidden="true">
               {clock(h)}
             </p>
             <div className="mt-4 min-h-28 sm:min-h-32" aria-hidden="true">
@@ -111,23 +111,23 @@ export function SolarDay() {
             </ol>
 
             <dl className="mt-4 grid grid-cols-3 gap-2 text-sm" aria-hidden="true">
-              <div className="rounded-xl bg-white/5 p-3 ring-1 ring-white/10">
+              <div className="rounded-lg bg-white/[0.06] p-3">
                 <dt className="flex items-center gap-1.5 text-white/60">
                   <Sun className="size-3.5 text-sun" /> Solar
                 </dt>
-                <dd className="num mt-1 font-display text-xl font-semibold">{solar.toFixed(1)} kW</dd>
+                <dd className="num mt-1 font-display text-xl font-bold">{solar.toFixed(1)} kW</dd>
               </div>
-              <div className="rounded-xl bg-white/5 p-3 ring-1 ring-white/10">
+              <div className="rounded-lg bg-white/[0.06] p-3">
                 <dt className="flex items-center gap-1.5 text-white/60">
-                  <BatteryMedium className="size-3.5 text-success" /> Battery
+                  <BatteryMedium className="size-3.5 text-charge" /> Battery
                 </dt>
-                <dd className="num mt-1 font-display text-xl font-semibold">{Math.round(batteryPct(h))}%</dd>
+                <dd className="num mt-1 font-display text-xl font-bold">{Math.round(batteryPct(h))}%</dd>
               </div>
-              <div className={cn("rounded-xl p-3 ring-1 transition-colors", off ? "bg-sale/20 ring-sale/50" : "bg-white/5 ring-white/10")}>
-                <dt className="flex items-center gap-1.5 text-white/60">
-                  <PlugZap className={cn("size-3.5", off ? "text-sale" : "text-white/60")} /> Grid
+              <div className={cn("rounded-xl p-3 ring-1 transition-colors", off ? "bg-sale ring-sale" : "bg-white/[0.06] ring-transparent")}>
+                <dt className={cn("flex items-center gap-1.5", off ? "text-white" : "text-white/60")}>
+                  <PlugZap className={cn("size-3.5", off ? "text-white" : "text-white/60")} /> Grid
                 </dt>
-                <dd className="mt-1 font-display text-xl font-semibold">{off ? "Off" : "On"}</dd>
+                <dd className="mt-1 font-display text-xl font-bold">{off ? "Off" : "On"}</dd>
               </div>
             </dl>
 
@@ -137,14 +137,14 @@ export function SolarDay() {
           </div>
 
           <div className="order-1 lg:order-2" aria-hidden="true">
-            <svg viewBox="0 0 600 420" className="w-full overflow-visible rounded-3xl shadow-2xl shadow-black/40">
+            <svg viewBox="0 0 600 420" className="w-full overflow-visible rounded-2xl">
               <defs>
                 <clipPath id="day-frame">
-                  <rect width="600" height="420" rx="28" />
+                  <rect width="600" height="420" rx="18" />
                 </clipPath>
                 <radialGradient id="day-sun" cx="0.5" cy="0.5" r="0.5">
-                  <stop offset="0" stopColor="#ffd66b" stopOpacity="0.9" />
-                  <stop offset="1" stopColor="#ffd66b" stopOpacity="0" />
+                  <stop offset="0" stopColor="#fff4c7" stopOpacity="1" />
+                  <stop offset="1" stopColor="#fff4c7" stopOpacity="0" />
                 </radialGradient>
               </defs>
               <g clipPath="url(#day-frame)">
@@ -169,7 +169,7 @@ export function SolarDay() {
                 {/* Sun on its arc */}
                 <motion.g style={{ opacity: sunOpacity }}>
                   <motion.circle r="70" fill="url(#day-sun)" style={{ cx: sunX, cy: sunY }} />
-                  <motion.circle r="26" fill="#ffc83d" style={{ cx: sunX, cy: sunY }} />
+                  <motion.circle r="26" fill="#ffb81c" style={{ cx: sunX, cy: sunY }} />
                 </motion.g>
 
                 {/* Clouds drifting with the day */}
@@ -191,7 +191,7 @@ export function SolarDay() {
                 <rect y="330" width="600" height="6" fill="#33573a" />
 
                 {/* Grid pylon and line */}
-                <g stroke={off ? "#e5484d" : "#9aa6b8"} strokeWidth="3" fill="none" opacity="0.9">
+                <g stroke={off ? "#e5484d" : "#8b8a84"} strokeWidth="3" fill="none" opacity="0.9">
                   <path d="M70 330 L85 230 L100 330 M78 270 H92 M74 300 H96" />
                   <path d="M85 236 Q170 250 232 268" strokeDasharray={off ? "6 6" : undefined} />
                 </g>
@@ -223,22 +223,22 @@ export function SolarDay() {
                       width="30"
                       height="38"
                       rx="2"
-                      fill="#1d3557"
-                      stroke="#5d7bb0"
+                      fill="#252523"
+                      stroke="#6a6a64"
                       strokeWidth="1.5"
                     />
                   ))}
-                  <motion.rect x="-2" y="-2" width="138" height="84" rx="3" fill="#ffd66b" style={{ opacity: panelGlow }} />
+                  <motion.rect x="-2" y="-2" width="138" height="84" rx="3" fill="#ffd34d" style={{ opacity: panelGlow }} />
                 </g>
                 {/* Windows: the lights stay on */}
                 {[256, 312, 380].map((x) => (
-                  <rect key={x} x={x} y="272" width="34" height="30" rx="3" fill={lightsOn ? "#ffd66b" : "#9bb3c9"} opacity={lightsOn ? 0.95 : 0.7} />
+                  <rect key={x} x={x} y="272" width="34" height="30" rx="3" fill={lightsOn ? "#ffd34d" : "#c9c7bd"} opacity={lightsOn ? 0.95 : 0.8} />
                 ))}
                 <rect x="340" y="282" width="28" height="48" rx="2" fill="#6b4e3d" />
 
                 {/* Battery beside the house */}
-                <rect x="458" y="250" width="54" height="80" rx="8" fill="#f2f2ef" stroke="#c9cbd1" strokeWidth="2" />
-                <rect x="468" y="262" width="34" height="58" rx="4" fill="#d9dde3" />
+                <rect x="458" y="250" width="54" height="80" rx="8" fill="#f2f2ef" stroke="#c8c7c0" strokeWidth="2" />
+                <rect x="468" y="262" width="34" height="58" rx="4" fill="#dcdbd4" />
                 <motion.rect
                   x="468"
                   y="262"
@@ -251,7 +251,7 @@ export function SolarDay() {
 
                 {/* Power flowing: sun to panels by day, battery to house when needed */}
                 <g fill="none" strokeWidth="3" strokeLinecap="round" strokeDasharray="4 10" className="[animation:jc-flow_1s_linear_infinite]">
-                  {solar > 0.4 && <path d="M432 290 H458" stroke="#ffc83d" />}
+                  {solar > 0.4 && <path d="M432 290 H458" stroke="#f0a400" />}
                   {fromBattery && <path d="M458 300 H432" stroke="#3fbf7f" />}
                 </g>
               </g>

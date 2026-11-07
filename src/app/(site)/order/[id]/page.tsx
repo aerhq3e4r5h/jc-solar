@@ -98,13 +98,13 @@ async function OrderContents({ params, searchParams }: Props) {
       <header className="space-y-2">
         <p className="font-mono text-sm text-muted-foreground">Order {order.orderNumber}</p>
         {paid && (
-          <h1 className="flex items-center gap-3 text-3xl font-semibold sm:text-4xl">
+          <h1 className="flex items-center gap-3 type-wide text-3xl sm:text-4xl">
             <CheckCircle2 className="size-8 text-success" aria-hidden="true" /> Thank you, payment received
           </h1>
         )}
-        {pending && <h1 className="text-3xl font-semibold sm:text-4xl">{order.paymentMethod === "eft" ? "Order placed: awaiting EFT payment" : "Review and pay"}</h1>}
+        {pending && <h1 className="type-wide text-3xl sm:text-4xl">{order.paymentMethod === "eft" ? "Order placed: awaiting EFT payment" : "Review and pay"}</h1>}
         {(order.status === "cancelled" || order.status === "expired") && (
-          <h1 className="flex items-center gap-3 text-3xl font-semibold sm:text-4xl">
+          <h1 className="flex items-center gap-3 type-wide text-3xl sm:text-4xl">
             <XCircle className="size-8 text-muted-foreground" aria-hidden="true" /> This order was {order.status === "expired" ? "not paid in time" : "cancelled"}
           </h1>
         )}

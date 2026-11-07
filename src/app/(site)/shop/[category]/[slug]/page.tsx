@@ -186,7 +186,7 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
         <div className="space-y-6">
           <div>
             {product.brand && <p className="font-medium text-muted-foreground">{product.brand}</p>}
-            <h1 className="mt-1 text-2xl leading-tight font-semibold sm:text-3xl">{productTitle(product)}</h1>
+            <h1 className="mt-1 text-2xl leading-tight font-bold sm:text-3xl">{productTitle(product)}</h1>
             <p className="mt-2 font-mono text-xs text-muted-foreground">SKU {product.sku}</p>
           </div>
 
@@ -280,7 +280,7 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
 
       <section className="scroll-rise mt-16 grid gap-10 lg:grid-cols-2" aria-labelledby="specs-heading">
         <div>
-          <h2 id="specs-heading" className="mb-4 text-2xl font-semibold">
+          <h2 id="specs-heading" className="mb-4 text-2xl font-bold">
             Specifications
           </h2>
           <SpecTable product={product} />
@@ -294,7 +294,7 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
         </div>
         {product.description && (
           <div>
-            <h2 className="mb-4 text-2xl font-semibold">About this product</h2>
+            <h2 className="mb-4 text-2xl font-bold">About this product</h2>
             <div className="space-y-4 leading-relaxed whitespace-pre-line text-muted-foreground">{product.description}</div>
           </div>
         )}
@@ -302,11 +302,11 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
 
       {related && related.items.length > 0 && (
         <section className="scroll-rise mt-16" aria-labelledby="related-heading">
-          <h2 id="related-heading" className="text-2xl font-semibold">
+          <h2 id="related-heading" className="text-2xl font-bold">
             {related.title}
           </h2>
           {related.note && <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{related.note}</p>}
-          <ul className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <ul className="mt-6 grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
             {related.items.map((p) => (
               <li key={p.id}>
                 <ProductCard product={p} />
@@ -317,7 +317,7 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
       )}
 
       <section className="mt-16 max-w-3xl" aria-labelledby="reviews-heading">
-        <h2 id="reviews-heading" className="mb-4 text-2xl font-semibold">
+        <h2 id="reviews-heading" className="mb-4 text-2xl font-bold">
           Reviews
         </h2>
         <Suspense fallback={<Skeleton className="h-24 w-full" />}>

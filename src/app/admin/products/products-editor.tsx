@@ -193,7 +193,7 @@ export function ProductsEditor({ initial, categories }: { initial: AdminProductR
       </div>
 
       {selected.size > 0 && (
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-cell/40 bg-cell/5 p-3 text-sm">
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-sun bg-sun/15 p-3 text-sm">
           <span className="font-medium">{selected.size} selected</span>
           <span className="text-muted-foreground">Put on sale at</span>
           <div className="relative">

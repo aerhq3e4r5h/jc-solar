@@ -25,7 +25,7 @@ export function MobileNav() {
         </SheetHeader>
         <nav aria-label="Mobile" className="flex flex-col gap-6 px-4">
           <div>
-            <p className="eyebrow mb-2">Shop</p>
+            <p className="mb-2 px-2 text-sm font-semibold text-muted-foreground">Shop</p>
             <ul className="space-y-1">
               {shopNav.map((item) => (
                 <li key={item.href}>
@@ -54,6 +54,18 @@ export function MobileNav() {
                   </Link>
                 </li>
               ))}
+          </ul>
+          <ul className="space-y-1 border-t pt-4">
+            <li>
+              <Link href="/account" onClick={() => setOpen(false)} className="block rounded-md px-2 py-2 text-base font-medium hover:bg-muted">
+                Your account
+              </Link>
+            </li>
+            <li>
+              <Link href="/cart" onClick={() => setOpen(false)} className="block rounded-md px-2 py-2 text-base font-medium hover:bg-muted">
+                Cart
+              </Link>
+            </li>
           </ul>
           <Button asChild size="lg" onClick={() => setOpen(false)}>
             <Link href="/advisor">Size my system</Link>

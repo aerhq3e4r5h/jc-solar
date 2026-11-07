@@ -15,7 +15,7 @@ export function Gallery({ images, name, sale }: { images: { url: string; alt: st
       <button
         type="button"
         onClick={() => setZoom(true)}
-        className="group relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-3xl border bg-white"
+        className="group relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-xl bg-shelf"
         aria-label={`Zoom image: ${current.alt}`}
       >
         <Image
@@ -24,10 +24,10 @@ export function Gallery({ images, name, sale }: { images: { url: string; alt: st
           fill
           priority
           sizes="(min-width: 1024px) 50vw, 100vw"
-          className="object-contain p-4 transition-transform duration-500 group-hover:scale-[1.03]"
+          className="object-contain transition-transform duration-500 group-hover:scale-[1.03]"
         />
         {sale}
-        <span className="absolute right-3 bottom-3 rounded-full bg-background/80 p-2 opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">
+        <span className="absolute right-3 bottom-3 rounded-full bg-background p-2 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
           <ZoomIn className="size-4" aria-hidden="true" />
         </span>
       </button>
@@ -41,11 +41,11 @@ export function Gallery({ images, name, sale }: { images: { url: string; alt: st
                 aria-label={`Show image ${i + 1}`}
                 aria-current={i === active}
                 className={cn(
-                  "relative block aspect-square w-full overflow-hidden rounded-xl border bg-white transition-opacity hover:opacity-100",
-                  i === active ? "ring-2 ring-ring" : "opacity-70",
+                  "relative block aspect-square w-full overflow-hidden rounded-md bg-shelf transition-opacity hover:opacity-100",
+                  i === active ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : "opacity-60",
                 )}
               >
-                <Image src={img.url} alt="" fill sizes="10vw" className="object-contain p-1" />
+                <Image src={img.url} alt="" fill sizes="10vw" className="object-cover" />
               </button>
             </li>
           ))}

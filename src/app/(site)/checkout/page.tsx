@@ -35,7 +35,7 @@ async function Checkout() {
 export default function CheckoutPage() {
   return (
     <div className="container-page py-10">
-      <h1 className="mb-8 text-4xl font-semibold">Checkout</h1>
+      <h1 className="mb-8 type-wide text-4xl">Checkout</h1>
       <Suspense fallback={<Skeleton className="h-[600px] w-full rounded-2xl" />}>
         <Checkout />
       </Suspense>

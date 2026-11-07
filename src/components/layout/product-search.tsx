@@ -98,12 +98,15 @@ export function ProductSearch() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex h-10 items-center gap-2 rounded-full border bg-muted/50 px-3 text-sm text-muted-foreground transition-colors hover:border-foreground/25 hover:text-foreground lg:w-64 lg:px-4"
+        className="group flex size-10 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-shelf md:h-12 md:w-full md:justify-start md:gap-3 md:border-2 md:border-foreground md:bg-background md:pr-1.5 md:pl-5 md:text-left md:hover:bg-background"
         aria-label="Search products"
       >
-        <Search className="size-4" aria-hidden="true" />
-        <span className="hidden lg:inline">Search products</span>
-        <kbd className="ml-auto hidden rounded border bg-background px-1.5 py-0.5 font-sans text-[11px] lg:inline">Ctrl K</kbd>
+        <Search className="size-5 md:hidden" aria-hidden="true" />
+        <span className="hidden min-w-0 flex-1 truncate text-[0.95rem] text-muted-foreground md:block">Search inverters, batteries, panels, brands or SKUs</span>
+        <kbd className="hidden rounded border px-1.5 py-0.5 font-sans text-[11px] text-muted-foreground xl:inline">Ctrl K</kbd>
+        <span className="hidden h-9 w-14 shrink-0 place-items-center rounded-full bg-sun text-ink transition-[filter] group-hover:brightness-95 md:grid">
+          <Search className="size-[1.1rem]" aria-hidden="true" />
+        </span>
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -141,7 +144,7 @@ export function ProductSearch() {
                       key={s}
                       type="button"
                       onClick={() => setQ(s)}
-                      className="rounded-full border px-3 py-1.5 text-sm hover:border-cell hover:text-cell"
+                      className="rounded-full border px-3 py-1.5 text-sm hover:border-foreground"
                     >
                       {s}
                     </button>
@@ -172,8 +175,8 @@ export function ProductSearch() {
                     onClick={() => go(r.url)}
                     className={cn("flex cursor-pointer items-center gap-3 rounded-xl p-2.5", i === active && "bg-muted")}
                   >
-                    <span className="relative size-14 shrink-0 overflow-hidden rounded-lg border bg-white">
-                      {r.image && <Image src={r.image} alt="" fill sizes="56px" className="object-contain p-1" />}
+                    <span className="relative size-14 shrink-0 overflow-hidden rounded-md bg-shelf">
+                      {r.image && <Image src={r.image} alt="" fill sizes="56px" className="object-cover" />}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="line-clamp-1 text-sm font-medium">{r.name}</span>

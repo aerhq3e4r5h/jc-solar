@@ -6,7 +6,7 @@ export function Prose({ children, className }: { children: React.ReactNode; clas
     <div
       className={cn(
         "max-w-3xl text-base leading-relaxed text-foreground/90",
-        "[&_h2]:mt-12 [&_h2]:mb-4 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:text-foreground",
+        "[&_h2]:mt-12 [&_h2]:mb-4 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-foreground",
         "[&_h3]:mt-8 [&_h3]:mb-3 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-foreground",
         "[&_p]:my-4 [&_ul]:my-4 [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-6 [&_ol]:my-4 [&_ol]:list-decimal [&_ol]:space-y-2 [&_ol]:pl-6",
         "[&_a]:font-medium [&_a]:text-foreground [&_a]:underline [&_a]:underline-offset-4",
@@ -24,7 +24,7 @@ export function PageHeader({ eyebrow, title, intro }: { eyebrow?: string; title:
   return (
     <header className="mb-10 max-w-3xl">
       {eyebrow && <p className="eyebrow mb-3">{eyebrow}</p>}
-      <h1 className="text-4xl font-semibold sm:text-5xl">{title}</h1>
+      <h1 className="type-wide text-4xl sm:text-5xl">{title}</h1>
       {intro && <p className="mt-4 text-lg text-muted-foreground">{intro}</p>}
     </header>
   );

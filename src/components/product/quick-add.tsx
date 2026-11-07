@@ -26,14 +26,14 @@ export function QuickAdd({ productId, name }: { productId: string; name: string 
       disabled={pending}
       aria-label={`Add ${name} to cart`}
       className={cn(
-        "absolute right-2 bottom-2 z-10 flex size-9 items-center justify-center gap-1.5 rounded-full text-sm font-medium shadow-md transition-all md:right-3 md:bottom-3 md:h-10 md:w-auto md:px-3",
-        "bg-primary text-primary-foreground hover:brightness-95 focus-visible:opacity-100",
+        "absolute right-2 bottom-2 z-10 flex size-10 items-center justify-center gap-1.5 rounded-full text-sm font-semibold shadow-md transition-all md:right-3 md:bottom-3 md:h-10 md:w-auto md:px-4",
+        "bg-ink text-ink-foreground hover:bg-sun hover:text-ink focus-visible:opacity-100 dark:bg-foreground dark:text-background",
         "md:translate-y-1 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100",
         (pending || added) && "translate-y-0 opacity-100",
       )}
     >
       {pending ? <Loader2 className="size-4 animate-spin" /> : added ? <Check className="size-4" /> : <Plus className="size-4" />}
-      <span className="hidden md:inline">{added ? "Added" : "Add"}</span>
+      <span className="hidden md:inline">{added ? "Added" : "Add to cart"}</span>
     </button>
   );
 }

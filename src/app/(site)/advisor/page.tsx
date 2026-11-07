@@ -27,7 +27,7 @@ export default function AdvisorPage() {
         <div className="relative z-10 mx-auto -mt-28 max-w-5xl sm:-mt-32">
           <AdvisorChat enabled={geminiConfig() !== null} />
         </div>
-        <h2 className="mt-20 mb-6 text-3xl font-semibold">Prefer to talk to a person?</h2>
+        <h2 className="type-wide mt-20 mb-6 text-3xl">Prefer to talk to a person?</h2>
         <div className="mb-12 flex flex-wrap gap-3">
           <Button asChild size="lg">
             <Link href="/contact">

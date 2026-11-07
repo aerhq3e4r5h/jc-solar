@@ -8,51 +8,41 @@ import { ProductArt } from "./product-art";
 import { QuickAdd } from "./quick-add";
 import { StockBadge } from "./stock-badge";
 
+/**
+ * Shop-shelf product tile: the photo on a grey tile, then brand, name, key
+ * specs and price. No card chrome, so a grid of products reads like a shelf.
+ */
 export function ProductCard({ product, priority = false }: { product: Product; priority?: boolean }) {
   const image = product.images[0];
   const specs = cardSpecs(product);
   const quickAdd = canPurchase(product) ? <QuickAdd productId={product.id} name={productTitle(product)} /> : null;
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border bg-card transition-all duration-300 hover:-translate-y-1 hover:border-foreground/15 hover:shadow-xl hover:shadow-navy/10">
-      {image ? (
-        <div className="relative aspect-square overflow-hidden border-b bg-white">
+    <article className="group relative flex h-full flex-col">
+      <div className="relative aspect-square overflow-hidden rounded-lg bg-shelf">
+        {image ? (
           <Image
             src={image.url}
             alt={image.alt}
             fill
-            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
-            className="object-contain p-2 transition-transform duration-500 group-hover:scale-105"
+            sizes="(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, (min-width: 640px) 33vw, 50vw"
+            className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
             priority={priority}
           />
-          <DiscountRibbon price={product.priceInclVat} compareAt={product.compareAtPriceInclVat} />
-          {quickAdd}
-        </div>
-      ) : (
-        <div className="relative p-3 pb-0">
-          <div className="relative overflow-hidden rounded-xl">
-            <ProductArt category={product.category} label={artLabel(product)} />
-            <DiscountRibbon price={product.priceInclVat} compareAt={product.compareAtPriceInclVat} />
-          </div>
-          {quickAdd}
-        </div>
-      )}
-      <div className="flex flex-1 flex-col gap-2 p-4 sm:p-5">
-        {product.brand && <p className="text-sm font-medium text-muted-foreground">{product.brand}</p>}
-        <h3 className="line-clamp-2 font-sans text-sm leading-snug font-medium sm:text-base">
-          <Link href={productUrl(product)} className="after:absolute after:inset-0 after:rounded-2xl">
+        ) : (
+          <ProductArt category={product.category} label={artLabel(product)} className="rounded-none" />
+        )}
+        <DiscountRibbon price={product.priceInclVat} compareAt={product.compareAtPriceInclVat} />
+        {quickAdd}
+      </div>
+      <div className="flex flex-1 flex-col pt-3.5">
+        {product.brand && <p className="text-[13px] font-semibold text-muted-foreground">{product.brand}</p>}
+        <h3 className="mt-0.5 line-clamp-2 font-sans text-[0.95rem] leading-snug font-medium [font-stretch:100%] sm:text-base">
+          <Link href={productUrl(product)} className="decoration-2 underline-offset-2 after:absolute after:inset-0 group-hover:underline">
             {productTitle(product)}
           </Link>
         </h3>
-        {specs.length > 0 && (
-          <ul className="flex flex-wrap gap-1.5" aria-label="Key specs">
-            {specs.map((s) => (
-              <li key={s} className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                {s}
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="mt-auto flex flex-wrap items-end justify-between gap-2 pt-2">
+        {specs.length > 0 && <p className="mt-1.5 line-clamp-1 text-[13px] text-muted-foreground">{specs.join(", ")}</p>}
+        <div className="mt-auto flex flex-wrap items-end justify-between gap-x-2 gap-y-1 pt-3">
           <Price amount={product.priceInclVat} compareAt={product.compareAtPriceInclVat} />
           <StockBadge product={product} className="text-xs" />
         </div>

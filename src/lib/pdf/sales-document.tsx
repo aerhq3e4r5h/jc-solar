@@ -18,14 +18,14 @@ Font.register({ family: "GeistMono", src: path.join(fontDir, "GeistMono-Regular.
 Font.registerHyphenationCallback((word) => [word]);
 
 const C = {
-  navy: "#162033",
-  navySoft: "#24324d",
-  sun: "#f5a524",
-  sunPale: "#fdf3df",
-  ink: "#162033",
-  muted: "#5b6474",
-  line: "#e6e3da",
-  zebra: "#faf9f6",
+  navy: "#1e1e1c",
+  navySoft: "#34342f",
+  sun: "#ffc414",
+  sunPale: "#fff6d6",
+  ink: "#1e1e1c",
+  muted: "#5f5f5a",
+  line: "#e4e4e0",
+  zebra: "#f7f7f5",
 };
 
 const s = StyleSheet.create({

@@ -5,18 +5,18 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * JC Solar design tokens.
- * Deep navy ink, warm solar amber, warm white space. Amber is used as a
- * fill (with navy text on it) or as a highlight, never as body text on
- * white, which would fail WCAG AA contrast. Use --amber-ink for amber text.
- * Spacing follows Tailwind's 4px scale used in steps of 8px (2, 4, 6, 8...).
+ * JC Solar design tokens: a bright, sunlit hardware store.
+ * White shop floor, graphite ink (the colour of inverter casings), signal
+ * yellow used as solid fills with graphite text on it (like a price label),
+ * charge green for "in stock" and sale red for markdowns. No blue anywhere.
+ * Yellow is never used as text on white (it fails contrast); use --amber-ink.
  */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-body);
-  --font-display: var(--font-display-face);
-  --font-mono: var(--font-mono-face);
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -36,78 +36,86 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-amber-ink: var(--amber-ink);
-  --color-navy: var(--navy);
-  --color-navy-foreground: var(--navy-foreground);
+  --color-ink: var(--ink);
+  --color-ink-foreground: var(--ink-foreground);
   --color-sun: var(--sun);
-  --color-cell: var(--cell);
+  --color-shelf: var(--shelf);
+  --color-charge: var(--charge);
   --color-sale: var(--sale);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-xl: calc(var(--radius) * 1.5);
+  --radius-2xl: calc(var(--radius) * 2);
+  --radius-3xl: calc(var(--radius) * 2.5);
+  --radius-4xl: calc(var(--radius) * 3);
 }
 
 :root {
-  --radius: 0.75rem;
+  --radius: 0.5rem;
 
-  --sun: oklch(0.8 0.155 75);
-  /* Solar-cell blue: selected and interactive states. */
-  --cell: oklch(0.48 0.17 262);
-  /* Sale ribbons and discount badges. */
-  --sale: oklch(0.56 0.21 25);
-  --navy: oklch(0.22 0.04 258);
-  --navy-foreground: oklch(0.975 0.006 85);
+  /* Signal yellow: fills only, with graphite text on top. */
+  --sun: oklch(0.86 0.17 88);
+  /* Graphite: text, dark bands, selected states. */
+  --ink: oklch(0.235 0.004 95);
+  --ink-foreground: oklch(0.985 0.002 95);
+  /* Light neutral grey behind product photos and quiet bands. */
+  --shelf: oklch(0.962 0.003 95);
+  /* Battery-charge green: in stock, power flowing. */
+  --charge: oklch(0.55 0.15 150);
+  /* Sale ribbons, sale prices and discount badges. */
+  --sale: oklch(0.575 0.215 28);
 
-  --background: oklch(0.985 0.004 85);
-  --foreground: oklch(0.2 0.035 258);
+  --background: oklch(1 0 0);
+  --foreground: var(--ink);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.035 258);
+  --card-foreground: var(--ink);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.035 258);
+  --popover-foreground: var(--ink);
   --primary: var(--sun);
-  --primary-foreground: oklch(0.2 0.035 258);
-  --secondary: var(--navy);
-  --secondary-foreground: var(--navy-foreground);
-  --muted: oklch(0.955 0.006 85);
-  --muted-foreground: oklch(0.46 0.022 258);
-  --accent: oklch(0.955 0.035 82);
-  --accent-foreground: oklch(0.2 0.035 258);
-  --destructive: oklch(0.55 0.2 27);
-  --border: oklch(0.905 0.008 85);
-  --input: oklch(0.88 0.01 85);
-  --ring: oklch(0.6 0.14 65);
-  --success: oklch(0.52 0.13 152);
-  --warning: oklch(0.58 0.14 60);
-  --amber-ink: oklch(0.5 0.12 62);
+  --primary-foreground: var(--ink);
+  --secondary: var(--ink);
+  --secondary-foreground: var(--ink-foreground);
+  --muted: var(--shelf);
+  --muted-foreground: oklch(0.46 0.006 95);
+  --accent: oklch(0.945 0.004 95);
+  --accent-foreground: var(--ink);
+  --destructive: oklch(0.55 0.21 28);
+  --border: oklch(0.905 0.004 95);
+  --input: oklch(0.86 0.005 95);
+  --ring: oklch(0.235 0.004 95);
+  --success: var(--charge);
+  --warning: oklch(0.56 0.13 65);
+  --amber-ink: oklch(0.5 0.115 72);
 }
 
 .dark {
-  --background: oklch(0.165 0.03 258);
-  --foreground: oklch(0.96 0.006 85);
-  --card: oklch(0.205 0.034 258);
-  --card-foreground: oklch(0.96 0.006 85);
-  --popover: oklch(0.205 0.034 258);
-  --popover-foreground: oklch(0.96 0.006 85);
+  --ink: oklch(0.2 0.004 95);
+  --ink-foreground: oklch(0.97 0.002 95);
+  --shelf: oklch(0.255 0.004 95);
+  --background: oklch(0.185 0.004 95);
+  --foreground: oklch(0.96 0.002 95);
+  --card: oklch(0.22 0.004 95);
+  --card-foreground: oklch(0.96 0.002 95);
+  --popover: oklch(0.22 0.004 95);
+  --popover-foreground: oklch(0.96 0.002 95);
   --primary: var(--sun);
-  --primary-foreground: oklch(0.2 0.035 258);
-  --secondary: oklch(0.29 0.04 258);
-  --secondary-foreground: oklch(0.96 0.006 85);
-  --muted: oklch(0.24 0.034 258);
-  --muted-foreground: oklch(0.75 0.02 258);
-  --accent: oklch(0.28 0.045 70);
-  --accent-foreground: oklch(0.96 0.006 85);
-  --destructive: oklch(0.68 0.19 25);
-  --border: oklch(1 0 0 / 11%);
-  --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.8 0.155 75);
-  --success: oklch(0.74 0.15 152);
-  --warning: oklch(0.8 0.14 70);
-  --amber-ink: oklch(0.83 0.14 78);
-  --cell: oklch(0.6 0.16 262);
-  --sale: oklch(0.62 0.2 25);
+  --primary-foreground: oklch(0.2 0.004 95);
+  --secondary: oklch(0.3 0.004 95);
+  --secondary-foreground: oklch(0.96 0.002 95);
+  --muted: var(--shelf);
+  --muted-foreground: oklch(0.74 0.006 95);
+  --accent: oklch(0.29 0.004 95);
+  --accent-foreground: oklch(0.96 0.002 95);
+  --destructive: oklch(0.68 0.19 28);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 18%);
+  --ring: var(--sun);
+  --charge: oklch(0.74 0.16 150);
+  --success: var(--charge);
+  --warning: oklch(0.8 0.14 75);
+  --amber-ink: oklch(0.86 0.15 88);
+  --sale: oklch(0.65 0.2 28);
 }
 
 @layer base {
@@ -126,6 +134,13 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+  }
+  /* Headlines are set wide and heavy, like the labels on the equipment. */
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-stretch: 112%;
   }
   h1,
   h2,
@@ -152,22 +167,25 @@
   .container-page {
     @apply mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-10;
   }
-  /* Full-bleed photo band: image layer + navy wash for legible white text. */
+  /* Photo with a graphite wash so white text stays legible. */
   .photo-wash {
-    background: linear-gradient(100deg, oklch(0.16 0.04 258 / 0.94) 0%, oklch(0.18 0.04 258 / 0.78) 45%, oklch(0.2 0.04 258 / 0.35) 100%);
+    background: linear-gradient(95deg, oklch(0.18 0.004 95 / 0.92) 0%, oklch(0.18 0.004 95 / 0.7) 42%, oklch(0.18 0.004 95 / 0.08) 100%);
   }
   .photo-wash-bottom {
-    background: linear-gradient(to top, oklch(0.16 0.04 258 / 0.92) 0%, oklch(0.16 0.04 258 / 0.45) 55%, oklch(0.16 0.04 258 / 0.1) 100%);
-  }
-  .glass {
-    @apply border border-white/15 bg-white/10 backdrop-blur-md;
+    background: linear-gradient(to top, oklch(0.18 0.004 95 / 0.92) 0%, oklch(0.18 0.004 95 / 0.5) 50%, oklch(0.18 0.004 95 / 0) 100%);
   }
   /* Short context label above a heading, in sentence case. */
   .eyebrow {
-    @apply text-sm font-semibold text-amber-ink;
+    @apply text-sm font-semibold text-muted-foreground;
   }
   .num {
     font-variant-numeric: tabular-nums;
+  }
+  /* Wide, heavy display setting for big headlines and prices. */
+  .type-wide {
+    font-stretch: 125%;
+    font-weight: 800;
+    letter-spacing: -0.025em;
   }
 }
 
@@ -198,12 +216,14 @@
     transform: none;
   }
 }
+/* Photos sit inside rounded frames, so they're scaled up enough that the
+   drift never uncovers an edge (scale 1.3 leaves 15% spare each side). */
 @keyframes jc-parallax {
   from {
-    transform: translateY(0) scale(1.08);
+    transform: translateY(-6%) scale(1.3);
   }
   to {
-    transform: translateY(18%) scale(1.15);
+    transform: translateY(10%) scale(1.3);
   }
 }
 @keyframes jc-drift-up {
@@ -226,7 +246,7 @@
       inset: 0 0 auto 0;
       z-index: 60;
       height: 3px;
-      background: linear-gradient(90deg, var(--sun), oklch(0.7 0.18 50));
+      background: var(--sun);
       transform-origin: 0 50%;
       animation: jc-grow-x linear both;
       animation-timeline: scroll(root);

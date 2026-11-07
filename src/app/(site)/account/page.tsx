@@ -53,7 +53,7 @@ async function AccountContents() {
       </div>
 
       <section aria-labelledby="orders-heading">
-        <h2 id="orders-heading" className="mb-4 text-2xl font-semibold">
+        <h2 id="orders-heading" className="mb-4 text-2xl font-bold">
           Your orders
         </h2>
         {orders && orders.length > 0 ? (

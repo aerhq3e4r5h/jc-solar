@@ -2,10 +2,9 @@ import { ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import Image from "next/image";
 import heroImage from "@/assets/backgrounds/home-roof.webp";
 import { PhotoBanner } from "@/components/layout/photo-banner";
-import { ProductArt } from "@/components/product/product-art";
+import { CategoryGlyph } from "@/components/product/product-art";
 import { ProductCard } from "@/components/product/product-card";
 import { sortProducts } from "@/lib/catalogue/filters";
 import { getCatalogue } from "@/lib/catalogue/queries";
@@ -29,7 +28,7 @@ async function SearchResults({ searchParams }: { searchParams: Promise<{ q?: str
   return (
     <section className="mb-16" aria-labelledby="results-heading">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <h2 id="results-heading" className="text-3xl font-semibold">
+        <h2 id="results-heading" className="type-wide text-3xl">
           {results.length ? `${results.length} result${results.length === 1 ? "" : "s"} for “${q}”` : `Nothing matches “${q}”`}
         </h2>
         <Link href="/shop" className="text-sm font-medium underline underline-offset-4">
@@ -39,7 +38,7 @@ async function SearchResults({ searchParams }: { searchParams: Promise<{ q?: str
       {results.length === 0 ? (
         <p className="text-muted-foreground">Check the spelling, try a brand or size (e.g. &ldquo;5 kW&rdquo;), or ask the Solar Advisor.</p>
       ) : (
-        <ul className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+        <ul className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
           {results.map((p) => (
             <li key={p.id}>
               <ProductCard product={p} />
@@ -57,7 +56,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
 
   return (
     <>
-      <PhotoBanner image={heroImage} eyebrow="Shop" title="Everything for a complete system">
+      <PhotoBanner image={heroImage} title="Everything for a complete system">
         <p>
           {products.length} products from tier-one brands. All prices include 15% VAT. Not sure what you need? The Solar Advisor can size a system for
           you.
@@ -67,7 +66,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
         <Suspense>
           <SearchResults searchParams={searchParams} />
         </Suspense>
-        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {slugs.map((slug) => {
             const items = products.filter((p) => p.category === slug);
             const inStock = items.filter((p) => availability(p).state !== "out_of_stock").length;
@@ -77,34 +76,23 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
               <li key={slug}>
                 <Link
                   href={`/shop/${slug}`}
-                  className="group flex h-full flex-col overflow-hidden rounded-3xl border bg-card transition-all duration-300 hover:-translate-y-1 hover:border-foreground/15 hover:shadow-2xl hover:shadow-navy/10"
+                  className="group relative isolate flex h-full min-h-60 flex-col overflow-hidden rounded-xl bg-shelf p-6 transition-colors duration-300 hover:bg-sun hover:text-ink sm:p-7"
                 >
-                  {image ? (
-                    <span className="relative block aspect-[4/3] overflow-hidden border-b bg-white">
-                      <Image
-                        src={image.url}
-                        alt=""
-                        fill
-                        priority
-                        sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-                        className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
-                      />
-                    </span>
-                  ) : (
-                    <ProductArt category={slug} className="m-4 mb-0 aspect-[4/3]" />
-                  )}
-                  <span className="flex items-center justify-between px-6 pt-5 font-display text-2xl font-semibold">
-                    {CATEGORIES[slug].name}
-                    <ArrowRight className="size-5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-                  </span>
-                  <span className="px-6 pt-2 pb-6 text-sm text-muted-foreground">
-                    {items.length} products · {inStock} in stock
+                  <span className="type-wide max-w-[70%] text-2xl leading-none sm:text-[1.75rem]">{CATEGORIES[slug].name}</span>
+                  <span className="mt-2 max-w-[60%] text-sm text-muted-foreground group-hover:text-ink/75">
+                    {items.length} products, {inStock} in stock
                     {from !== null && (
                       <>
-                        {" "}
-                        · from <span className="num">{formatRand(from)}</span>
+                        , from <span className="num font-semibold text-foreground group-hover:text-ink">{formatRand(from)}</span>
                       </>
                     )}
+                  </span>
+                  <CategoryGlyph
+                    category={slug}
+                    className="absolute -right-3 -bottom-5 -z-10 size-44 transition-transform duration-500 ease-out group-hover:scale-105 group-hover:-rotate-3"
+                  />
+                  <span className="mt-auto grid size-11 place-items-center rounded-full bg-background transition-colors group-hover:bg-ink group-hover:text-sun">
+                    <ArrowRight className="size-5" aria-hidden="true" />
                   </span>
                 </Link>
               </li>
@@ -122,14 +110,14 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
           return (
             <section key={slug} className="scroll-rise mt-20" aria-labelledby={`${slug}-heading`}>
               <div className="mb-6 flex items-end justify-between gap-4">
-                <h2 id={`${slug}-heading`} className="text-3xl font-semibold">
+                <h2 id={`${slug}-heading`} className="type-wide text-3xl">
                   {CATEGORIES[slug].name} in stock
                 </h2>
-                <Link href={`/shop/${slug}`} className="inline-flex items-center gap-1 text-sm font-medium hover:underline">
+                <Link href={`/shop/${slug}`} className="inline-flex items-center gap-1.5 text-sm font-semibold underline-offset-4 hover:underline">
                   See all <ArrowRight className="size-4" />
                 </Link>
               </div>
-              <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+              <ul className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
                 {top.map((p) => (
                   <li key={p.id}>
                     <ProductCard product={p} />

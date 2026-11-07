@@ -155,7 +155,7 @@ async function CartContents() {
 export default function CartPage() {
   return (
     <div className="container-page py-10">
-      <h1 className="mb-8 text-4xl font-semibold">Your cart</h1>
+      <h1 className="mb-8 type-wide text-4xl">Your cart</h1>
       <Suspense fallback={<Skeleton className="h-80 w-full rounded-2xl" />}>
         <CartContents />
       </Suspense>

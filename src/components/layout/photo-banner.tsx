@@ -2,8 +2,9 @@ import Image, { type StaticImageData } from "next/image";
 import { cn } from "@/lib/utils";
 
 /**
- * Full-width photo header for section pages: photo, navy wash, white text.
- * The photo is decorative (empty alt); the heading carries the meaning.
+ * Department banner for section pages: a contained photo with a graphite
+ * wash and white text. The photo is decorative (empty alt); the heading
+ * carries the meaning.
  */
 export function PhotoBanner({
   image,
@@ -21,16 +22,20 @@ export function PhotoBanner({
   priority?: boolean;
 }) {
   return (
-    <section className={cn("relative isolate overflow-hidden bg-navy text-white", className)}>
-      <Image src={image} alt="" fill priority={priority} placeholder="blur" sizes="100vw" className="-z-20 object-cover" />
-      <div className="photo-wash absolute inset-0 -z-10" aria-hidden="true" />
-      <div className="container-page py-16 sm:py-20 lg:py-24">
-        <div className="max-w-3xl">
-          {eyebrow && <p className="eyebrow mb-4 text-sun">{eyebrow}</p>}
-          <h1 className="text-4xl leading-[1.05] font-semibold sm:text-5xl lg:text-6xl">{title}</h1>
-          {children && <div className="mt-5 text-lg leading-relaxed text-white/80 sm:text-xl">{children}</div>}
+    <div className={cn("container-page pt-4 sm:pt-6", className)}>
+      <section className="relative isolate overflow-hidden rounded-xl bg-ink text-white">
+        <div className="parallax-hero absolute inset-0 -z-20">
+          <Image src={image} alt="" fill priority={priority} placeholder="blur" sizes="(min-width: 1440px) 1440px, 100vw" className="object-cover" />
         </div>
-      </div>
-    </section>
+        <div className="photo-wash absolute inset-0 -z-10" aria-hidden="true" />
+        <div className="px-6 py-10 sm:px-10 sm:py-12 lg:px-14 lg:py-14">
+          <div className="max-w-3xl">
+            {eyebrow && <p className="mb-3 text-sm font-semibold text-white/70">{eyebrow}</p>}
+            <h1 className="type-wide text-4xl leading-[0.98] sm:text-5xl">{title}</h1>
+            {children && <div className="mt-4 max-w-2xl text-base leading-relaxed text-white/80 sm:text-lg">{children}</div>}
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }

@@ -155,7 +155,7 @@ function ProductCards({ products }: { products: RecommendationCard[] }) {
 
 function Avatar({ role }: { role: Message["role"] }) {
   return role === "assistant" ? (
-    <span className="grid size-9 shrink-0 place-items-center rounded-full bg-navy text-sun shadow-sm dark:bg-secondary" aria-hidden="true">
+    <span className="grid size-9 shrink-0 place-items-center rounded-full bg-ink text-sun shadow-sm dark:bg-secondary" aria-hidden="true">
       <Sparkles className="size-4" />
     </span>
   ) : (
@@ -253,7 +253,7 @@ export function AdvisorChat({ enabled }: { enabled: boolean }) {
   };
 
   return (
-    <div className="flex h-[min(78vh,760px)] min-h-[520px] flex-col overflow-hidden rounded-3xl border bg-card shadow-2xl shadow-navy/10">
+    <div className="flex h-[min(78vh,760px)] min-h-[520px] flex-col overflow-hidden rounded-3xl border bg-card shadow-2xl shadow-ink/10">
       <div className="flex items-center justify-between gap-3 border-b bg-muted/40 px-5 py-3">
         <div className="flex items-center gap-3">
           <Avatar role="assistant" />
@@ -275,10 +275,10 @@ export function AdvisorChat({ enabled }: { enabled: boolean }) {
       <div ref={scroller} className="flex-1 space-y-6 overflow-y-auto px-4 py-6 sm:px-6" aria-live="polite" aria-busy={loading}>
         {messages.length === 0 && (
           <div className="mx-auto max-w-2xl py-4 text-center">
-            <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-navy text-sun shadow-lg dark:bg-secondary">
+            <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-ink text-sun shadow-lg dark:bg-secondary">
               <SunMedium className="size-7" aria-hidden="true" />
             </span>
-            <h2 className="mt-5 text-2xl font-semibold sm:text-3xl">Hi! Let&apos;s size your system.</h2>
+            <h2 className="mt-5 text-2xl font-bold sm:text-3xl">Hi! Let&apos;s size your system.</h2>
             <p className="mt-2 text-muted-foreground">
               Tell me what you want to keep running, for how long, or what you pay for electricity. I&apos;ll recommend a matched system from our
               stock, with prices.
@@ -315,7 +315,7 @@ export function AdvisorChat({ enabled }: { enabled: boolean }) {
                   className={cn(
                     "inline-block rounded-3xl px-4 py-3 text-left leading-relaxed sm:px-5",
                     m.role === "user"
-                      ? "rounded-tr-md bg-navy text-navy-foreground dark:bg-secondary"
+                      ? "rounded-tr-md bg-ink text-ink-foreground dark:bg-secondary"
                       : "rounded-tl-md bg-muted/70 text-foreground/90",
                   )}
                 >

@@ -91,7 +91,7 @@ async function CompareTable({ searchParams }: { searchParams: Promise<Record<str
 export default function ComparePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   return (
     <div className="container-page py-10">
-      <h1 className="mb-2 text-4xl font-semibold">Compare</h1>
+      <h1 className="mb-2 type-wide text-4xl">Compare</h1>
       <p className="mb-8 text-muted-foreground">Rows where the products differ are shown in bold.</p>
       <Suspense fallback={<Skeleton className="h-96 w-full rounded-2xl" />}>
         <CompareTable searchParams={searchParams} />

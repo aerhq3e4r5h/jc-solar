@@ -1,14 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
+import { Archivo } from "next/font/google";
 import { ThemeProvider } from "@/components/theme";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { site } from "@/config/site";
 import "./globals.css";
 
-const body = Geist({ variable: "--font-body", subsets: ["latin"], display: "swap" });
-const display = Bricolage_Grotesque({ variable: "--font-display-face", subsets: ["latin"], display: "swap" });
-const mono = Geist_Mono({ variable: "--font-mono-face", subsets: ["latin"], display: "swap" });
+// One family throughout. Its width axis does the work: wide and heavy for
+// headlines and prices, normal width for reading.
+const archivo = Archivo({ variable: "--font-archivo", subsets: ["latin"], axes: ["wdth"], display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
@@ -19,14 +19,14 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fbfaf7" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f1626" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#191918" },
   ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-ZA" suppressHydrationWarning className={`${body.variable} ${display.variable} ${mono.variable}`}>
+    <html lang="en-ZA" suppressHydrationWarning className={archivo.variable}>
       <body className="min-h-dvh">
         <ThemeProvider>
           <TooltipProvider>{children}</TooltipProvider>

@@ -1,114 +1,95 @@
-import { AirVent, BatteryCharging, ChevronDown, Cpu, Gauge, PackageCheck, PanelsTopLeft, ShoppingCart, Truck, UserRound, Wrench } from "lucide-react";
+import { ShoppingCart, Sparkles, Truck, UserRound } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Logo } from "@/components/brand/logo";
 import { CartBadge } from "@/components/cart/cart-badge";
 import { ThemeToggle } from "@/components/theme";
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { mainNav, shopNav } from "@/config/site";
+import { getCatalogue } from "@/lib/catalogue/queries";
+import { discountPercent } from "@/lib/pricing/sale";
+import { CategoryBar, CategoryLinks } from "./category-bar";
 import { MobileNav } from "./mobile-nav";
 import { ProductSearch } from "./product-search";
 
-const SHOP_ICONS = {
-  "/shop/solar-panels": PanelsTopLeft,
-  "/shop/batteries": BatteryCharging,
-  "/shop/inverters": Cpu,
-  "/shop/kits": PackageCheck,
-  "/shop/voltage-stabilizers": Gauge,
-  "/shop/air-conditioners": AirVent,
-} as const;
+// Display is set per link (flex or hidden), so it isn't part of the shared style.
+const action = "relative h-10 shrink-0 items-center gap-2 rounded-full px-2.5 text-sm font-semibold transition-colors hover:bg-shelf [&_svg]:size-5";
 
-const navLink =
-  "relative rounded-md px-3 py-2 text-[0.95rem] font-medium text-muted-foreground transition-colors after:absolute after:inset-x-3 after:-bottom-0.5 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-sun after:transition-transform hover:text-foreground hover:after:scale-x-100";
+/** Whether anything is marked down, so the "On sale" link only shows when it leads somewhere. */
+async function Departments() {
+  const products = await getCatalogue();
+  const hasSale = products.some((p) => discountPercent(p.priceInclVat, p.compareAtPriceInclVat));
+  return (
+    <Suspense fallback={<CategoryLinks pathname={null} hasSale={hasSale} />}>
+      <CategoryBar hasSale={hasSale} />
+    </Suspense>
+  );
+}
 
 export function SiteHeader() {
   return (
     <>
-      <div className="bg-navy text-navy-foreground">
-        <div className="container-page flex h-9 items-center justify-center gap-6 text-xs sm:justify-between sm:text-sm">
-          <p className="flex items-center gap-2">
-            <Truck className="size-4 text-sun" aria-hidden="true" />
-            Delivery anywhere in South Africa, priced at checkout
+      <div className="bg-sun text-ink">
+        <div className="container-page flex h-9 items-center justify-between gap-6 text-[13px] font-medium">
+          <p className="flex min-w-0 items-center gap-2">
+            <Truck className="size-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">Delivery anywhere in South Africa, priced at checkout</span>
           </p>
-          <p className="hidden items-center gap-2 sm:flex">
-            <Wrench className="size-4 text-sun" aria-hidden="true" />
-            <Link href="/installation" className="underline-offset-4 hover:underline">
-              Installation by a registered technician
+          <nav aria-label="Help" className="hidden items-center gap-5 sm:flex">
+            <Link href="/delivery" className="underline-offset-4 hover:underline">
+              Delivery
             </Link>
-          </p>
+            <Link href="/warranty-and-returns" className="underline-offset-4 hover:underline">
+              Returns
+            </Link>
+            <Link href="/faq" className="underline-offset-4 hover:underline">
+              Help
+            </Link>
+            <Link href="/contact" className="underline-offset-4 hover:underline">
+              Contact
+            </Link>
+            <span className="-mr-2 [&_button]:size-7 [&_button]:hover:bg-ink/10">
+              <ThemeToggle />
+            </span>
+          </nav>
         </div>
       </div>
-      <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+      <header className="sticky top-0 z-40 border-b bg-background">
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
         >
           Skip to content
         </a>
-        <div className="container-page flex h-16 items-center gap-3 lg:h-20">
+        <div className="container-page flex h-16 items-center gap-2 lg:h-[4.5rem] lg:gap-4">
           <MobileNav />
-          <Link href="/" className="rounded-md" aria-label="JC Solar home">
+          <Link href="/" className="shrink-0 rounded-md" aria-label="JC Solar home">
             <Logo />
           </Link>
-          <nav aria-label="Main" className="ml-6 hidden items-center gap-1 md:flex">
-            <DropdownMenu modal={false}>
-              <DropdownMenuTrigger className={`${navLink} inline-flex items-center gap-1 outline-none data-[state=open]:text-foreground`}>
-                Shop <ChevronDown className="size-4" aria-hidden="true" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" sideOffset={10} className="w-[22rem] p-2">
-                {shopNav.map((item) => {
-                  const Icon = SHOP_ICONS[item.href];
-                  return (
-                    <DropdownMenuItem key={item.href} asChild className="items-start gap-3 rounded-lg p-3">
-                      <Link href={item.href}>
-                        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-amber-ink">
-                          <Icon className="size-5" aria-hidden="true" />
-                        </span>
-                        <span>
-                          <span className="block font-medium">{item.label}</span>
-                          <span className="block text-xs text-muted-foreground">{item.description}</span>
-                        </span>
-                      </Link>
-                    </DropdownMenuItem>
-                  );
-                })}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild className="rounded-lg p-3 font-medium">
-                  <Link href="/shop">Everything in the shop</Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {mainNav
-              .filter((item) => item.href !== "/shop")
-              .map((item) => (
-                <Link key={item.href} href={item.href} className={navLink}>
-                  {item.label}
-                </Link>
-              ))}
-          </nav>
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="ml-auto flex min-w-0 items-center md:mx-4 md:ml-6 md:flex-1 lg:mx-8">
             <ProductSearch />
-            <Button asChild className="mx-1 hidden xl:inline-flex lg:h-10 lg:px-5">
-              <Link href="/advisor">Size my system</Link>
-            </Button>
-            <ThemeToggle />
-            <Button asChild variant="ghost" size="icon">
-              <Link href="/account" aria-label="Your account">
-                <UserRound />
-              </Link>
-            </Button>
-            <Button asChild variant="ghost" size="icon" className="relative">
-              <Link href="/cart" aria-label="Cart">
-                <ShoppingCart />
-                <Suspense>
-                  <CartBadge />
-                </Suspense>
-              </Link>
-            </Button>
           </div>
+          <nav aria-label="Your shop" className="flex items-center gap-0.5">
+            <Link href="/advisor" className={`${action} hidden lg:flex`}>
+              <Sparkles className="text-amber-ink" aria-hidden="true" /> Solar Advisor
+            </Link>
+            <Link href="/account" className={`${action} hidden sm:flex`} aria-label="Your account">
+              <UserRound aria-hidden="true" />
+              <span className="hidden xl:inline">Account</span>
+            </Link>
+            <Link href="/cart" className={`${action} flex`} aria-label="Cart">
+              <ShoppingCart aria-hidden="true" />
+              <span className="hidden xl:inline">Cart</span>
+              <Suspense>
+                <CartBadge />
+              </Suspense>
+            </Link>
+          </nav>
         </div>
       </header>
+      <nav aria-label="Shop by department" className="border-b bg-background">
+        <Suspense fallback={<CategoryLinks pathname={null} hasSale={false} />}>
+          <Departments />
+        </Suspense>
+      </nav>
     </>
   );
 }

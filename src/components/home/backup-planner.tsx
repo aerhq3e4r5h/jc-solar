@@ -102,10 +102,10 @@ export function BackupPlanner({ stock }: { stock: PlannerStock }) {
   return (
     <section
       aria-labelledby="planner-heading"
-      className="grid gap-x-10 gap-y-6 rounded-[1.75rem] bg-card p-5 text-card-foreground shadow-2xl shadow-black/30 sm:p-7 lg:grid-cols-[1.3fr_1fr]"
+      className="grid gap-x-10 gap-y-6 rounded-xl border bg-card p-5 text-card-foreground sm:p-8 lg:grid-cols-[1.3fr_1fr]"
     >
       <div>
-        <h2 id="planner-heading" className="text-2xl font-semibold">
+        <h2 id="planner-heading" className="type-wide text-2xl sm:text-3xl">
           Plan your backup
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">Tap what must keep running when the power goes off.</p>
@@ -121,15 +121,15 @@ export function BackupPlanner({ stock }: { stock: PlannerStock }) {
                   onClick={() => toggle(a.id)}
                   title={a.detail ? `${a.detail}, about ${a.watts} W` : `About ${a.watts} W`}
                   className={cn(
-                    "relative flex h-full w-full items-center gap-2 rounded-xl border px-2.5 py-2 text-left text-sm transition-colors",
+                    "relative flex h-full w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
                     on
-                      ? "border-cell bg-cell/10 ring-1 ring-cell"
-                      : "bg-background text-muted-foreground hover:border-foreground/30 hover:text-foreground",
+                      ? "border-ink bg-ink text-ink-foreground dark:border-foreground dark:bg-foreground dark:text-background"
+                      : "bg-background text-muted-foreground hover:border-foreground/40 hover:text-foreground",
                   )}
                 >
-                  <a.icon className={cn("size-4 shrink-0", on ? "text-cell" : "")} aria-hidden="true" />
-                  <span className={cn("min-w-0 leading-tight", on && "font-medium text-foreground")}>{a.label}</span>
-                  {on && <Check className="ml-auto size-3.5 shrink-0 text-cell" aria-hidden="true" />}
+                  <a.icon className={cn("size-4 shrink-0", on ? "text-sun dark:text-amber-ink" : "")} aria-hidden="true" />
+                  <span className={cn("min-w-0 leading-tight", on && "font-semibold")}>{a.label}</span>
+                  {on && <Check className="ml-auto size-3.5 shrink-0 text-sun dark:text-amber-ink" aria-hidden="true" />}
                 </button>
               </li>
             );
@@ -139,7 +139,7 @@ export function BackupPlanner({ stock }: { stock: PlannerStock }) {
         <div className="mt-6">
           <label htmlFor="planner-hours" className="flex items-baseline justify-between text-sm">
             <span className="font-medium">Keep it running for</span>
-            <span className="num font-display text-lg font-semibold">
+            <span className="num font-display text-lg font-bold">
               {hours} hour{hours === 1 ? "" : "s"}
             </span>
           </label>
@@ -151,7 +151,7 @@ export function BackupPlanner({ stock }: { stock: PlannerStock }) {
             step={1}
             value={hours}
             onChange={(e) => setHours(Number(e.target.value))}
-            className="mt-2 w-full accent-[var(--cell)]"
+            className="mt-2 w-full accent-[var(--ink)] dark:accent-[var(--sun)]"
             aria-describedby="planner-hours-hint"
           />
           <p id="planner-hours-hint" className="flex justify-between text-xs text-muted-foreground">
@@ -163,34 +163,34 @@ export function BackupPlanner({ stock }: { stock: PlannerStock }) {
 
       <div className="lg:border-l lg:pl-10">
         {plan.load === 0 ? (
-          <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+          <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
             Choose at least one appliance to see the system you need.
           </p>
         ) : (
           <div className="space-y-4" aria-live="polite">
-            <dl className="grid grid-cols-3 divide-x rounded-xl bg-muted/70 text-center">
+            <dl className="grid grid-cols-3 divide-x divide-ink/15 rounded-lg bg-sun text-center text-ink">
               <div className="px-2 py-3">
-                <dt className="text-xs text-muted-foreground">Inverter</dt>
-                <dd className="num font-display text-xl font-semibold">{plan.size.inverterKw} kW</dd>
+                <dt className="text-xs font-medium">Inverter</dt>
+                <dd className="num font-display text-xl font-extrabold">{plan.size.inverterKw} kW</dd>
               </div>
               <div className="px-2 py-3">
-                <dt className="text-xs text-muted-foreground">Battery</dt>
-                <dd className="num font-display text-xl font-semibold">{kwh(plan.size.batteryNominalKwh)}</dd>
+                <dt className="text-xs font-medium">Battery</dt>
+                <dd className="num font-display text-xl font-extrabold">{kwh(plan.size.batteryNominalKwh)}</dd>
               </div>
               <div className="px-2 py-3">
-                <dt className="text-xs text-muted-foreground">Running at once</dt>
-                <dd className="num font-display text-xl font-semibold">{kw(plan.load)}</dd>
+                <dt className="text-xs font-medium">Running at once</dt>
+                <dd className="num font-display text-xl font-extrabold">{kw(plan.load)}</dd>
               </div>
             </dl>
 
             {plan.match ? (
-              <div className="rounded-xl border p-4">
+              <div className="rounded-lg border p-4">
                 <p className="text-sm font-medium">{plan.match.kind === "kit" ? "A ready-made kit that covers it" : "Matched from our stock"}</p>
                 <ul className="mt-3 space-y-2.5">
                   {plan.match.lines.map((l) => (
                     <li key={l.item.id} className="flex items-center gap-3">
-                      <span className="relative size-12 shrink-0 overflow-hidden rounded-lg border bg-white">
-                        {l.item.image && <Image src={l.item.image} alt="" fill sizes="48px" className="object-contain p-0.5" />}
+                      <span className="relative size-12 shrink-0 overflow-hidden rounded-md bg-shelf">
+                        {l.item.image && <Image src={l.item.image} alt="" fill sizes="48px" className="object-cover" />}
                       </span>
                       <Link href={l.item.url} className="line-clamp-2 min-w-0 flex-1 text-sm leading-snug hover:underline">
                         <span className="num font-semibold">{l.quantity} x</span> {l.item.name}
@@ -201,7 +201,7 @@ export function BackupPlanner({ stock }: { stock: PlannerStock }) {
                 </ul>
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4">
                   <p>
-                    <span className="num font-display text-2xl font-semibold">{formatRand(plan.match.total)}</span>
+                    <span className="num font-display text-2xl font-extrabold">{formatRand(plan.match.total)}</span>
                     <span className="block text-xs text-muted-foreground">
                       {plan.match.bus ? `Both ${plan.match.bus === "HV" ? "high-voltage" : `${plan.match.bus} V`}, so they work together. ` : ""}Incl.
                       VAT, before delivery.
@@ -213,7 +213,7 @@ export function BackupPlanner({ stock }: { stock: PlannerStock }) {
                 </div>
               </div>
             ) : (
-              <p className="rounded-xl border p-4 text-sm">
+              <p className="rounded-lg border p-4 text-sm">
                 That&apos;s more than our ready-made systems cover. The Solar Advisor can put together a larger or three-phase system for you.
               </p>
             )}

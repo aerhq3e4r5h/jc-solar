@@ -1,16 +1,18 @@
 import { cn } from "@/lib/utils";
 
-/** Placeholder mark until the real JC Solar logo is supplied. */
+/**
+ * Placeholder mark until the real JC Solar logo is supplied: a sun rising
+ * over a panel's horizon, graphite on signal yellow.
+ */
 export function LogoMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true" className={cn("size-8", className)}>
-      <rect width="32" height="32" rx="9" className="fill-navy dark:fill-secondary" />
-      <circle cx="16" cy="14" r="5.5" className="fill-sun" />
-      <g className="stroke-sun" strokeWidth="1.6" strokeLinecap="round">
-        <path d="M16 4.5v2.2M6.5 14h2.2M23.3 14h2.2M9.3 7.3l1.5 1.5M22.7 7.3l-1.5 1.5" />
+      <rect width="32" height="32" rx="7" className="fill-sun" />
+      <path d="M8.5 19a7.5 7.5 0 0 1 15 0Z" className="fill-ink" />
+      <g className="stroke-ink" strokeWidth="2" strokeLinecap="round">
+        <path d="M16 5.5v2.6M7 10.2l1.8 1.8M25 10.2l-1.8 1.8" />
       </g>
-      <path d="M6 24.5h20" className="stroke-navy-foreground" strokeWidth="1.6" strokeLinecap="round" opacity="0.85" />
-      <path d="M9 27.5h14" className="stroke-navy-foreground" strokeWidth="1.6" strokeLinecap="round" opacity="0.45" />
+      <path d="M5.5 22.5h21M9 26.5h14" className="stroke-ink" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -18,10 +20,8 @@ export function LogoMark({ className }: { className?: string }) {
 export function Logo({ className }: { className?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-2.5", className)}>
-      <LogoMark />
-      <span className="font-display text-lg font-semibold tracking-tight">
-        JC <span className="text-amber-ink">Solar</span>
-      </span>
+      <LogoMark className="size-9" />
+      <span className="type-wide text-[1.3rem] leading-none">JC Solar</span>
     </span>
   );
 }

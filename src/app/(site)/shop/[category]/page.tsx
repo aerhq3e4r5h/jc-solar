@@ -85,12 +85,12 @@ async function Results({ category, searchParams }: { category: CategorySlug; sea
           <SortSelect filters={filters} />
         </div>
         {results.length === 0 ? (
-          <div className="rounded-2xl border border-dashed p-12 text-center">
+          <div className="rounded-xl border border-dashed p-12 text-center">
             <p className="font-medium">No products match these filters.</p>
             <p className="mt-1 text-sm text-muted-foreground">Try removing a filter, or ask us and we&apos;ll help you find the right product.</p>
           </div>
         ) : (
-          <ul className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-3 2xl:grid-cols-4">
+          <ul className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 xl:grid-cols-3 2xl:grid-cols-4">
             {results.map((p, i) => (
               <li key={p.id} className="scroll-rise" style={{ "--i": i % 4 } as React.CSSProperties}>
                 <ProductCard product={p} priority={i < 3} />
@@ -123,7 +123,7 @@ async function CategoryBody({ params, searchParams }: { params: Promise<{ catego
 
   return (
     <>
-      <PhotoBanner image={BANNER[category]} eyebrow="Shop" title={c.name}>
+      <PhotoBanner image={BANNER[category]} title={c.name}>
         <p>{c.blurb}</p>
       </PhotoBanner>
       <div className="container-page py-8">
