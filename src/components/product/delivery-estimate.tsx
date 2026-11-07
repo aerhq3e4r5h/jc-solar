@@ -8,23 +8,44 @@ import { formatRand } from "@/lib/pricing/vat";
 import { estimateProductDelivery } from "@/lib/shipping/actions";
 import { etaText } from "@/lib/shipping/format";
 
-const KEY = "jc_province";
+// Remembered in a cookie (a year), so every product page and the checkout can use it.
+const COOKIE = "jc_delivery";
+
+function readSaved(): { province: string; postalCode: string } | null {
+  const raw = document.cookie.split("; ").find((c) => c.startsWith(`${COOKIE}=`));
+  if (raw) {
+    try {
+      const v = JSON.parse(decodeURIComponent(raw.slice(COOKIE.length + 1)));
+      if (typeof v?.province === "string") return { province: v.province, postalCode: typeof v.postalCode === "string" ? v.postalCode : "" };
+    } catch {}
+  }
+  // Older visits stored only the province.
+  try {
+    const p = localStorage.getItem("jc_province");
+    if (p) return { province: p, postalCode: "" };
+  } catch {}
+  return null;
+}
+
+function save(province: string, postalCode: string) {
+  document.cookie = `${COOKIE}=${encodeURIComponent(JSON.stringify({ province, postalCode }))}; path=/; max-age=31536000; samesite=lax`;
+}
 
 type Estimate = { price: number | null; eta: string | null } | { error: string };
 
 /** "Delivery to <province>: R450, 4–5 working days", remembered across product pages. */
 export function DeliveryEstimate({ productId, note }: { productId: string; note: string | null }) {
   const [province, setProvince] = useState<string>("");
+  const [postalCode, setPostalCode] = useState("");
   const [estimate, setEstimate] = useState<Estimate | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const check = (p: string) => {
+  const check = (p: string, code = postalCode) => {
     setProvince(p);
-    try {
-      localStorage.setItem(KEY, p);
-    } catch {}
+    if (code && !/^\d{4}$/.test(code)) return;
+    save(p, code);
     startTransition(async () => {
-      const r = await estimateProductDelivery(productId, p);
+      const r = await estimateProductDelivery(productId, p, code);
       if (!r.ok) return setEstimate({ error: r.error });
       const s = r.quote.shipments[0];
       setEstimate({ price: s?.price ?? null, eta: s ? etaText(s.etaDaysMin, s.etaDaysMax) : null });
@@ -32,12 +53,12 @@ export function DeliveryEstimate({ productId, note }: { productId: string; note:
   };
 
   useEffect(() => {
-    let saved: string | null = null;
-    try {
-      saved = localStorage.getItem(KEY);
-    } catch {}
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- restore the remembered province once after hydration
-    if (saved && (PROVINCES as readonly string[]).includes(saved)) check(saved);
+    const saved = readSaved();
+    if (saved && (PROVINCES as readonly string[]).includes(saved.province)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- restore the remembered address once after hydration
+      setPostalCode(saved.postalCode);
+      check(saved.province, saved.postalCode);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, with the remembered province
   }, []);
 
@@ -59,7 +80,26 @@ export function DeliveryEstimate({ productId, note }: { productId: string; note:
               ))}
             </SelectContent>
           </Select>
+          <label className="inline-flex items-center gap-2">
+            <span className="sr-only">Postcode (optional)</span>
+            <input
+              value={postalCode}
+              onChange={(e) => {
+                const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                setPostalCode(v);
+                if (province && (v.length === 4 || v.length === 0)) check(province, v);
+              }}
+              inputMode="numeric"
+              autoComplete="postal-code"
+              placeholder="Postcode"
+              aria-describedby="postcode-hint"
+              className="num h-8 w-24 rounded-md border border-input bg-transparent px-2.5 text-sm"
+            />
+          </label>
         </div>
+        <p id="postcode-hint" className="sr-only">
+          Optional. Some areas have their own rate.
+        </p>
         <p className="text-muted-foreground" aria-live="polite">
           {pending ? (
             <span className="inline-flex items-center gap-2">

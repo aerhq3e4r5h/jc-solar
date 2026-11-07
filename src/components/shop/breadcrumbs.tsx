@@ -17,7 +17,7 @@ export function Breadcrumbs({ items, siteUrl }: { items: Crumb[]; siteUrl: strin
                   {c.label}
                 </span>
               ) : (
-                <Link href={c.href} className="hover:text-foreground hover:underline">
+                <Link href={c.href} transitionTypes={["nav-back"]} className="hover:text-foreground hover:underline">
                   {c.label}
                 </Link>
               )}

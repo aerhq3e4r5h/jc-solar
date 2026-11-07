@@ -74,15 +74,15 @@ export function checkPair(inverter: SpecSource, battery: SpecSource, overrides: 
   if (inv === "HV") {
     return {
       status: "check",
-      reason: "High-voltage systems need a matched battery management unit. We confirm the exact combination before dispatch.",
+      reason: "High-voltage systems need a matched battery management unit. Check the exact combination with us or your installer before you buy.",
     };
   }
   const sameBrand = !!inverter.brand && inverter.brand === battery.brand;
   return {
     status: "likely",
     reason: sameBrand
-      ? `Same brand and both ${BUS_LABEL(inv)}. We confirm battery communication before dispatch.`
-      : `Both ${BUS_LABEL(inv)}. Battery communication (CAN/RS485) is confirmed by our team before dispatch.`,
+      ? `Same brand and both ${BUS_LABEL(inv)}, so they're made to work together.`
+      : `Both ${BUS_LABEL(inv)}. Your installer sets up battery communication (CAN/RS485) when it goes in.`,
   };
 }
 

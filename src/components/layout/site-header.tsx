@@ -52,7 +52,7 @@ export function SiteHeader() {
           </nav>
         </div>
       </div>
-      <header className="sticky top-0 z-40 border-b bg-background">
+      <header className="sticky top-0 z-40 border-b bg-background" style={{ viewTransitionName: "site-header" }}>
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
@@ -75,7 +75,7 @@ export function SiteHeader() {
               <UserRound aria-hidden="true" />
               <span className="hidden xl:inline">Account</span>
             </Link>
-            <Link href="/cart" className={`${action} flex`} aria-label="Cart">
+            <Link href="/cart" className={`${action} flex`} aria-label="Cart" data-cart-target>
               <ShoppingCart aria-hidden="true" />
               <span className="hidden xl:inline">Cart</span>
               <Suspense>

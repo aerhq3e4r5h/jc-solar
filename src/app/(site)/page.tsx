@@ -3,26 +3,31 @@ import Image from "next/image";
 import Link from "next/link";
 import installersImage from "@/assets/backgrounds/installers-roof.webp";
 import homeImage from "@/assets/backgrounds/home-roof.webp";
-import { BackupPlanner } from "@/components/home/backup-planner";
+import { LazyPlanner, LazySolarDay } from "@/components/home/lazy-sections";
 import { BrandWall } from "@/components/home/brand-wall";
-import { SolarDay } from "@/components/home/solar-day";
+import { SavingsCalculator } from "@/components/home/savings-calculator";
 import { Carousel } from "@/components/motion/carousel";
 import { CountUp } from "@/components/motion/count-up";
 import { HorizontalScroll } from "@/components/motion/horizontal-scroll";
 import { Marquee } from "@/components/motion/marquee";
+import { Spotlight } from "@/components/motion/spotlight";
+import { PageTransition, Shared, vtName } from "@/components/motion/page-transition";
 import { CategoryGlyph } from "@/components/product/product-art";
 import { ProductCard } from "@/components/product/product-card";
 import { discountPercent } from "@/lib/pricing/sale";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { shopNav } from "@/config/site";
+import { JsonLd } from "@/components/seo/json-ld";
+import { shopNav, site } from "@/config/site";
+import { siteUrl } from "@/lib/env";
 import type { CategorySlug } from "@/lib/catalogue/classify";
 import { sortProducts } from "@/lib/catalogue/filters";
 import { getCatalogue } from "@/lib/catalogue/queries";
 import { availability, canPurchase, productFullTitle, productUrl, specNum, specText, type Product } from "@/lib/catalogue/types";
 import { batteryBus, inverterBus } from "@/lib/compatibility/engine";
+import { calculatorPrices } from "@/lib/planner/calculator-prices";
 import type { PlannerStock } from "@/lib/planner/match";
-import { formatRand } from "@/lib/pricing/vat";
+import { formatPrice } from "@/lib/pricing/vat";
 
 const steps = [
   {
@@ -58,6 +63,9 @@ const faqs = [
   },
 ];
 
+// Runs as the page HTML is parsed, before the hero paints, so there's no flash.
+const INTRO_SCRIPT = `try{if(!sessionStorage.getItem("jc-intro")){sessionStorage.setItem("jc-intro","1");var d=document.documentElement;d.dataset.intro="1";setTimeout(function(){delete d.dataset.intro},1400)}}catch(e){}`;
+
 /** The first n in-stock products with photos, one per brand so the row has variety. */
 function topInStock(products: Product[], category: CategorySlug, n: number) {
   const brands = new Set<string | null>();
@@ -87,7 +95,15 @@ export default async function HomePage() {
     .filter((p) => canPurchase(p) && discountPercent(p.priceInclVat, p.compareAtPriceInclVat))
     .sort((a, b) => (discountPercent(b.priceInclVat, b.compareAtPriceInclVat) ?? 0) - (discountPercent(a.priceInclVat, a.compareAtPriceInclVat) ?? 0))
     .slice(0, 8);
-  const featured = (["inverters", "batteries", "solar-panels", "kits"] as const).flatMap((c) => topInStock(products, c, 2));
+  // Not the sale items again: a product shown twice on one page can't morph into its own page.
+  const saleIds = new Set(onSale.map((p) => p.id));
+  const featured = (["inverters", "batteries", "solar-panels", "kits"] as const).flatMap((c) =>
+    topInStock(
+      products.filter((p) => !saleIds.has(p.id)),
+      c,
+      2,
+    ),
+  );
   const brandList = [...brands].sort() as string[];
 
   // Compact stock list for the backup planner (runs in the browser).
@@ -103,13 +119,25 @@ export default async function HomePage() {
   const plannerStock: PlannerStock = {
     kits: products
       .filter((p) => p.category === "kits" && specNum(p, "inverter_power_kw") && specNum(p, "battery_capacity_kwh"))
-      .map((p) => ({ ...plannerItem(p), inverterKw: specNum(p, "inverter_power_kw")!, batteryKwh: specNum(p, "battery_capacity_kwh")! })),
+      .map((p) => ({
+        ...plannerItem(p),
+        inverterKw: specNum(p, "inverter_power_kw")!,
+        batteryKwh: specNum(p, "battery_capacity_kwh")!,
+      })),
     inverters: products
       .filter((p) => p.category === "inverters" && specText(p, "inverter_type") !== "Grid-tie" && specNum(p, "rated_power_kw") && inverterBus(p))
-      .map((p) => ({ ...plannerItem(p), kw: specNum(p, "rated_power_kw")!, bus: String(inverterBus(p)) })),
+      .map((p) => ({
+        ...plannerItem(p),
+        kw: specNum(p, "rated_power_kw")!,
+        bus: String(inverterBus(p)),
+      })),
     batteries: products
       .filter((p) => p.category === "batteries" && specNum(p, "capacity_kwh") && batteryBus(p))
-      .map((p) => ({ ...plannerItem(p), kwh: specNum(p, "capacity_kwh")!, bus: String(batteryBus(p)) })),
+      .map((p) => ({
+        ...plannerItem(p),
+        kwh: specNum(p, "capacity_kwh")!,
+        bus: String(batteryBus(p)),
+      })),
   };
 
   const ticker = [
@@ -128,9 +156,11 @@ export default async function HomePage() {
   const aircons = categories.find((c) => c.slug === "air-conditioners");
 
   return (
-    <>
+    <PageTransition>
       {/* Hero: a shop window, not a slogan. Big promo with a real price, plus two smaller offers. */}
       <section aria-labelledby="hero-heading" className="container-page pt-4 sm:pt-6">
+        {/* Plays the entrance on the first home page view of a visit only. */}
+        <script dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} />
         <div className="grid gap-3 lg:h-[min(76svh,46rem)] lg:grid-cols-3 lg:grid-rows-2">
           <div className="relative isolate flex min-h-[32rem] flex-col justify-end overflow-hidden rounded-xl bg-ink text-white lg:col-span-2 lg:row-span-2 lg:min-h-0">
             <div className="parallax-hero absolute inset-0 -z-20">
@@ -140,12 +170,12 @@ export default async function HomePage() {
             <div className="photo-wash absolute inset-0 -z-10 hidden lg:block" aria-hidden="true" />
             <div className="drift-up p-6 sm:p-10 lg:p-14">
               {kitsFrom !== null && (
-                <p className="mb-6 inline-flex -rotate-2 items-baseline gap-2 rounded-sm bg-sun px-3 py-1.5 text-ink shadow-lg">
+                <p className="intro-stamp mb-6 inline-flex -rotate-2 items-baseline gap-2 rounded-sm bg-sun px-3 py-1.5 text-ink shadow-lg">
                   <span className="text-sm font-semibold">Backup kits from</span>
-                  <span className="num type-wide text-xl">{formatRand(kitsFrom)}</span>
+                  <span className="num type-wide text-xl">{formatPrice(kitsFrom)}</span>
                 </p>
               )}
-              <h1 id="hero-heading" className="type-wide max-w-3xl text-[2.35rem] leading-[0.95] sm:text-6xl xl:text-7xl">
+              <h1 id="hero-heading" className="intro-sweep type-wide max-w-3xl text-[2.35rem] leading-[0.95] sm:text-6xl xl:text-7xl">
                 Keep the lights on when the grid goes off.
               </h1>
               <p className="mt-5 max-w-xl text-lg leading-relaxed text-white/80">
@@ -155,7 +185,12 @@ export default async function HomePage() {
                 <Button asChild size="lg" className="h-13 px-7 text-base">
                   <Link href="/shop/kits">Shop backup kits</Link>
                 </Button>
-                <Button asChild size="lg" variant="outline" className="h-13 border-white/40 bg-transparent px-7 text-base text-white hover:border-white hover:bg-white hover:text-ink">
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="h-13 border-white/40 bg-transparent px-7 text-base text-white hover:border-white hover:bg-white hover:text-ink"
+                >
                   <Link href="#planner">Plan my system</Link>
                 </Button>
               </div>
@@ -165,7 +200,7 @@ export default async function HomePage() {
           {onSale.length > 0 && topDiscount ? (
             <Link
               href="/shop?sale=1"
-              className="group relative isolate flex min-h-60 flex-col justify-between overflow-hidden rounded-xl bg-sun p-6 text-ink sm:p-8"
+              className="intro-rise group relative isolate flex min-h-60 flex-col justify-between overflow-hidden rounded-xl bg-sun p-6 text-ink sm:p-8"
             >
               <span className="inline-flex items-center gap-2 text-sm font-semibold">
                 <BadgePercent className="size-4" aria-hidden="true" /> On sale now
@@ -189,13 +224,13 @@ export default async function HomePage() {
           ) : (
             <Link
               href={aircons?.href ?? "/shop"}
-              className="group relative isolate flex min-h-60 flex-col justify-between overflow-hidden rounded-xl bg-sun p-6 text-ink sm:p-8"
+              className="intro-rise group relative isolate flex min-h-60 flex-col justify-between overflow-hidden rounded-xl bg-sun p-6 text-ink sm:p-8"
             >
               <span className="text-sm font-semibold">New in the shop</span>
               <span>
                 <span className="type-wide block text-4xl leading-none sm:text-5xl">Inverter aircons</span>
                 <span className="mt-3 inline-flex items-center gap-2 font-semibold underline-offset-4 group-hover:underline">
-                  {aircons?.from ? <>From {formatRand(aircons.from)}</> : "Shop aircons"}
+                  {aircons?.from ? <>From {formatPrice(aircons.from)}</> : "Shop aircons"}
                   <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
                 </span>
               </span>
@@ -205,9 +240,17 @@ export default async function HomePage() {
 
           <Link
             href="/installation"
-            className="group relative isolate flex min-h-60 flex-col justify-between overflow-hidden rounded-xl bg-ink p-6 text-white sm:p-8"
+            style={{ "--i": 1 } as React.CSSProperties}
+            className="intro-rise group relative isolate flex min-h-60 flex-col justify-between overflow-hidden rounded-xl bg-ink p-6 text-white sm:p-8"
           >
-            <Image src={installersImage} alt="" fill placeholder="blur" sizes="(min-width: 1024px) 33vw, 100vw" className="-z-20 object-cover opacity-50 transition-transform duration-700 group-hover:scale-105" />
+            <Image
+              src={installersImage}
+              alt=""
+              fill
+              placeholder="blur"
+              sizes="(min-width: 1024px) 33vw, 100vw"
+              className="-z-20 object-cover opacity-50 transition-transform duration-700 group-hover:scale-105"
+            />
             <div className="photo-wash-bottom absolute inset-0 -z-10" aria-hidden="true" />
             <span className="inline-flex items-center gap-2 text-sm font-semibold text-white/80">
               <BadgeCheck className="size-4 text-sun" aria-hidden="true" /> Certificate of Compliance included
@@ -250,35 +293,38 @@ export default async function HomePage() {
       >
         {categories.map((c) => (
           <div key={c.href} className="w-[78vw] shrink-0 snap-start sm:w-[22rem] lg:w-[25rem]">
-            <Link
-              href={c.href}
-              className="group relative isolate flex h-[26rem] flex-col overflow-hidden rounded-xl bg-shelf p-7 transition-colors duration-300 hover:bg-sun hover:text-ink"
-            >
-              <span className="flex items-start justify-between gap-4">
-                <span className="type-wide text-[1.75rem] leading-none">{c.label}</span>
-                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-background text-foreground transition-transform duration-300 group-hover:-rotate-45 group-hover:bg-ink group-hover:text-sun">
-                  <ArrowRight className="size-5" aria-hidden="true" />
+            <Shared name={vtName("category", c.slug)}>
+              <Link
+                href={c.href}
+                transitionTypes={["nav-forward"]}
+                className="group relative isolate flex h-[26rem] flex-col overflow-hidden rounded-xl bg-shelf p-7 transition-colors duration-300 hover:bg-sun hover:text-ink"
+              >
+                <span className="flex items-start justify-between gap-4">
+                  <span className="type-wide text-[1.75rem] leading-none">{c.label}</span>
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-background text-foreground transition-transform duration-300 group-hover:-rotate-45 group-hover:bg-ink group-hover:text-sun">
+                    <ArrowRight className="size-5" aria-hidden="true" />
+                  </span>
                 </span>
-              </span>
-              <span className="mt-2 text-sm text-muted-foreground group-hover:text-ink/75">
-                {c.count > 0 ? (
-                  <>
-                    <span className="num font-semibold text-foreground group-hover:text-ink">{c.count}</span> products
-                    {c.from !== null && (
-                      <>
-                        , from <span className="num font-semibold text-foreground group-hover:text-ink">{formatRand(c.from)}</span>
-                      </>
-                    )}
-                  </>
-                ) : (
-                  "Coming soon"
-                )}
-              </span>
-              <CategoryGlyph
-                category={c.slug}
-                className="mx-auto mt-auto size-56 transition-transform duration-500 ease-out group-hover:scale-105 group-hover:-rotate-3"
-              />
-            </Link>
+                <span className="mt-2 text-sm text-muted-foreground group-hover:text-ink/75">
+                  {c.count > 0 ? (
+                    <>
+                      <span className="num font-semibold text-foreground group-hover:text-ink">{c.count}</span> products
+                      {c.from !== null && (
+                        <>
+                          , from <span className="num font-semibold text-foreground group-hover:text-ink">{formatPrice(c.from)}</span>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    "Coming soon"
+                  )}
+                </span>
+                <CategoryGlyph
+                  category={c.slug}
+                  className="mx-auto mt-auto size-56 transition-transform duration-500 ease-out group-hover:scale-105 group-hover:-rotate-3"
+                />
+              </Link>
+            </Shared>
           </div>
         ))}
       </HorizontalScroll>
@@ -307,12 +353,29 @@ export default async function HomePage() {
       {/* The planner: tap appliances, get a matched system from stock */}
       <section id="planner" className="scroll-mt-24 border-y bg-shelf py-16 lg:py-24" aria-label="Backup planner">
         <div className="container-page">
-          <BackupPlanner stock={plannerStock} />
+          <LazyPlanner stock={plannerStock} />
+          <p className="mt-5 text-center text-sm text-muted-foreground">
+            Rather pick every part yourself?{" "}
+            <Link href="/build" className="font-semibold text-foreground underline underline-offset-4">
+              Build your system panel by panel
+            </Link>
+          </p>
         </div>
       </section>
 
+      {/* What solar saves: an estimate from the visitor's own bill */}
+      <section className="container-page py-16 lg:py-24" aria-labelledby="savings-heading">
+        <div className="mb-8 max-w-2xl">
+          <h2 id="savings-heading" className="type-wide text-4xl sm:text-5xl">
+            What could solar save you?
+          </h2>
+          <p className="mt-3 text-lg text-muted-foreground">Move the sliders to your own bill. Prices come from what&apos;s in stock today.</p>
+        </div>
+        <SavingsCalculator prices={calculatorPrices(products)} />
+      </section>
+
       {/* A day on solar, driven by scrolling */}
-      <SolarDay />
+      <LazySolarDay />
 
       {/* Popular products */}
       {featured.length > 0 && (
@@ -345,6 +408,7 @@ export default async function HomePage() {
             <Image src={installersImage} alt="" fill placeholder="blur" sizes="(min-width: 1440px) 1440px, 100vw" className="object-cover" />
           </div>
           <div className="absolute inset-0 -z-10 bg-ink/85" aria-hidden="true" />
+          <Spotlight />
           <div className="px-6 py-14 sm:px-10 lg:px-14 lg:py-20">
             <h2 id="how-heading" className="type-wide max-w-3xl text-4xl leading-[0.98] sm:text-5xl">
               From your electricity bill to a working system
@@ -366,7 +430,12 @@ export default async function HomePage() {
                   Size my system with the Solar Advisor <ArrowRight />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="h-13 border-white/40 bg-transparent px-7 text-base text-white hover:border-white hover:bg-white hover:text-ink">
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="h-13 border-white/40 bg-transparent px-7 text-base text-white hover:border-white hover:bg-white hover:text-ink"
+              >
                 <Link href="/contact">Talk to us</Link>
               </Button>
             </div>
@@ -401,6 +470,7 @@ export default async function HomePage() {
           ))}
         </Accordion>
       </section>
-    </>
+      <JsonLd data={{ "@context": "https://schema.org", "@type": "OnlineStore", name: site.name, url: siteUrl(), description: site.description, areaServed: "ZA" }} />
+    </PageTransition>
   );
 }

@@ -1,6 +1,7 @@
 import { BadgeCheck, PlugZap, ReceiptText, Truck } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
+import { Spotlight } from "@/components/motion/spotlight";
 import { PaymentMethods } from "@/components/brand/payment-methods";
 import { footerNav, site } from "@/config/site";
 
@@ -33,7 +34,8 @@ export function SiteFooter() {
           ))}
         </ul>
       </section>
-      <div className="dark bg-background text-foreground">
+      <div className="dark relative isolate bg-background text-foreground">
+        <Spotlight />
         <div className="container-page grid gap-12 py-16 md:grid-cols-[1.5fr_repeat(3,1fr)] lg:py-20">
           <div className="max-w-sm space-y-5">
             <Logo />

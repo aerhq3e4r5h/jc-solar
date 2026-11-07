@@ -27,10 +27,15 @@ export function vatPortion(amountInclVat: number, rate = VAT_RATE): number {
  * browsers ship different en-ZA rules ("R 14 375,00" vs "R 14,375.00"),
  * which would show two formats on one page and break hydration.
  */
-export function formatRand(amount: number): string {
+export function formatRand(amount: number, { dropZeroCents = false }: { dropZeroCents?: boolean } = {}): string {
   const cents = Math.round(Math.abs(amount) * 100);
   const whole = Math.floor(cents / 100)
     .toString()
     .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return `${amount < 0 ? "-" : ""}R${whole}.${String(cents % 100).padStart(2, "0")}`;
+  const fraction = cents % 100;
+  if (dropZeroCents && fraction === 0) return `${amount < 0 ? "-" : ""}R${whole}`;
+  return `${amount < 0 ? "-" : ""}R${whole}.${String(fraction).padStart(2, "0")}`;
 }
+
+/** Shop shelves and banners: "R15,870" rather than "R15,870.00". Carts, checkout and invoices keep the cents. */
+export const formatPrice = (amount: number) => formatRand(amount, { dropZeroCents: true });

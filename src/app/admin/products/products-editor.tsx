@@ -1,7 +1,8 @@
 "use client";
 
-import { ExternalLink, Loader2, Percent, RotateCcw, Save, Search, Undo2 } from "lucide-react";
+import { ExternalLink, ImageIcon, Loader2, Percent, RotateCcw, Save, Search, Undo2 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -26,12 +27,21 @@ export type AdminProductRow = {
   compareAt: number | null;
   stockQty: number;
   isActive: boolean;
+  /** Where the shop's photos come from: uploaded here, the supplier's, a sister model's (range), or none. */
+  photos: { source: "uploaded" | "supplier" | "range" | "none"; count: number };
 };
+
+const PHOTO_LABEL = {
+  uploaded: (n: number) => `${n} uploaded photo${n === 1 ? "" : "s"}`,
+  supplier: (n: number) => `${n} supplier photo${n === 1 ? "" : "s"}`,
+  range: () => "Range photo only",
+  none: () => "No photos",
+} as const;
 
 /** What the admin has typed for a row (strings, so half-typed numbers aren't lost). */
 type Draft = { price: string; compareAt: string; stockQty: string; isActive: boolean; wasTouched: boolean };
 
-const STATUS = { all: "All", sale: "On sale", out: "Out of stock", hidden: "Hidden from shop" } as const;
+const STATUS = { all: "All", sale: "On sale", out: "Out of stock", hidden: "Hidden from shop", photos: "Needs photos" } as const;
 type Status = keyof typeof STATUS;
 
 const toDraft = (r: AdminProductRow): Draft => ({
@@ -67,6 +77,7 @@ export function ProductsEditor({ initial, categories }: { initial: AdminProductR
       if (status === "sale" && !discountPercent(r.price, r.compareAt)) return false;
       if (status === "out" && r.stockQty > 0) return false;
       if (status === "hidden" && r.isActive) return false;
+      if (status === "photos" && r.photos.source !== "none" && r.photos.source !== "range") return false;
       const hay = `${r.name} ${r.sku} ${r.brand ?? ""}`.toLowerCase();
       return words.every((w) => hay.includes(w));
     });
@@ -78,6 +89,7 @@ export function ProductsEditor({ initial, categories }: { initial: AdminProductR
       sale: rows.filter((r) => discountPercent(r.price, r.compareAt)).length,
       out: rows.filter((r) => r.stockQty <= 0).length,
       hidden: rows.filter((r) => !r.isActive).length,
+      photos: rows.filter((r) => r.photos.source === "none" || r.photos.source === "range").length,
     }),
     [rows],
   );
@@ -268,7 +280,19 @@ export function ProductsEditor({ initial, categories }: { initial: AdminProductR
                         <a href={r.url} target="_blank" rel="noopener" className="line-clamp-1 max-w-md font-medium hover:underline">
                           {r.name} <ExternalLink className="inline size-3 text-muted-foreground" aria-hidden="true" />
                         </a>
-                        <span className="block font-mono text-xs text-muted-foreground">{r.sku}</span>
+                        <span className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                          <span className="font-mono">{r.sku}</span>
+                          <Link
+                            href={`/admin/products/${r.id}/photos`}
+                            className={cn(
+                              "inline-flex items-center gap-1 underline-offset-2 hover:text-foreground hover:underline",
+                              (r.photos.source === "none" || r.photos.source === "range") && "font-semibold text-warning",
+                            )}
+                          >
+                            <ImageIcon className="size-3" aria-hidden="true" />
+                            {PHOTO_LABEL[r.photos.source](r.photos.count)}
+                          </Link>
+                        </span>
                       </span>
                     </div>
                   </td>

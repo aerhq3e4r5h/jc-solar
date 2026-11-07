@@ -1,25 +1,43 @@
-import { BadgeCheck, FileDown, ShieldCheck, Star, TriangleAlert } from "lucide-react";
+import { BadgeCheck, FileDown, GitCompareArrows, ShieldCheck, Star, TriangleAlert } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Suspense } from "react";
 import { PaymentMethods } from "@/components/brand/payment-methods";
+import { CopySku } from "@/components/product/copy-sku";
 import { DeliveryEstimate } from "@/components/product/delivery-estimate";
 import { DiscountRibbon } from "@/components/product/discount-ribbon";
 import { Gallery } from "@/components/product/gallery";
-import { artLabel, highlightSpecs } from "@/components/product/key-specs";
+import { CompleteSystem } from "@/components/product/complete-system";
+import { artLabel, highlightSpecs, specSections } from "@/components/product/key-specs";
 import { Price } from "@/components/product/price";
 import { ProductArt } from "@/components/product/product-art";
 import { ProductCard } from "@/components/product/product-card";
 import { PurchasePanel } from "@/components/product/purchase-panel";
+import { RecentlyViewed, TrackView } from "@/components/product/recently-viewed";
+import { StickyBox } from "@/components/product/sticky-box";
 import { StockBadge } from "@/components/product/stock-badge";
+import { PageTransition } from "@/components/motion/page-transition";
 import { JsonLd } from "@/components/seo/json-ld";
 import { Breadcrumbs } from "@/components/shop/breadcrumbs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getApprovedReviews, getCatalogue, getCompatibilityOverrides } from "@/lib/catalogue/queries";
-import { availability, canPurchase, CATEGORIES, productFullTitle, productTitle, productUrl, specText, type Product } from "@/lib/catalogue/types";
+import { SIZE_SPEC } from "@/lib/catalogue/filters";
+import {
+  availability,
+  canPurchase,
+  CATEGORIES,
+  productFullTitle,
+  productTitle,
+  productUrl,
+  specNum,
+  specText,
+  type Product,
+} from "@/lib/catalogue/types";
+import { completeTheSystem } from "@/lib/compatibility/bundle";
 import { checkPair, maxPanelsPerString, type Override } from "@/lib/compatibility/engine";
 import { siteUrl } from "@/lib/env";
+import { cn } from "@/lib/utils";
 
 type Params = { category: string; slug: string };
 
@@ -47,31 +65,43 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     title: productFullTitle(p),
     description: describe(p),
     alternates: { canonical: productUrl(p) },
-    openGraph: { title: productFullTitle(p), description: describe(p), type: "website", images: p.images.slice(0, 1).map((i) => i.url) },
+    openGraph: {
+      title: productFullTitle(p),
+      description: describe(p),
+      type: "website",
+    },
   };
 }
 
 function SpecTable({ product }: { product: Product }) {
-  const rows: [string, string][] = [
-    ["Brand", product.brand ?? ""],
-    ["SKU", product.sku],
-    ...product.specs.map((s) => [s.label, s.valueText] as [string, string]),
-    ["Warranty", product.warrantyMonths ? `${product.warrantyMonths / 12} years (manufacturer)` : ""],
-    ["Performance warranty", product.performanceWarrantyYears ? `${product.performanceWarrantyYears} years` : ""],
-    ["Grid-tie approval (NRS 097-2-1)", product.nrsApproved === true ? "Approved" : product.nrsApproved === false ? "Not approved" : ""],
-  ];
   return (
-    <dl className="divide-y rounded-2xl border bg-card">
-      {rows
-        .filter(([, v]) => v)
-        .map(([k, v]) => (
-          <div key={k} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-4 px-5 py-3 text-sm">
-            <dt className="text-muted-foreground">{k}</dt>
-            <dd className="font-medium break-words">{v}</dd>
-          </div>
-        ))}
-    </dl>
+    <div className="space-y-6">
+      {specSections(product).map((section) => (
+        <section key={section.title} aria-label={section.title}>
+          <h3 className="mb-2 text-sm font-bold [font-stretch:100%]">{section.title}</h3>
+          <dl className="divide-y rounded-lg border">
+            {section.rows.map((r) => (
+              <div key={r.label} className={cn("grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-4 px-4 py-2.5 text-sm", r.key && "bg-shelf")}>
+                <dt className={cn("text-muted-foreground", r.key && "font-semibold text-foreground")}>{r.label}</dt>
+                <dd className={cn("font-medium break-words", r.key && "font-bold")}>{r.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ))}
+    </div>
   );
+}
+
+/** Up to 2 in-stock products of the same type closest in size, for "Compare with similar". */
+function similar(product: Product, catalogue: Product[]) {
+  const key = SIZE_SPEC[product.category].key;
+  const size = specNum(product, key);
+  if (size === null) return [];
+  return catalogue
+    .filter((p) => p.id !== product.id && p.category === product.category && canPurchase(p) && specNum(p, key) !== null)
+    .sort((a, b) => Math.abs(specNum(a, key)! - size) - Math.abs(specNum(b, key)! - size) || a.priceInclVat - b.priceInclVat)
+    .slice(0, 2);
 }
 
 /** Products that work with this one, using the compatibility rules. */
@@ -85,7 +115,11 @@ function compatibleWith(product: Product, catalogue: Product[], overrides: Overr
       .map((b) => ({ p: b, r: checkPair(product, b, overrides) }))
       .filter(({ r }) => r.status === "confirmed" || r.status === "likely")
       .sort((a, b) => Number(b.p.brand === product.brand) - Number(a.p.brand === product.brand) || inStockFirst(a.p, b.p));
-    return { title: "Batteries that suit this inverter", items: items.slice(0, 8).map((i) => i.p), note: items[0]?.r.reason };
+    return {
+      title: "Batteries that suit this inverter",
+      items: items.slice(0, 8).map((i) => i.p),
+      note: items[0]?.r.reason,
+    };
   }
   if (product.category === "batteries") {
     const items = catalogue
@@ -93,7 +127,11 @@ function compatibleWith(product: Product, catalogue: Product[], overrides: Overr
       .map((i) => ({ p: i, r: checkPair(i, product, overrides) }))
       .filter(({ r }) => r.status === "confirmed" || r.status === "likely")
       .sort((a, b) => Number(b.p.brand === product.brand) - Number(a.p.brand === product.brand) || inStockFirst(a.p, b.p));
-    return { title: "Inverters that suit this battery", items: items.slice(0, 8).map((i) => i.p), note: items[0]?.r.reason };
+    return {
+      title: "Inverters that suit this battery",
+      items: items.slice(0, 8).map((i) => i.p),
+      note: items[0]?.r.reason,
+    };
   }
   if (product.category === "solar-panels") {
     const items = catalogue.filter((i) => i.category === "inverters" && (maxPanelsPerString(product, i) ?? 0) >= 4).sort(inStockFirst);
@@ -151,6 +189,8 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
   const type = specText(product, "inverter_type");
   const gridConnected = product.category === "inverters" && (type === "Grid-tie" || type === "Hybrid");
   const stock = availability(product);
+  const bundle = completeTheSystem(product, catalogue, overrides);
+  const neighbours = similar(product, catalogue);
 
   return (
     <div className="container-page py-8 pb-28 md:pb-8">
@@ -164,17 +204,19 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
         ]}
       />
 
-      <div className="mt-6 grid gap-10 lg:grid-cols-2 lg:gap-14">
-        <div className="lg:sticky lg:top-24 lg:self-start">
+      {/* Phones: photos, buy box, details. Desktop: photos and details on the left; the buy box stays in view on the right. */}
+      <div className="mt-6 grid gap-x-14 gap-y-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:[grid-template-areas:'photos_buy'_'details_buy']">
+        <div className="lg:[grid-area:photos]">
           {product.images.length ? (
             <Gallery
+              productId={product.id}
               images={product.images}
               name={productFullTitle(product)}
               sale={<DiscountRibbon price={product.priceInclVat} compareAt={product.compareAtPriceInclVat} size="lg" />}
             />
           ) : (
             <div>
-              <div className="relative overflow-hidden rounded-2xl border">
+              <div className="relative overflow-hidden rounded-xl border">
                 <ProductArt category={product.category} label={artLabel(product)} className="rounded-none" />
                 <DiscountRibbon price={product.priceInclVat} compareAt={product.compareAtPriceInclVat} size="lg" />
               </div>
@@ -183,122 +225,170 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
           )}
         </div>
 
-        <div className="space-y-6">
-          <div>
-            {product.brand && <p className="font-medium text-muted-foreground">{product.brand}</p>}
-            <h1 className="mt-1 text-2xl leading-tight font-bold sm:text-3xl">{productTitle(product)}</h1>
-            <p className="mt-2 font-mono text-xs text-muted-foreground">SKU {product.sku}</p>
-          </div>
-
-          <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="lg:[grid-area:buy]">
+          <StickyBox className="space-y-5">
             <div>
-              <Price amount={product.priceInclVat} compareAt={product.compareAtPriceInclVat} size="lg" />
-              <p className="text-sm text-muted-foreground">Includes 15% VAT</p>
+              {product.brand && <p className="font-semibold text-muted-foreground">{product.brand}</p>}
+              <h1 className="mt-1 text-2xl leading-tight font-bold sm:text-3xl">{productTitle(product)}</h1>
+              <CopySku sku={product.sku} />
             </div>
-            <StockBadge product={product} />
-          </div>
 
-          {product.nrsApproved === true && (
-            <p className="inline-flex items-center gap-2 rounded-lg bg-accent px-3 py-1.5 text-sm font-medium">
-              <BadgeCheck className="size-4 text-success" aria-hidden="true" /> Grid-tie approved (NRS 097-2-1)
-            </p>
-          )}
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <Price amount={product.priceInclVat} compareAt={product.compareAtPriceInclVat} size="lg" />
+                <p className="text-sm text-muted-foreground">Includes 15% VAT</p>
+              </div>
+              <StockBadge product={product} />
+            </div>
 
-          {highlightSpecs(product).length > 0 && (
-            <dl className="grid grid-cols-3 gap-2">
-              {highlightSpecs(product).map((h) => (
-                <div key={h.label} className="rounded-xl border bg-card px-3 py-2.5">
-                  <dt className="text-xs text-muted-foreground">{h.label}</dt>
-                  <dd className="num mt-0.5 font-display text-lg leading-tight font-semibold">{h.value}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
+            {product.nrsApproved === true && (
+              <p className="inline-flex items-center gap-2 rounded-md bg-accent px-3 py-1.5 text-sm font-medium">
+                <BadgeCheck className="size-4 text-success" aria-hidden="true" /> Grid-tie approved (NRS 097-2-1)
+              </p>
+            )}
 
-          {product.shortDescription && <p className="leading-relaxed text-muted-foreground">{product.shortDescription}</p>}
+            {highlightSpecs(product).length > 0 && (
+              <dl className="grid grid-cols-3 gap-2">
+                {highlightSpecs(product).map((h) => (
+                  <div key={h.label} className="rounded-lg border px-3 py-2.5">
+                    <dt className="text-xs text-muted-foreground">{h.label}</dt>
+                    <dd className="num mt-0.5 font-display text-lg leading-tight font-bold">{h.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
 
-          <PurchasePanel
-            productId={product.id}
-            slug={product.slug}
-            category={product.category}
-            name={productTitle(product)}
-            price={product.priceInclVat}
-            canBuy={canPurchase(product)}
-            maxQty={product.allowBackorder ? 500 : product.stockQty}
-            installationEligible={product.installationEligible}
-          />
+            <PurchasePanel
+              image={product.images[0]?.url ?? null}
+              productId={product.id}
+              slug={product.slug}
+              category={product.category}
+              name={productTitle(product)}
+              price={product.priceInclVat}
+              canBuy={canPurchase(product)}
+              maxQty={product.allowBackorder ? 500 : product.stockQty}
+              installationEligible={product.installationEligible}
+            />
 
-          <ul className="space-y-3 rounded-2xl border bg-card p-5 text-sm">
-            <li>
-              <DeliveryEstimate
-                productId={product.id}
-                note={
-                  product.category === "solar-panels"
-                    ? "Panels travel on a pallet; extra panels add a little each."
-                    : product.shippingClass === "oversized"
-                      ? "Large item: travels by road freight."
-                      : product.isDangerousGoods
-                        ? "Lithium batteries travel as dangerous goods with an approved service."
-                        : null
-                }
-              />
-            </li>
-            <li className="flex gap-3">
-              <ShieldCheck className="size-5 shrink-0 text-amber-ink" aria-hidden="true" />
-              <span>
-                <strong className="font-medium">
-                  {product.warrantyMonths ? `${product.warrantyMonths / 12}-year manufacturer warranty` : "Manufacturer warranty"}
-                </strong>
-                {!product.warrantyMonths && " (ask us for the term)"}, plus 6 months to return defective goods under the Consumer Protection Act.
-              </span>
-            </li>
-            {gridConnected && (
+            <ul className="space-y-3 rounded-xl border p-4 text-sm">
+              <li>
+                <DeliveryEstimate
+                  productId={product.id}
+                  note={
+                    product.category === "solar-panels"
+                      ? "Panels travel on a pallet; extra panels add a little each."
+                      : product.shippingClass === "oversized"
+                        ? "Large item: travels by road freight."
+                        : product.isDangerousGoods
+                          ? "Lithium batteries travel as dangerous goods with an approved service."
+                          : null
+                  }
+                />
+              </li>
               <li className="flex gap-3">
-                <TriangleAlert className="size-5 shrink-0 text-warning" aria-hidden="true" />
+                <ShieldCheck className="size-5 shrink-0 text-amber-ink" aria-hidden="true" />
                 <span>
-                  If this inverter will be connected to the grid, your municipality may require the system to be registered as a small-scale embedded
-                  generator (SSEG). Ask us if you&apos;re not sure what applies to you.
+                  <strong className="font-semibold">
+                    {product.warrantyMonths ? `${product.warrantyMonths / 12}-year manufacturer warranty` : "Manufacturer warranty"}
+                  </strong>
+                  {!product.warrantyMonths && " (ask us for the term)"}, plus 6 months to return defective goods under the Consumer Protection Act.
                 </span>
               </li>
-            )}
-          </ul>
+              {gridConnected && (
+                <li className="flex gap-3">
+                  <TriangleAlert className="size-5 shrink-0 text-warning" aria-hidden="true" />
+                  <span>
+                    If this inverter will be connected to the grid, your municipality may require the system to be registered as a small-scale
+                    embedded generator (SSEG). Ask us if you&apos;re not sure what applies to you.
+                  </span>
+                </li>
+              )}
+            </ul>
+            <PaymentMethods />
+          </StickyBox>
+        </div>
 
-          <PaymentMethods />
-
-          {product.datasheetUrl && (
-            <a
-              href={product.datasheetUrl}
-              className="inline-flex items-center gap-2 text-sm font-medium underline underline-offset-4"
-              target="_blank"
-              rel="noopener"
-            >
-              <FileDown className="size-4" aria-hidden="true" /> Download the datasheet (PDF)
-            </a>
+        <div className="space-y-14 lg:[grid-area:details]">
+          {bundle && (
+            <section aria-labelledby="system-heading">
+              <h2 id="system-heading" className="text-2xl font-bold">
+                Complete the system
+              </h2>
+              <p className="mt-1 mb-5 text-sm text-muted-foreground">
+                Parts in stock that work with this one, checked against our compatibility rules. Untick anything you don&apos;t need. Our technician
+                confirms the final design.
+              </p>
+              <CompleteSystem
+                base={{
+                  id: product.id,
+                  name: productFullTitle(product),
+                  image: product.images[0]?.url ?? null,
+                  price: product.priceInclVat,
+                  quantity: 1,
+                }}
+                lines={bundle.map((l) => ({
+                  id: l.product.id,
+                  name: productFullTitle(l.product),
+                  url: productUrl(l.product),
+                  image: l.product.images[0]?.url ?? null,
+                  price: l.product.priceInclVat,
+                  quantity: l.quantity,
+                  why: l.why,
+                }))}
+              />
+            </section>
           )}
+
+          {(product.shortDescription || product.description) && (
+            <section aria-labelledby="about-heading">
+              <h2 id="about-heading" className="mb-4 text-2xl font-bold">
+                About this product
+              </h2>
+              <div className="space-y-4 leading-relaxed whitespace-pre-line text-muted-foreground">
+                {product.shortDescription && <p>{product.shortDescription}</p>}
+                {product.description && <p>{product.description}</p>}
+              </div>
+            </section>
+          )}
+
+          <section aria-labelledby="specs-heading">
+            <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+              <h2 id="specs-heading" className="text-2xl font-bold">
+                Specifications
+              </h2>
+              {neighbours.length > 0 && (
+                <Link
+                  href={`/compare?items=${[product, ...neighbours].map((p) => encodeURIComponent(p.slug)).join(",")}`}
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold underline-offset-4 hover:underline"
+                >
+                  <GitCompareArrows className="size-4" aria-hidden="true" /> Compare with {neighbours.length} similar
+                </Link>
+              )}
+            </div>
+            <SpecTable product={product} />
+            <p className="mt-3 text-xs text-muted-foreground">
+              Need a figure that isn&apos;t listed?{" "}
+              <Link href="/contact" className="underline underline-offset-4">
+                Ask us
+              </Link>{" "}
+              and we&apos;ll send the datasheet.
+              {product.datasheetUrl && (
+                <>
+                  {" "}
+                  <a
+                    href={product.datasheetUrl}
+                    className="inline-flex items-center gap-1 font-medium underline underline-offset-4"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    <FileDown className="size-3.5" aria-hidden="true" /> Download the datasheet (PDF)
+                  </a>
+                </>
+              )}
+            </p>
+          </section>
         </div>
       </div>
-
-      <section className="scroll-rise mt-16 grid gap-10 lg:grid-cols-2" aria-labelledby="specs-heading">
-        <div>
-          <h2 id="specs-heading" className="mb-4 text-2xl font-bold">
-            Specifications
-          </h2>
-          <SpecTable product={product} />
-          <p className="mt-3 text-xs text-muted-foreground">
-            Need a figure that isn&apos;t listed?{" "}
-            <Link href="/contact" className="underline underline-offset-4">
-              Ask us
-            </Link>{" "}
-            and we&apos;ll send the datasheet.
-          </p>
-        </div>
-        {product.description && (
-          <div>
-            <h2 className="mb-4 text-2xl font-bold">About this product</h2>
-            <div className="space-y-4 leading-relaxed whitespace-pre-line text-muted-foreground">{product.description}</div>
-          </div>
-        )}
-      </section>
 
       {related && related.items.length > 0 && (
         <section className="scroll-rise mt-16" aria-labelledby="related-heading">
@@ -316,6 +406,17 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
         </section>
       )}
 
+      <RecentlyViewed excludeId={product.id} className="mt-16" />
+      <TrackView
+        item={{
+          id: product.id,
+          url: productUrl(product),
+          name: productTitle(product),
+          brand: product.brand,
+          image: product.images[0]?.url ?? null,
+        }}
+      />
+
       <section className="mt-16 max-w-3xl" aria-labelledby="reviews-heading">
         <h2 id="reviews-heading" className="mb-4 text-2xl font-bold">
           Reviews
@@ -331,8 +432,12 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
           "@type": "Product",
           name: productFullTitle(product),
           sku: product.sku,
-          ...(product.brand && { brand: { "@type": "Brand", name: product.brand } }),
-          ...(product.images.length && { image: product.images.map((i) => i.url) }),
+          ...(product.brand && {
+            brand: { "@type": "Brand", name: product.brand },
+          }),
+          ...(product.images.length && {
+            image: product.images.map((i) => i.url),
+          }),
           description: describe(product),
           url: new URL(productUrl(product), url).toString(),
           offers: {
@@ -366,7 +471,9 @@ export default function ProductPage(props: { params: Promise<Params> }) {
         </div>
       }
     >
-      <ProductBody {...props} />
+      <PageTransition>
+        <ProductBody {...props} />
+      </PageTransition>
     </Suspense>
   );
 }

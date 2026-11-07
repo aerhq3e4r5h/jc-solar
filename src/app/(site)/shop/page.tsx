@@ -4,14 +4,15 @@ import Link from "next/link";
 import { Suspense } from "react";
 import heroImage from "@/assets/backgrounds/home-roof.webp";
 import { PhotoBanner } from "@/components/layout/photo-banner";
+import { PageTransition, Shared, vtName } from "@/components/motion/page-transition";
 import { CategoryGlyph } from "@/components/product/product-art";
 import { ProductCard } from "@/components/product/product-card";
 import { sortProducts } from "@/lib/catalogue/filters";
 import { getCatalogue } from "@/lib/catalogue/queries";
-import { searchProducts } from "@/lib/search/search";
+import { closestCategory, searchProducts } from "@/lib/search/search";
 import { availability, CATEGORIES } from "@/lib/catalogue/types";
 import type { CategorySlug } from "@/lib/catalogue/classify";
-import { formatRand } from "@/lib/pricing/vat";
+import { formatPrice } from "@/lib/pricing/vat";
 
 export const metadata: Metadata = {
   title: "Shop solar panels, batteries and inverters",
@@ -25,6 +26,7 @@ async function SearchResults({ searchParams }: { searchParams: Promise<{ q?: str
   const q = (Array.isArray(raw) ? raw[0] : raw)?.trim().slice(0, 100) ?? "";
   if (!q) return null;
   const results = searchProducts(await getCatalogue(), q, 60);
+  const closest = results.length === 0 ? closestCategory(q) : null;
   return (
     <section className="mb-16" aria-labelledby="results-heading">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -36,7 +38,14 @@ async function SearchResults({ searchParams }: { searchParams: Promise<{ q?: str
         </Link>
       </div>
       {results.length === 0 ? (
-        <p className="text-muted-foreground">Check the spelling, try a brand or size (e.g. &ldquo;5 kW&rdquo;), or ask the Solar Advisor.</p>
+        <div className="space-y-4">
+          <p className="text-muted-foreground">Check the spelling, try a brand or size (e.g. &ldquo;5 kW&rdquo;), or ask the Solar Advisor.</p>
+          {closest && (
+            <Link href={`/shop/${closest}`} className="inline-flex rounded-full bg-sun px-4 py-2 font-semibold text-ink">
+              Browse all {CATEGORIES[closest].name.toLowerCase()}
+            </Link>
+          )}
+        </div>
       ) : (
         <ul className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
           {results.map((p) => (
@@ -55,7 +64,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   const slugs = Object.keys(CATEGORIES) as CategorySlug[];
 
   return (
-    <>
+    <PageTransition>
       <PhotoBanner image={heroImage} title="Everything for a complete system">
         <p>
           {products.length} products from tier-one brands. All prices include 15% VAT. Not sure what you need? The Solar Advisor can size a system for
@@ -74,27 +83,30 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
             const image = items.find((p) => p.images.length > 0 && availability(p).state !== "out_of_stock")?.images[0];
             return (
               <li key={slug}>
-                <Link
-                  href={`/shop/${slug}`}
-                  className="group relative isolate flex h-full min-h-60 flex-col overflow-hidden rounded-xl bg-shelf p-6 transition-colors duration-300 hover:bg-sun hover:text-ink sm:p-7"
-                >
-                  <span className="type-wide max-w-[70%] text-2xl leading-none sm:text-[1.75rem]">{CATEGORIES[slug].name}</span>
-                  <span className="mt-2 max-w-[60%] text-sm text-muted-foreground group-hover:text-ink/75">
-                    {items.length} products, {inStock} in stock
-                    {from !== null && (
-                      <>
-                        , from <span className="num font-semibold text-foreground group-hover:text-ink">{formatRand(from)}</span>
-                      </>
-                    )}
-                  </span>
-                  <CategoryGlyph
-                    category={slug}
-                    className="absolute -right-3 -bottom-5 -z-10 size-44 transition-transform duration-500 ease-out group-hover:scale-105 group-hover:-rotate-3"
-                  />
-                  <span className="mt-auto grid size-11 place-items-center rounded-full bg-background transition-colors group-hover:bg-ink group-hover:text-sun">
-                    <ArrowRight className="size-5" aria-hidden="true" />
-                  </span>
-                </Link>
+                <Shared name={vtName("category", slug)}>
+                  <Link
+                    href={`/shop/${slug}`}
+                    transitionTypes={["nav-forward"]}
+                    className="group relative isolate flex h-full min-h-60 flex-col overflow-hidden rounded-xl bg-shelf p-6 transition-colors duration-300 hover:bg-sun hover:text-ink sm:p-7"
+                  >
+                    <span className="type-wide max-w-[70%] text-2xl leading-none sm:text-[1.75rem]">{CATEGORIES[slug].name}</span>
+                    <span className="mt-2 max-w-[60%] text-sm text-muted-foreground group-hover:text-ink/75">
+                      {items.length} products, {inStock} in stock
+                      {from !== null && (
+                        <>
+                          , from <span className="num font-semibold text-foreground group-hover:text-ink">{formatPrice(from)}</span>
+                        </>
+                      )}
+                    </span>
+                    <CategoryGlyph
+                      category={slug}
+                      className="absolute -right-3 -bottom-5 -z-10 size-44 transition-transform duration-500 ease-out group-hover:scale-105 group-hover:-rotate-3"
+                    />
+                    <span className="mt-auto grid size-11 place-items-center rounded-full bg-background transition-colors group-hover:bg-ink group-hover:text-sun">
+                      <ArrowRight className="size-5" aria-hidden="true" />
+                    </span>
+                  </Link>
+                </Shared>
               </li>
             );
           })}
@@ -120,7 +132,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
               <ul className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
                 {top.map((p) => (
                   <li key={p.id}>
-                    <ProductCard product={p} />
+                    <ProductCard product={p} morph={false} />
                   </li>
                 ))}
               </ul>
@@ -128,6 +140,6 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
           );
         })}
       </div>
-    </>
+    </PageTransition>
   );
 }

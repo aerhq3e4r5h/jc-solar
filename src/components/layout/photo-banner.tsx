@@ -1,4 +1,5 @@
 import Image, { type StaticImageData } from "next/image";
+import { Shared } from "@/components/motion/page-transition";
 import { cn } from "@/lib/utils";
 
 /**
@@ -13,7 +14,10 @@ export function PhotoBanner({
   children,
   className,
   priority = true,
+  shared,
 }: {
+  /** View-transition name, so a category tile morphs into this banner. */
+  shared?: string;
   image: StaticImageData;
   eyebrow?: string;
   title: React.ReactNode;
@@ -23,19 +27,33 @@ export function PhotoBanner({
 }) {
   return (
     <div className={cn("container-page pt-4 sm:pt-6", className)}>
-      <section className="relative isolate overflow-hidden rounded-xl bg-ink text-white">
-        <div className="parallax-hero absolute inset-0 -z-20">
-          <Image src={image} alt="" fill priority={priority} placeholder="blur" sizes="(min-width: 1440px) 1440px, 100vw" className="object-cover" />
-        </div>
-        <div className="photo-wash absolute inset-0 -z-10" aria-hidden="true" />
-        <div className="px-6 py-10 sm:px-10 sm:py-12 lg:px-14 lg:py-14">
-          <div className="max-w-3xl">
-            {eyebrow && <p className="mb-3 text-sm font-semibold text-white/70">{eyebrow}</p>}
-            <h1 className="type-wide text-4xl leading-[0.98] sm:text-5xl">{title}</h1>
-            {children && <div className="mt-4 max-w-2xl text-base leading-relaxed text-white/80 sm:text-lg">{children}</div>}
+      <MaybeShared name={shared}>
+        <section className="relative isolate overflow-hidden rounded-xl bg-ink text-white">
+          <div className="parallax-hero absolute inset-0 -z-20">
+            <Image
+              src={image}
+              alt=""
+              fill
+              priority={priority}
+              placeholder="blur"
+              sizes="(min-width: 1440px) 1440px, 100vw"
+              className="object-cover"
+            />
           </div>
-        </div>
-      </section>
+          <div className="photo-wash absolute inset-0 -z-10" aria-hidden="true" />
+          <div className="px-6 py-10 sm:px-10 sm:py-12 lg:px-14 lg:py-14">
+            <div className="max-w-3xl">
+              {eyebrow && <p className="mb-3 text-sm font-semibold text-white/70">{eyebrow}</p>}
+              <h1 className="type-wide text-4xl leading-[0.98] sm:text-5xl">{title}</h1>
+              {children && <div className="mt-4 max-w-2xl text-base leading-relaxed text-white/80 sm:text-lg">{children}</div>}
+            </div>
+          </div>
+        </section>
+      </MaybeShared>
     </div>
   );
+}
+
+function MaybeShared({ name, children }: { name?: string; children: React.ReactNode }) {
+  return name ? <Shared name={name}>{children}</Shared> : children;
 }

@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { filtersToQuery, type Facets, type Filters } from "@/lib/catalogue/filters";
+import { NO_FILTERS } from "./active-filters";
+import { PriceSlider } from "./price-slider";
 
 type Props = {
   facets: Facets;
@@ -24,7 +26,7 @@ function useFilterNavigation(filters: Filters) {
   const pathname = usePathname();
   const [pending, startTransition] = useTransition();
   const go = (next: Partial<Filters>) =>
-    startTransition(() => router.replace(`${pathname}${filtersToQuery({ ...filters, ...next })}`, { scroll: false }));
+    startTransition(() => router.replace(`${pathname}${filtersToQuery({ ...filters, show: undefined, ...next })}`, { scroll: false }));
   return { go, pending };
 }
 
@@ -151,7 +153,7 @@ function FilterControls({ facets, filters, sizeLabel, sizeUnit, typeLabel }: Pro
       </div>
 
       <RangeInputs legend={sizeLabel} unit={sizeUnit} min={filters.smin} max={filters.smax} bounds={facets.size} onApply={(smin, smax) => go({ smin, smax })} />
-      <RangeInputs legend="Price" unit="R incl. VAT" min={filters.min} max={filters.max} bounds={facets.price} onApply={(min, max) => go({ min, max })} />
+      <PriceSlider bounds={facets.price} bands={facets.priceBands} scale={facets.priceScale} min={filters.min} max={filters.max} onApply={(min, max) => go({ min, max })} />
       {typeLabel && (
         <CheckGroup legend={typeLabel} options={facets.types} selected={filters.type} onToggle={(v) => go({ type: toggle(filters.type, v) })} />
       )}
@@ -161,9 +163,10 @@ function FilterControls({ facets, filters, sizeLabel, sizeUnit, typeLabel }: Pro
   );
 }
 
-export function FiltersPanel(props: Props & { activeCount: number }) {
-  const { go } = useFilterNavigation(props.filters);
-  const clear = () => go({ q: "", brand: [], type: [], phase: [], min: null, max: null, smin: null, smax: null, stock: false, nrs: false });
+export function FiltersPanel(props: Props & { activeCount: number; resultCount: number }) {
+  const { go, pending } = useFilterNavigation(props.filters);
+  const [open, setOpen] = useState(false);
+  const clear = () => go(NO_FILTERS);
   // Remount controls when filters change from outside (e.g. "Clear all").
   const key = filtersToQuery(props.filters);
   return (
@@ -181,14 +184,15 @@ export function FiltersPanel(props: Props & { activeCount: number }) {
           <FilterControls key={key} {...props} />
         </div>
       </aside>
-      <Sheet>
+      {/* Phones and tablets: a bottom sheet; results update behind it as you choose. */}
+      <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
           <Button variant="outline" className="lg:hidden">
             <SlidersHorizontal /> Filters{props.activeCount > 0 && ` (${props.activeCount})`}
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-[88vw] max-w-sm overflow-y-auto">
-          <SheetHeader className="flex-row items-center justify-between">
+        <SheetContent side="bottom" className="flex max-h-[88dvh] flex-col gap-0 rounded-t-2xl p-0">
+          <SheetHeader className="flex-row items-center justify-between border-b px-5 py-4">
             <SheetTitle>Filters</SheetTitle>
             {props.activeCount > 0 && (
               <Button variant="ghost" size="sm" onClick={clear}>
@@ -196,8 +200,13 @@ export function FiltersPanel(props: Props & { activeCount: number }) {
               </Button>
             )}
           </SheetHeader>
-          <div className="px-4 pb-8">
+          <div className="flex-1 overflow-y-auto px-5 py-6">
             <FilterControls key={key} {...props} />
+          </div>
+          <div className="border-t bg-background p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <Button size="lg" className="h-12 w-full text-base" onClick={() => setOpen(false)} disabled={pending}>
+              {pending ? "Updating…" : `Show ${props.resultCount} product${props.resultCount === 1 ? "" : "s"}`}
+            </Button>
           </div>
         </SheetContent>
       </Sheet>

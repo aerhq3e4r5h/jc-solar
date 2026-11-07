@@ -18,7 +18,7 @@ export function SortSelect({ filters }: { filters: Filters }) {
       <Select
         value={filters.sort}
         onValueChange={(sort) =>
-          startTransition(() => router.replace(`${pathname}${filtersToQuery({ ...filters, sort: sort as SortKey })}`, { scroll: false }))
+          startTransition(() => router.replace(`${pathname}${filtersToQuery({ ...filters, show: undefined, sort: sort as SortKey })}`, { scroll: false }))
         }
       >
         <SelectTrigger id="sort" className="w-48">

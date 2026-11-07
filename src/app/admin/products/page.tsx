@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { requireRole } from "@/lib/auth";
-import { bundledThumb } from "@/lib/catalogue/queries";
+import { bundledPhotos, bundledThumb } from "@/lib/catalogue/queries";
 import { CATEGORIES, isCategorySlug } from "@/lib/catalogue/types";
 import { storagePublicUrl } from "@/lib/supabase/public";
 import { createClient } from "@/lib/supabase/server";
@@ -24,6 +24,12 @@ async function Products() {
     .map((p) => {
       const category = p.categories!.slug as keyof typeof CATEGORIES;
       const uploaded = [...p.product_images].sort((a, b) => a.sort_order - b.sort_order)[0];
+      const supplier = bundledPhotos(p.sku);
+      const photos: AdminProductRow["photos"] = uploaded
+        ? { source: "uploaded", count: p.product_images.length }
+        : supplier.length
+          ? { source: supplier[0].sameRange ? "range" : "supplier", count: supplier.length }
+          : { source: "none", count: 0 };
       return {
         id: p.id,
         sku: p.sku,
@@ -36,6 +42,7 @@ async function Products() {
         compareAt: p.compare_at_price_incl_vat === null ? null : Number(p.compare_at_price_incl_vat),
         stockQty: p.stock_qty,
         isActive: p.is_active,
+        photos,
       };
     });
 

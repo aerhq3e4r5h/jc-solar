@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addVat, formatRand, vatPortion } from "./vat";
+import { addVat, formatPrice, formatRand, vatPortion } from "./vat";
 
 describe("VAT", () => {
   it("adds 15% and rounds to the cent", () => {
@@ -18,5 +18,13 @@ describe("VAT", () => {
     expect(formatRand(0.36)).toBe("R0.36");
     expect(formatRand(999.999)).toBe("R1,000.00");
     expect(formatRand(-50)).toBe("-R50.00");
+  });
+});
+
+describe("formatPrice", () => {
+  it("drops .00 on shop shelves but keeps real cents", () => {
+    expect(formatPrice(15870)).toBe("R15,870");
+    expect(formatPrice(13903.5)).toBe("R13,903.50");
+    expect(formatRand(15870)).toBe("R15,870.00");
   });
 });

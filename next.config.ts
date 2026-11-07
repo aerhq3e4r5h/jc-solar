@@ -22,6 +22,8 @@ const nextConfig: NextConfig = {
     "/api/quotes/**": ["./src/lib/pdf/fonts/**"],
     "/api/orders/**": ["./src/lib/pdf/fonts/**"],
     "/api/payfast/**": ["./src/lib/pdf/fonts/**"],
+    // Share images read their fonts and the product photos from disk.
+    "/shop/**/opengraph-image*": ["./src/assets/fonts/**", "./public/products/**/og.jpg"],
   },
   turbopack: {
     rules: {

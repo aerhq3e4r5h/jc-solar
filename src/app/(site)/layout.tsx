@@ -3,6 +3,7 @@ import { CartDrawer } from "@/components/cart/cart-drawer";
 import { CompareBar } from "@/components/compare/compare-bar";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { WhatsAppButton } from "@/components/layout/whatsapp-button";
 import { MotionProvider } from "@/components/motion/reveal";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
@@ -19,6 +20,9 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
           <CompareBar />
         </Suspense>
         <CartDrawer />
+        <Suspense>
+          <WhatsAppButton />
+        </Suspense>
       </div>
     </MotionProvider>
   );

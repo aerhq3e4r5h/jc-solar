@@ -20,6 +20,11 @@ function bundledImages(sku: string, name: string) {
   }));
 }
 
+/** The supplier photos shipped with the site for a SKU (admin photo manager). */
+export function bundledPhotos(sku: string): { url: string; sameRange: boolean }[] {
+  return (BUNDLED_IMAGES[sku] ?? []).map((img) => ({ url: img.src, sameRange: img.sameRange === true }));
+}
+
 /** First bundled photo for a SKU (admin lists). */
 export function bundledThumb(sku: string): string | null {
   return BUNDLED_IMAGES[sku]?.[0]?.src ?? null;

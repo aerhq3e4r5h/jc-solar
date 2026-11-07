@@ -29,7 +29,7 @@ import { estimateSystem } from "@/lib/advisor/sizing";
 import { addManyToCart } from "@/lib/cart/actions";
 import { cartChanged } from "@/lib/cart/events";
 import { matchSystem, type PlannerStock } from "@/lib/planner/match";
-import { formatRand } from "@/lib/pricing/vat";
+import { formatPrice } from "@/lib/pricing/vat";
 import { cn } from "@/lib/utils";
 
 /**
@@ -195,13 +195,13 @@ export function BackupPlanner({ stock }: { stock: PlannerStock }) {
                       <Link href={l.item.url} className="line-clamp-2 min-w-0 flex-1 text-sm leading-snug hover:underline">
                         <span className="num font-semibold">{l.quantity} x</span> {l.item.name}
                       </Link>
-                      <span className="num shrink-0 text-sm">{formatRand(l.item.price * l.quantity)}</span>
+                      <span className="num shrink-0 text-sm">{formatPrice(l.item.price * l.quantity)}</span>
                     </li>
                   ))}
                 </ul>
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4">
                   <p>
-                    <span className="num font-display text-2xl font-extrabold">{formatRand(plan.match.total)}</span>
+                    <span className="num font-display text-2xl font-extrabold">{formatPrice(plan.match.total)}</span>
                     <span className="block text-xs text-muted-foreground">
                       {plan.match.bus ? `Both ${plan.match.bus === "HV" ? "high-voltage" : `${plan.match.bus} V`}, so they work together. ` : ""}Incl.
                       VAT, before delivery.

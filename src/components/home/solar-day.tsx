@@ -49,6 +49,31 @@ const batteryPct = (h: number) =>
   );
 const gridOff = (h: number) => h >= SHEDDING[0] && h < SHEDDING[1];
 
+/** What the house is using, kW: low overnight, a morning bump, highest in the evening. */
+const houseKw = (h: number) =>
+  curve(
+    [
+      [5, 0.4],
+      [6.5, 1.0],
+      [9, 0.8],
+      [17, 0.9],
+      [19, 1.5],
+      [22, 1.0],
+      [24, 0.5],
+    ],
+    h,
+  );
+/** Battery power, kW: positive while charging (from the battery curve's slope; 10 kWh = 0.1 kWh per %). */
+const batteryKw = (h: number) => ((batteryPct(Math.min(24, h + 0.1)) - batteryPct(h)) / 0.1) * 0.1;
+
+/** Moments you can jump to: the hour each one shows. */
+const JUMPS = [
+  { label: "Morning", hour: 7 },
+  { label: "Midday", hour: 12 },
+  { label: "Load shedding at 18:00", hour: 18.25 },
+  { label: "Night", hour: 22 },
+];
+
 const clock = (h: number) => {
   const hh = Math.floor(h) % 24;
   const mm = Math.floor(((h - Math.floor(h)) * 60) / 15) * 15;
@@ -83,6 +108,18 @@ export function SolarDay() {
   const off = gridOff(h);
   const fromBattery = solar < 0.6 || off;
   const lightsOn = h >= 18 || h < 6.5;
+  const house = houseKw(h);
+  const battery = batteryKw(h);
+  // Whatever solar and the battery don't cover comes from the grid (when it's on).
+  const grid = off ? 0 : Math.max(0, house + Math.max(0, battery) - solar - Math.max(0, -battery));
+
+  const jump = (hour: number) => {
+    const el = ref.current;
+    if (!el) return;
+    const span = el.offsetHeight - window.innerHeight;
+    const top = el.getBoundingClientRect().top + window.scrollY + ((hour - 5) / 19) * span;
+    window.scrollTo({ top, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  };
 
   return (
     <section ref={ref} className="relative h-[340vh] bg-ink text-white lg:h-[400vh]" aria-labelledby="day-heading">
@@ -93,6 +130,21 @@ export function SolarDay() {
               24 hours on solar
             </h2>
             <p className="mt-2 text-sm text-white/60 sm:text-base">Scroll through a day with a 5 kW system and a 10 kWh battery.</p>
+            <div className="mt-4 flex flex-wrap gap-2" aria-label="Jump to a time of day">
+              {JUMPS.map((j) => (
+                <button
+                  key={j.label}
+                  type="button"
+                  onClick={() => jump(j.hour)}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs font-semibold transition-colors sm:text-sm",
+                    j.hour === 18.25 ? "border-sale text-white hover:bg-sale" : "border-white/25 text-white/80 hover:border-white hover:text-white",
+                  )}
+                >
+                  {j.label}
+                </button>
+              ))}
+            </div>
 
             <p className="num type-wide mt-5 text-6xl leading-none text-sun sm:text-8xl" aria-hidden="true">
               {clock(h)}
@@ -130,6 +182,8 @@ export function SolarDay() {
                 <dd className="mt-1 font-display text-xl font-bold">{off ? "Off" : "On"}</dd>
               </div>
             </dl>
+
+            <EnergyFlow solar={solar} house={house} battery={battery} grid={grid} off={off} />
 
             <div className="mt-5 h-1 overflow-hidden rounded-full bg-white/10" aria-hidden="true">
               <motion.div className="h-full rounded-full bg-sun" style={{ width: progress }} />
@@ -261,5 +315,58 @@ export function SolarDay() {
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * Where the power is going right now: panels and grid feed the inverter,
+ * which feeds the house and charges (or draws on) the battery. Line
+ * thickness follows the kW on each link.
+ */
+function EnergyFlow({ solar, house, battery, grid, off }: { solar: number; house: number; battery: number; grid: number; off: boolean }) {
+  const w = (kw: number) => (kw < 0.05 ? 0 : Math.min(9, 1.5 + kw * 1.6));
+  const charging = battery > 0.05;
+  const discharging = battery < -0.05;
+  const link = (d: string, kw: number, color: string, reverse = false) =>
+    kw >= 0.05 ? (
+      <g>
+        <path d={d} stroke="white" strokeOpacity="0.1" strokeWidth="10" strokeLinecap="round" fill="none" />
+        <path
+          d={d}
+          stroke={color}
+          strokeWidth={w(kw)}
+          strokeLinecap="round"
+          fill="none"
+          strokeDasharray="2 9"
+          className="[animation:jc-flow_0.9s_linear_infinite]"
+          style={reverse ? { animationDirection: "reverse" } : undefined}
+        />
+      </g>
+    ) : (
+      <path d={d} stroke="white" strokeOpacity="0.12" strokeWidth="2" strokeDasharray="3 5" fill="none" />
+    );
+  const node = (x: number, y: number, label: string, value: string, accent?: string) => (
+    <g transform={`translate(${x} ${y})`}>
+      <rect x="-44" y="-17" width="88" height="34" rx="8" fill="white" fillOpacity="0.07" stroke={accent ?? "white"} strokeOpacity={accent ? 0.9 : 0.15} />
+      <text y="-3" textAnchor="middle" fontSize="9" fill="white" fillOpacity="0.6">
+        {label}
+      </text>
+      <text y="11" textAnchor="middle" fontSize="11" fontWeight="700" fill="white">
+        {value}
+      </text>
+    </g>
+  );
+  return (
+    <svg viewBox="0 0 340 150" className="mt-4 hidden w-full max-w-md sm:block" aria-hidden="true">
+      {link("M88 34 C 116 34, 112 75, 134 75", solar, "#ffc414")}
+      {link("M88 116 C 116 116, 112 75, 134 75", grid, "#b8b8b0")}
+      {link("M222 75 C 244 75, 230 34, 252 34", house, "white")}
+      {link("M222 75 C 244 75, 230 116, 252 116", Math.abs(battery), "#3fbf7f", discharging)}
+      {node(44, 34, "Panels", `${solar.toFixed(1)} kW`, solar > 0.05 ? "#ffc414" : undefined)}
+      {node(44, 116, off ? "Grid: off" : "Grid", off ? "0.0 kW" : `${grid.toFixed(1)} kW`, off ? "#e5484d" : undefined)}
+      {node(178, 75, "Inverter", "5 kW")}
+      {node(296, 34, "House", `${house.toFixed(1)} kW`)}
+      {node(296, 116, charging ? "Battery: charging" : discharging ? "Battery: in use" : "Battery", `${Math.abs(battery).toFixed(1)} kW`, charging || discharging ? "#3fbf7f" : undefined)}
+    </svg>
   );
 }

@@ -7,12 +7,21 @@ import { PhotoBanner } from "@/components/layout/photo-banner";
 import { Prose } from "@/components/content/prose";
 import { Button } from "@/components/ui/button";
 import { geminiConfig } from "@/lib/env.server";
+import { Suspense } from "react";
+import { SavingsCalculator } from "@/components/home/savings-calculator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getCatalogue } from "@/lib/catalogue/queries";
+import { calculatorPrices } from "@/lib/planner/calculator-prices";
 
 export const metadata: Metadata = {
   title: "Solar Advisor: size your system",
   description: "Work out the inverter, battery and panels you need for load shedding and lower electricity bills.",
   alternates: { canonical: "/advisor" },
 };
+
+async function Savings() {
+  return <SavingsCalculator prices={calculatorPrices(await getCatalogue())} />;
+}
 
 export default function AdvisorPage() {
   return (
@@ -27,6 +36,15 @@ export default function AdvisorPage() {
         <div className="relative z-10 mx-auto -mt-28 max-w-5xl sm:-mt-32">
           <AdvisorChat enabled={geminiConfig() !== null} />
         </div>
+        <section className="mt-20" aria-labelledby="advisor-savings">
+          <h2 id="advisor-savings" className="type-wide mb-2 text-3xl">
+            What could solar save you?
+          </h2>
+          <p className="mb-6 text-muted-foreground">A quick estimate from your bill, priced from today&apos;s stock.</p>
+          <Suspense fallback={<Skeleton className="h-96 w-full rounded-xl" />}>
+            <Savings />
+          </Suspense>
+        </section>
         <h2 className="type-wide mt-20 mb-6 text-3xl">Prefer to talk to a person?</h2>
         <div className="mb-12 flex flex-wrap gap-3">
           <Button asChild size="lg">

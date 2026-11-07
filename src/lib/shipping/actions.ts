@@ -28,10 +28,19 @@ export async function getDeliveryQuote(address: {
   );
 }
 
-/** Delivery cost of one product to a province, for the product page. */
-export async function estimateProductDelivery(productId: string, province: string): Promise<{ ok: true; quote: DeliveryQuote } | { ok: false; error: string }> {
-  const parsed = z.object({ productId: z.uuid(), province: z.enum(PROVINCES) }).safeParse({ productId, province });
-  if (!parsed.success) return { ok: false, error: "Choose a province." };
+/** Delivery cost of one product to a province (and postcode, when given), for the product page. */
+export async function estimateProductDelivery(
+  productId: string,
+  province: string,
+  postalCode = "",
+): Promise<{ ok: true; quote: DeliveryQuote } | { ok: false; error: string }> {
+  const parsed = z
+    .object({ productId: z.uuid(), province: z.enum(PROVINCES), postalCode: z.union([z.string().regex(/^\d{4}$/), z.literal("")]) })
+    .safeParse({ productId, province, postalCode });
+  if (!parsed.success) return { ok: false, error: postalCode ? "Postcodes are 4 digits." : "Choose a province." };
   if (!isServiceRoleConfigured()) return { ok: false, error: "Delivery is worked out at checkout." };
-  return quoteDelivery([{ productId: parsed.data.productId, quantity: 1, installation: false }], { province: parsed.data.province });
+  return quoteDelivery([{ productId: parsed.data.productId, quantity: 1, installation: false }], {
+    province: parsed.data.province,
+    postalCode: parsed.data.postalCode || undefined,
+  });
 }

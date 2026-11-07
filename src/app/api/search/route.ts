@@ -1,12 +1,13 @@
 import type { NextRequest } from "next/server";
 import { getCatalogue } from "@/lib/catalogue/queries";
 import { availability, CATEGORIES, productFullTitle, productUrl } from "@/lib/catalogue/types";
-import { searchProducts } from "@/lib/search/search";
+import { closestCategory, searchProducts } from "@/lib/search/search";
 
 // Product search for the header search box. Public catalogue data only.
 export async function GET(request: NextRequest) {
   const q = (request.nextUrl.searchParams.get("q") ?? "").slice(0, 100);
-  const results = searchProducts(await getCatalogue(), q).map((p) => ({
+  const results = searchProducts(await getCatalogue(), q, 12).map((p) => ({
+    categorySlug: p.category,
     id: p.id,
     name: productFullTitle(p),
     brand: p.brand,
@@ -19,5 +20,8 @@ export async function GET(request: NextRequest) {
     stock: availability(p).label,
     inStock: availability(p).state !== "out_of_stock",
   }));
-  return Response.json({ results }, { headers: { "cache-control": "public, max-age=60" } });
+  // Nothing found: point at the category the words were probably about.
+  const slug = results.length === 0 ? closestCategory(q) : null;
+  const closest = slug ? { slug, name: CATEGORIES[slug].name } : null;
+  return Response.json({ results, closest }, { headers: { "cache-control": "public, max-age=60" } });
 }

@@ -7,6 +7,7 @@ import { shopNav } from "@/config/site";
 import { cn } from "@/lib/utils";
 
 const MORE = [
+  { href: "/build", label: "Build a system" },
   { href: "/installation", label: "Installation" },
   { href: "/advisor", label: "Solar Advisor" },
   { href: "/learn", label: "Guides" },

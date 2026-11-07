@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import type { RecommendationCard } from "@/lib/advisor/tools";
 import { addManyToCart, addToCart } from "@/lib/cart/actions";
 import { cartChanged } from "@/lib/cart/events";
-import { formatRand } from "@/lib/pricing/vat";
+import { formatPrice } from "@/lib/pricing/vat";
 import { cn } from "@/lib/utils";
 
 type Message = { role: "user" | "assistant"; text: string; products?: RecommendationCard[] };
@@ -119,7 +119,7 @@ function ProductCards({ products }: { products: RecommendationCard[] }) {
               <div className="mt-auto flex items-center justify-between gap-2 pt-2">
                 <span>
                   <span className="num flex items-center gap-1.5 font-semibold">
-                    {formatRand(p.price)}
+                    {formatPrice(p.price)}
                     <DiscountPill price={p.price} compareAt={p.compareAt} />
                   </span>
                   <span className={cn("block text-xs", p.stock.state === "out_of_stock" ? "text-destructive" : "text-success")}>{p.stock.label}</span>
@@ -141,7 +141,7 @@ function ProductCards({ products }: { products: RecommendationCard[] }) {
       {buyable.length > 1 && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sun/40 bg-accent/50 p-4">
           <p className="text-sm">
-            All {buyable.length} items: <span className="num font-semibold">{formatRand(total)}</span>{" "}
+            All {buyable.length} items: <span className="num font-semibold">{formatPrice(total)}</span>{" "}
             <span className="text-muted-foreground">incl. VAT, before delivery and installation</span>
           </p>
           <Button onClick={addAll} disabled={pending}>

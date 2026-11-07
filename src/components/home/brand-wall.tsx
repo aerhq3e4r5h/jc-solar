@@ -4,6 +4,7 @@ import { Pause, Play } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { VelocityMarquee } from "@/components/motion/velocity-marquee";
+import { slugify } from "@/lib/catalogue/normalise";
 
 /** Every brand in the shop, in big type, looping in two rows that run opposite ways. */
 export function BrandWall({ brands }: { brands: string[] }) {
@@ -33,7 +34,8 @@ export function BrandWall({ brands }: { brands: string[] }) {
             {row.map((b) => (
               <li key={b} className="flex items-center">
                 <Link
-                  href={`/shop?q=${encodeURIComponent(b)}`}
+                  href={`/brands/${slugify(b)}`}
+                  transitionTypes={["nav-forward"]}
                   className="type-wide px-6 text-4xl whitespace-nowrap text-foreground/20 transition-colors duration-300 hover:text-foreground sm:text-6xl"
                 >
                   {b}

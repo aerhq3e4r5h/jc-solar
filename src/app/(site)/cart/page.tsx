@@ -1,6 +1,7 @@
 import { AlertTriangle, Info, Lock, ShoppingCart, Wrench, XCircle } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { RecentlyViewed } from "@/components/product/recently-viewed";
 import { Suspense } from "react";
 import { CartLineControls } from "@/components/cart/cart-line-controls";
 import { QuoteDialog } from "@/components/cart/quote-dialog";
@@ -159,6 +160,7 @@ export default function CartPage() {
       <Suspense fallback={<Skeleton className="h-80 w-full rounded-2xl" />}>
         <CartContents />
       </Suspense>
+      <RecentlyViewed className="mt-20" />
     </div>
   );
 }

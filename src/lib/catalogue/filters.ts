@@ -55,6 +55,9 @@ const flag = z
   .optional()
   .transform((v) => (Array.isArray(v) ? v[0] : v) === "1");
 
+/** Results per "page" before "Load more". */
+export const PAGE_SIZE = 24;
+
 const filterSchema = z.object({
   q: z
     .union([z.string(), z.array(z.string())])
@@ -77,7 +80,21 @@ const filterSchema = z.object({
       const s = Array.isArray(v) ? v[0] : v;
       return (s && s in SORTS ? s : "featured") as SortKey;
     }),
+  /** Grid of tiles, or a list with spec columns (for installers). */
+  view: z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .transform((v) => ((Array.isArray(v) ? v[0] : v) === "list" ? "list" : "grid") as "grid" | "list"),
+  /** How many results to show ("Load more" adds a page). */
+  show: z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .transform((v) => {
+      const n = Number(Array.isArray(v) ? v[0] : v);
+      return Number.isInteger(n) && n > PAGE_SIZE ? Math.min(n, 480) : PAGE_SIZE;
+    }),
 });
+
 
 export type Filters = z.output<typeof filterSchema>;
 export type SearchParams = Record<string, string | string[] | undefined>;
@@ -180,7 +197,13 @@ export type Facets = {
   types: { value: string; count: number }[];
   phases: { value: "single" | "three"; label: string; count: number }[];
   price: { min: number; max: number } | null;
+  /** How many products fall in each of 24 price bands between min and max (for the slider's histogram). */
+  priceBands: number[];
+  /** "log" when prices span more than 20x (a few huge systems), so the bands and slider are spread evenly by ratio. */
+  priceScale: "linear" | "log";
   size: { min: number; max: number } | null;
+  /** Distinct sizes with counts, for "Shop by size". */
+  sizes: { value: number; count: number }[];
   hasNrs: boolean;
   hasSale: boolean;
 };
@@ -189,6 +212,20 @@ function counts(values: (string | null)[]) {
   const m = new Map<string, number>();
   values.forEach((v) => v && m.set(v, (m.get(v) ?? 0) + 1));
   return [...m.entries()].map(([value, count]) => ({ value, count })).sort((a, b) => a.value.localeCompare(b.value));
+}
+
+function priceScaleOf(values: number[]): "linear" | "log" {
+  return values.length && Math.min(...values) > 0 && Math.max(...values) / Math.min(...values) > 20 ? "log" : "linear";
+}
+
+function bands(values: number[], n: number, scale: "linear" | "log"): number[] {
+  if (!values.length) return [];
+  const f = scale === "log" ? Math.log : (v: number) => v;
+  const lo = f(Math.floor(Math.min(...values)));
+  const hi = f(Math.ceil(Math.max(...values)));
+  const out = new Array(n).fill(0);
+  for (const v of values) out[Math.min(n - 1, Math.floor(((f(v) - lo) / Math.max(1e-9, hi - lo)) * n))] += 1;
+  return out;
 }
 
 /** Filter options for a category, counted over all its products. */
@@ -206,7 +243,12 @@ export function buildFacets(products: Product[], category: CategorySlug): Facets
       count,
     })),
     price: prices.length ? { min: Math.floor(Math.min(...prices)), max: Math.ceil(Math.max(...prices)) } : null,
+    priceBands: bands(prices, 24, priceScaleOf(prices)),
+    priceScale: priceScaleOf(prices),
     size: sizes.length ? { min: Math.min(...sizes), max: Math.max(...sizes) } : null,
+    sizes: [...sizes.reduce((m, n) => m.set(n, (m.get(n) ?? 0) + 1), new Map<number, number>())]
+      .map(([value, count]) => ({ value, count }))
+      .sort((a, b) => a.value - b.value),
     hasNrs: products.some((p) => p.nrsApproved === true),
     hasSale: products.some((p) => discountPercent(p.priceInclVat, p.compareAtPriceInclVat) !== null),
   };
@@ -227,6 +269,8 @@ export function filtersToQuery(f: Partial<Filters>): string {
   if (f.nrs) params.set("nrs", "1");
   if (f.sale) params.set("sale", "1");
   if (f.sort && f.sort !== "featured") params.set("sort", f.sort);
+  if (f.view === "list") params.set("view", "list");
+  if (f.show && f.show > PAGE_SIZE) params.set("show", String(f.show));
   const s = params.toString();
   return s ? `?${s}` : "";
 }

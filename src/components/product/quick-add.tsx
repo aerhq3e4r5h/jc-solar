@@ -5,20 +5,24 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { addToCart } from "@/lib/cart/actions";
 import { cartChanged } from "@/lib/cart/events";
+import { flyToCart } from "@/lib/cart/fly";
 import { cn } from "@/lib/utils";
 
 /** One-tap add to cart on a product card. Sits above the card's full-size link. */
-export function QuickAdd({ productId, name }: { productId: string; name: string }) {
+export function QuickAdd({ productId, name, image }: { productId: string; name: string; image?: string | null }) {
   const [pending, startTransition] = useTransition();
   const [added, setAdded] = useState(false);
-  const add = () =>
+  const add = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const photo = e.currentTarget.parentElement;
     startTransition(async () => {
       const r = await addToCart({ productId, quantity: 1, installation: false });
       if (!r.ok) return void toast.error(r.error);
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);
+      await flyToCart(photo, image);
       cartChanged();
     });
+  };
   return (
     <button
       type="button"
