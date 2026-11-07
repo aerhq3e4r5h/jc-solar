@@ -4,6 +4,7 @@ import Link from "next/link";
 import installersImage from "@/assets/backgrounds/installers-roof.webp";
 import homeImage from "@/assets/backgrounds/home-roof.webp";
 import { BackupPlanner } from "@/components/home/backup-planner";
+import { BrandWall } from "@/components/home/brand-wall";
 import { SolarDay } from "@/components/home/solar-day";
 import { Carousel } from "@/components/motion/carousel";
 import { CountUp } from "@/components/motion/count-up";
@@ -334,31 +335,8 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Brands, in big type scrolling both ways */}
-      {brandList.length > 0 && (
-        <section className="overflow-hidden border-y py-14" aria-labelledby="brands-heading">
-          <h2 id="brands-heading" className="container-page mb-8 text-lg font-semibold [font-stretch:100%]">
-            Brands we stock
-          </h2>
-          <div className="space-y-2">
-            {[brandList.slice(0, Math.ceil(brandList.length / 2)), brandList.slice(Math.ceil(brandList.length / 2))].map((row, r) => (
-              <Marquee key={r} label={r === 0 ? "Brands" : "More brands"} reverse={r === 1} seconds={60}>
-                {row.map((b) => (
-                  <li key={b} className="flex items-center">
-                    <Link
-                      href={`/shop?q=${encodeURIComponent(b)}`}
-                      className="type-wide px-6 text-4xl whitespace-nowrap text-foreground/20 transition-colors hover:text-foreground sm:text-6xl"
-                    >
-                      {b}
-                    </Link>
-                    <span className="size-3 rotate-45 bg-sun" aria-hidden="true" />
-                  </li>
-                ))}
-              </Marquee>
-            ))}
-          </div>
-        </section>
-      )}
+      {/* Brands, in big type, looping both ways and speeding up as you scroll */}
+      {brandList.length > 0 && <BrandWall brands={brandList} />}
 
       {/* How it works, over a photo */}
       <section className="container-page pt-20 lg:pt-28" aria-labelledby="how-heading">

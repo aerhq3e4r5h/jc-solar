@@ -26,7 +26,7 @@ export function Marquee({
     >
       <div className={cn("marquee-track flex w-max", reverse && "reverse")} style={{ "--marquee-duration": `${seconds}s` } as React.CSSProperties}>
         <ul className="flex shrink-0 items-center">{children}</ul>
-        <ul className="flex shrink-0 items-center" aria-hidden="true">
+        <ul className="flex shrink-0 items-center" aria-hidden="true" inert>
           {children}
         </ul>
       </div>

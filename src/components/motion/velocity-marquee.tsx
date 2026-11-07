@@ -1,0 +1,81 @@
+"use client";
+
+import {
+  motion,
+  useAnimationFrame,
+  useMotionValue,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+  useVelocity,
+} from "motion/react";
+import { useRef } from "react";
+import { cn } from "@/lib/utils";
+
+/** Keeps v inside [min, max), wrapping around like a clock. */
+const wrap = (min: number, max: number, v: number) => {
+  const range = max - min;
+  return ((((v - min) % range) + range) % range) + min;
+};
+
+/**
+ * A row that loops round and round on its own, speeds up while the page
+ * scrolls, and turns around when you scroll back up. The items are rendered
+ * twice so the loop is seamless; the copy is hidden from screen readers and
+ * keyboard. With reduced motion it's a static, wrapping row.
+ */
+export function VelocityMarquee({
+  children,
+  speed = 2,
+  paused = false,
+  label,
+  className,
+}: {
+  children: React.ReactNode;
+  /** Percent of the row per second; negative runs right to left. */
+  speed?: number;
+  paused?: boolean;
+  label: string;
+  className?: string;
+}) {
+  const reduce = useReducedMotion();
+  const offset = useMotionValue(0);
+  const { scrollY } = useScroll();
+  const velocity = useSpring(useVelocity(scrollY), { damping: 50, stiffness: 400 });
+  const boost = useTransform(velocity, [0, 1000], [0, 5], { clamp: false });
+  const direction = useRef(1);
+  const x = useTransform(offset, (v) => `${wrap(-50, 0, v)}%`);
+
+  useAnimationFrame((_, delta) => {
+    if (reduce || paused) return;
+    const b = boost.get();
+    if (b < 0) direction.current = -1;
+    else if (b > 0) direction.current = 1;
+    const step = direction.current * speed * (delta / 1000);
+    offset.set(offset.get() + step + step * Math.abs(b));
+  });
+
+  if (reduce) {
+    return (
+      <div role="region" aria-label={label} className={cn("container-page", className)}>
+        <ul className="flex flex-wrap items-center gap-y-2">{children}</ul>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      role="region"
+      aria-label={label}
+      className={cn("relative overflow-hidden [mask-image:linear-gradient(90deg,transparent,black_6%,black_94%,transparent)]", className)}
+    >
+      <motion.div className="flex w-max will-change-transform" style={{ x }}>
+        <ul className="flex shrink-0 items-center">{children}</ul>
+        <ul className="flex shrink-0 items-center" aria-hidden="true" inert>
+          {children}
+        </ul>
+      </motion.div>
+    </div>
+  );
+}
