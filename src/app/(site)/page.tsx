@@ -221,7 +221,7 @@ export default async function HomePage() {
                 />
                 <CategoryGlyph
                   category={c.slug}
-                  className="absolute top-6 right-4 -z-10 size-40 opacity-95 transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2 sm:size-44"
+                  className="absolute top-4 right-5 -z-10 size-32 opacity-95 transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2 sm:size-36"
                 />
                 <span className="max-w-[60%] text-sm text-white/70">
                   {c.count > 0 ? (
