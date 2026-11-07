@@ -4,6 +4,7 @@
 
 import { z } from "zod";
 import type { CategorySlug } from "./classify";
+import { discountPercent } from "@/lib/pricing/sale";
 import { availability, specNum, specText, type Product } from "./types";
 
 /** The headline size spec used for the size filter and sort in each category. */
@@ -68,6 +69,7 @@ const filterSchema = z.object({
   smax: num,
   stock: flag,
   nrs: flag,
+  sale: flag,
   sort: z
     .union([z.string(), z.array(z.string())])
     .optional()
@@ -93,6 +95,7 @@ export function activeFilterCount(f: Filters): number {
     (f.smin !== null || f.smax !== null ? 1 : 0) +
     (f.stock ? 1 : 0) +
     (f.nrs ? 1 : 0) +
+    (f.sale ? 1 : 0) +
     (f.q ? 1 : 0)
   );
 }
@@ -129,6 +132,7 @@ export function applyFilters(products: Product[], f: Filters, category?: Categor
     if (f.phase.length && !f.phase.includes(phaseOf(p) ?? "")) return false;
     if (f.stock && availability(p).state === "out_of_stock") return false;
     if (f.nrs && p.nrsApproved !== true) return false;
+    if (f.sale && !discountPercent(p.priceInclVat, p.compareAtPriceInclVat)) return false;
     return true;
   });
 }
@@ -178,6 +182,7 @@ export type Facets = {
   price: { min: number; max: number } | null;
   size: { min: number; max: number } | null;
   hasNrs: boolean;
+  hasSale: boolean;
 };
 
 function counts(values: (string | null)[]) {
@@ -203,6 +208,7 @@ export function buildFacets(products: Product[], category: CategorySlug): Facets
     price: prices.length ? { min: Math.floor(Math.min(...prices)), max: Math.ceil(Math.max(...prices)) } : null,
     size: sizes.length ? { min: Math.min(...sizes), max: Math.max(...sizes) } : null,
     hasNrs: products.some((p) => p.nrsApproved === true),
+    hasSale: products.some((p) => discountPercent(p.priceInclVat, p.compareAtPriceInclVat) !== null),
   };
 }
 
@@ -219,6 +225,7 @@ export function filtersToQuery(f: Partial<Filters>): string {
   }
   if (f.stock) params.set("stock", "1");
   if (f.nrs) params.set("nrs", "1");
+  if (f.sale) params.set("sale", "1");
   if (f.sort && f.sort !== "featured") params.set("sort", f.sort);
   const s = params.toString();
   return s ? `?${s}` : "";

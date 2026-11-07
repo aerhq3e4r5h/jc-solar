@@ -22,12 +22,12 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { estimateSystem } from "@/lib/advisor/sizing";
 import { addManyToCart } from "@/lib/cart/actions";
+import { cartChanged } from "@/lib/cart/events";
 import { matchSystem, type PlannerStock } from "@/lib/planner/match";
 import { formatRand } from "@/lib/pricing/vat";
 import { cn } from "@/lib/utils";
@@ -62,7 +62,6 @@ const kw = (w: number) => `${oneDecimal(w / 1000)} kW`;
 const kwh = (n: number) => `${oneDecimal(n)} kWh`;
 
 export function BackupPlanner({ stock }: { stock: PlannerStock }) {
-  const router = useRouter();
   const [selected, setSelected] = useState<Set<ApplianceId>>(new Set(DEFAULT));
   const [hours, setHours] = useState(4);
   const [pending, startTransition] = useTransition();
@@ -93,7 +92,7 @@ export function BackupPlanner({ stock }: { stock: PlannerStock }) {
         m.lines.map((l) => ({ productId: l.item.id, quantity: l.quantity })),
         false,
       );
-      if (r.ok) toast.success("System added to your cart", { action: { label: "View cart", onClick: () => router.push("/cart") } });
+      if (r.ok) cartChanged();
       else toast.error(r.error);
     });
   };

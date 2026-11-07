@@ -5,8 +5,9 @@
 import { z } from "zod";
 import type { CategorySlug } from "@/lib/catalogue/classify";
 import { SIZE_SPEC } from "@/lib/catalogue/filters";
-import { availability, CATEGORIES, productUrl, specNum, type Product } from "@/lib/catalogue/types";
+import { availability, CATEGORIES, productTitle, productUrl, specNum, type Product } from "@/lib/catalogue/types";
 import { batteryBus, checkPair, inverterBus, type Override } from "@/lib/compatibility/engine";
+import { discountPercent } from "@/lib/pricing/sale";
 import { estimateSystem } from "./sizing";
 
 const CATEGORY_SLUGS = Object.keys(CATEGORIES) as [CategorySlug, ...CategorySlug[]];
@@ -115,6 +116,9 @@ function summary(p: Product) {
     brand: p.brand,
     category: p.category,
     price_incl_vat: p.priceInclVat,
+    ...(discountPercent(p.priceInclVat, p.compareAtPriceInclVat)
+      ? { was_price: p.compareAtPriceInclVat, on_sale_percent_off: discountPercent(p.priceInclVat, p.compareAtPriceInclVat) }
+      : {}),
     stock: availability(p).label,
     size: size(p) === null ? null : `${size(p)} ${SIZE_SPEC[p.category].unit}`,
     battery_bus: bus(p),
@@ -219,11 +223,12 @@ export function recommendationCard(p: Product) {
   return {
     id: p.id,
     sku: p.sku,
-    name: p.name,
+    name: productTitle(p),
     brand: p.brand,
     url: productUrl(p),
     image: p.images[0]?.url ?? null,
     price: p.priceInclVat,
+    compareAt: p.compareAtPriceInclVat,
     stock: availability(p),
     installationEligible: p.installationEligible,
   };

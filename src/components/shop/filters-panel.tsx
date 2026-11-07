@@ -136,6 +136,12 @@ function FilterControls({ facets, filters, sizeLabel, sizeUnit, typeLabel }: Pro
           <Label htmlFor="in-stock">In stock only</Label>
           <Switch id="in-stock" checked={filters.stock} onCheckedChange={(v) => go({ stock: v })} />
         </div>
+        {(facets.hasSale || filters.sale) && (
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor="on-sale">On sale</Label>
+            <Switch id="on-sale" checked={filters.sale} onCheckedChange={(v) => go({ sale: v })} />
+          </div>
+        )}
         {facets.hasNrs && (
           <div className="flex items-center justify-between gap-3">
             <Label htmlFor="nrs">Grid-tie approved (NRS 097)</Label>

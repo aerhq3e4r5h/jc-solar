@@ -13,20 +13,27 @@ export function ProductArt({ category, label, className }: { category: CategoryS
         className,
       )}
     >
-      <svg viewBox="0 0 200 200" aria-hidden="true" className="h-3/5 w-3/5 drop-shadow-sm">
-        {category === "solar-panels" && <PanelGlyph />}
-        {category === "batteries" && <BatteryGlyph />}
-        {category === "inverters" && <InverterGlyph />}
-        {category === "kits" && <KitGlyph />}
-        {category === "voltage-stabilizers" && <StabilizerGlyph />}
-        {category === "air-conditioners" && <AirconGlyph />}
-      </svg>
+      <CategoryGlyph category={category} className="h-3/5 w-3/5 drop-shadow-sm" />
       {label && (
         <span className="absolute bottom-3 left-3 rounded-md bg-background/80 px-2 py-0.5 font-mono text-[11px] font-medium text-muted-foreground backdrop-blur">
           {label}
         </span>
       )}
     </div>
+  );
+}
+
+/** The drawing for a category, on its own (used on product stand-ins and category tiles). */
+export function CategoryGlyph({ category, className }: { category: CategorySlug; className?: string }) {
+  return (
+    <svg viewBox="0 0 200 200" aria-hidden="true" className={className}>
+      {category === "solar-panels" && <PanelGlyph />}
+      {category === "batteries" && <BatteryGlyph />}
+      {category === "inverters" && <InverterGlyph />}
+      {category === "kits" && <KitGlyph />}
+      {category === "voltage-stabilizers" && <StabilizerGlyph />}
+      {category === "air-conditioners" && <AirconGlyph />}
+    </svg>
   );
 }
 

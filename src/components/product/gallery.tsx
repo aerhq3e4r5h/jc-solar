@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
-export function Gallery({ images, name }: { images: { url: string; alt: string }[]; name: string }) {
+export function Gallery({ images, name, sale }: { images: { url: string; alt: string }[]; name: string; sale?: React.ReactNode }) {
   const [active, setActive] = useState(0);
   const [zoom, setZoom] = useState(false);
   const current = images[active];
@@ -26,6 +26,7 @@ export function Gallery({ images, name }: { images: { url: string; alt: string }
           sizes="(min-width: 1024px) 50vw, 100vw"
           className="object-contain p-4 transition-transform duration-500 group-hover:scale-[1.03]"
         />
+        {sale}
         <span className="absolute right-3 bottom-3 rounded-full bg-background/80 p-2 opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">
           <ZoomIn className="size-4" aria-hidden="true" />
         </span>

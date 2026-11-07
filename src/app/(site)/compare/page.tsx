@@ -8,7 +8,7 @@ import { StockBadge } from "@/components/product/stock-badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCatalogue } from "@/lib/catalogue/queries";
-import { CATEGORIES, productUrl, type Product } from "@/lib/catalogue/types";
+import { CATEGORIES, productFullTitle, productTitle, productUrl, type Product } from "@/lib/catalogue/types";
 
 export const metadata: Metadata = { title: "Compare products", robots: { index: false } };
 
@@ -46,7 +46,7 @@ async function CompareTable({ searchParams }: { searchParams: Promise<Record<str
   return (
     <div className="overflow-x-auto rounded-2xl border bg-card">
       <table className="w-full min-w-[640px] table-fixed text-sm">
-        <caption className="sr-only">Comparison of {products.map((p) => p.name).join(", ")}</caption>
+        <caption className="sr-only">Comparison of {products.map((p) => productFullTitle(p)).join(", ")}</caption>
         <thead>
           <tr className="border-b align-top">
             <th scope="col" className="w-40 p-4 text-left font-medium text-muted-foreground">
@@ -56,7 +56,7 @@ async function CompareTable({ searchParams }: { searchParams: Promise<Record<str
               <th key={p.id} scope="col" className="p-4 text-left font-normal">
                 <ProductArt category={p.category} label={artLabel(p)} className="mb-3 aspect-[4/3]" />
                 <Link href={productUrl(p)} className="line-clamp-3 font-medium hover:underline">
-                  {p.name}
+                  {productTitle(p)}
                 </Link>
                 <Price amount={p.priceInclVat} className="mt-2" />
                 <div className="mt-1">

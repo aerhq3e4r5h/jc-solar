@@ -2,7 +2,6 @@
 
 import { Check, GitCompareArrows, Loader2, Minus, Plus, ShoppingCart, Wrench } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useCompare } from "@/components/compare/compare-store";
@@ -10,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { addToCart } from "@/lib/cart/actions";
+import { cartChanged } from "@/lib/cart/events";
 import { formatRand } from "@/lib/pricing/vat";
 import { cn } from "@/lib/utils";
 
@@ -29,17 +29,13 @@ export function PurchasePanel({ productId, slug, category, name, price, canBuy, 
   const [installation, setInstallation] = useState(false);
   const [pending, startTransition] = useTransition();
   const compare = useCompare();
-  const router = useRouter();
   const inCompare = compare.has(slug);
 
   const add = () =>
     startTransition(async () => {
       const r = await addToCart({ productId, quantity: qty, installation });
       if (r.ok) {
-        toast.success("Added to cart", {
-          description: `${qty} x ${name}`,
-          action: { label: "View cart", onClick: () => router.push("/cart") },
-        });
+        cartChanged();
       } else {
         toast.error(r.error);
       }
@@ -54,13 +50,27 @@ export function PurchasePanel({ productId, slug, category, name, price, canBuy, 
   const limit = Math.max(1, Math.min(maxQty, 500));
   const stepper = (
     <div className="flex items-center rounded-lg border" role="group" aria-label="Quantity">
-      <Button type="button" variant="ghost" size="icon" onClick={() => setQty((q) => Math.max(1, q - 1))} disabled={qty <= 1} aria-label="Decrease quantity">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={() => setQty((q) => Math.max(1, q - 1))}
+        disabled={qty <= 1}
+        aria-label="Decrease quantity"
+      >
         <Minus />
       </Button>
       <output className="num w-10 text-center font-medium" aria-live="polite">
         {qty}
       </output>
-      <Button type="button" variant="ghost" size="icon" onClick={() => setQty((q) => Math.min(limit, q + 1))} disabled={qty >= limit} aria-label="Increase quantity">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={() => setQty((q) => Math.min(limit, q + 1))}
+        disabled={qty >= limit}
+        aria-label="Increase quantity"
+      >
         <Plus />
       </Button>
     </div>
@@ -78,8 +88,8 @@ export function PurchasePanel({ productId, slug, category, name, price, canBuy, 
                   Add professional installation
                 </Label>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Installed by our registered technician, with a Certificate of Compliance. Priced after a quick site
-                  assessment; you won&apos;t pay for installation until you accept the quote.
+                  Installed by our registered technician, with a Certificate of Compliance. Priced after a quick site assessment; you won&apos;t pay
+                  for installation until you accept the quote.
                 </p>
               </div>
               <Switch id="installation" checked={installation} onCheckedChange={setInstallation} />

@@ -1,6 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import Image from "next/image";
 import heroImage from "@/assets/backgrounds/home-roof.webp";
 import { PhotoBanner } from "@/components/layout/photo-banner";
@@ -8,6 +9,7 @@ import { ProductArt } from "@/components/product/product-art";
 import { ProductCard } from "@/components/product/product-card";
 import { sortProducts } from "@/lib/catalogue/filters";
 import { getCatalogue } from "@/lib/catalogue/queries";
+import { searchProducts } from "@/lib/search/search";
 import { availability, CATEGORIES } from "@/lib/catalogue/types";
 import type { CategorySlug } from "@/lib/catalogue/classify";
 import { formatRand } from "@/lib/pricing/vat";
@@ -18,7 +20,38 @@ export const metadata: Metadata = {
   alternates: { canonical: "/shop" },
 };
 
-export default async function ShopPage() {
+/** Results for ?q= (brand links, "See all results" in search). Reads searchParams, so it renders inside <Suspense>. */
+async function SearchResults({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
+  const raw = (await searchParams).q;
+  const q = (Array.isArray(raw) ? raw[0] : raw)?.trim().slice(0, 100) ?? "";
+  if (!q) return null;
+  const results = searchProducts(await getCatalogue(), q, 60);
+  return (
+    <section className="mb-16" aria-labelledby="results-heading">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <h2 id="results-heading" className="text-3xl font-semibold">
+          {results.length ? `${results.length} result${results.length === 1 ? "" : "s"} for “${q}”` : `Nothing matches “${q}”`}
+        </h2>
+        <Link href="/shop" className="text-sm font-medium underline underline-offset-4">
+          Clear search
+        </Link>
+      </div>
+      {results.length === 0 ? (
+        <p className="text-muted-foreground">Check the spelling, try a brand or size (e.g. &ldquo;5 kW&rdquo;), or ask the Solar Advisor.</p>
+      ) : (
+        <ul className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+          {results.map((p) => (
+            <li key={p.id}>
+              <ProductCard product={p} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+export default async function ShopPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
   const products = await getCatalogue();
   const slugs = Object.keys(CATEGORIES) as CategorySlug[];
 
@@ -31,6 +64,9 @@ export default async function ShopPage() {
         </p>
       </PhotoBanner>
       <div className="container-page py-14">
+        <Suspense>
+          <SearchResults searchParams={searchParams} />
+        </Suspense>
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {slugs.map((slug) => {
             const items = products.filter((p) => p.category === slug);

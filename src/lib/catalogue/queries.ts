@@ -14,6 +14,11 @@ function bundledImages(sku: string, name: string) {
   return (BUNDLED_IMAGES[sku] ?? []).map((img, i) => ({ url: img.src, alt: i === 0 ? name : `${name}, view ${i + 1}` }));
 }
 
+/** First bundled photo for a SKU (admin lists). */
+export function bundledThumb(sku: string): string | null {
+  return BUNDLED_IMAGES[sku]?.[0]?.src ?? null;
+}
+
 const PRODUCT_COLUMNS = `
   id, sku, slug, name, price_incl_vat, compare_at_price_incl_vat, stock_qty, allow_backorder,
   shipping_class, is_dangerous_goods, installation_eligible, warranty_months,

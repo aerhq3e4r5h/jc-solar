@@ -4,12 +4,13 @@ import { ArrowUp, Loader2, RotateCcw, ShoppingCart, Sparkles, SunMedium, UserRou
 import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { DiscountPill } from "@/components/product/discount-ribbon";
 import { Button } from "@/components/ui/button";
 import type { RecommendationCard } from "@/lib/advisor/tools";
 import { addManyToCart, addToCart } from "@/lib/cart/actions";
+import { cartChanged } from "@/lib/cart/events";
 import { formatRand } from "@/lib/pricing/vat";
 import { cn } from "@/lib/utils";
 
@@ -78,16 +79,14 @@ function RichText({ text }: { text: string }) {
 }
 
 function ProductCards({ products }: { products: RecommendationCard[] }) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const buyable = products.filter((p) => p.stock.state !== "out_of_stock");
   const total = buyable.reduce((n, p) => n + p.price, 0);
 
-  const viewCart = { label: "View cart", onClick: () => router.push("/cart") };
   const addOne = (p: RecommendationCard) =>
     startTransition(async () => {
       const r = await addToCart({ productId: p.id, quantity: 1, installation: false });
-      if (r.ok) toast.success("Added to cart", { description: p.name, action: viewCart });
+      if (r.ok) cartChanged();
       else toast.error(r.error);
     });
   const addAll = () =>
@@ -96,7 +95,7 @@ function ProductCards({ products }: { products: RecommendationCard[] }) {
         buyable.map((p) => ({ productId: p.id, quantity: 1 })),
         false,
       );
-      if (r.ok) toast.success(`Added ${buyable.length} products to your cart`, { action: viewCart });
+      if (r.ok) cartChanged();
       else toast.error(r.error);
     });
 
@@ -119,7 +118,10 @@ function ProductCards({ products }: { products: RecommendationCard[] }) {
               </Link>
               <div className="mt-auto flex items-center justify-between gap-2 pt-2">
                 <span>
-                  <span className="num block font-semibold">{formatRand(p.price)}</span>
+                  <span className="num flex items-center gap-1.5 font-semibold">
+                    {formatRand(p.price)}
+                    <DiscountPill price={p.price} compareAt={p.compareAt} />
+                  </span>
                   <span className={cn("block text-xs", p.stock.state === "out_of_stock" ? "text-destructive" : "text-success")}>{p.stock.label}</span>
                 </span>
                 <Button

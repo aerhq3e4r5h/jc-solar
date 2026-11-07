@@ -4,6 +4,7 @@ import { Loader2, Search, SearchX } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
+import { DiscountPill } from "@/components/product/discount-ribbon";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { formatRand } from "@/lib/pricing/vat";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,7 @@ type Result = {
   url: string;
   image: string | null;
   price: number;
+  compareAt: number | null;
   stock: string;
   inStock: boolean;
 };
@@ -108,7 +110,11 @@ export function ProductSearch() {
         <DialogContent className="top-[12vh] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-2xl" showCloseButton={false}>
           <DialogTitle className="sr-only">Search products</DialogTitle>
           <div className="flex items-center gap-3 border-b px-4">
-            {loading ? <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden="true" /> : <Search className="size-5 text-muted-foreground" aria-hidden="true" />}
+            {loading ? (
+              <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden="true" />
+            ) : (
+              <Search className="size-5 text-muted-foreground" aria-hidden="true" />
+            )}
             <input
               autoFocus
               value={q}
@@ -131,7 +137,12 @@ export function ProductSearch() {
                 <p className="mb-2 text-sm text-muted-foreground">Try</p>
                 <div className="flex flex-wrap gap-2">
                   {SUGGESTIONS.map((s) => (
-                    <button key={s} type="button" onClick={() => setQ(s)} className="rounded-full border px-3 py-1.5 text-sm hover:border-cell hover:text-cell">
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setQ(s)}
+                      className="rounded-full border px-3 py-1.5 text-sm hover:border-cell hover:text-cell"
+                    >
                       {s}
                     </button>
                   ))}
@@ -141,7 +152,11 @@ export function ProductSearch() {
               <div className="flex flex-col items-center gap-2 p-8 text-center text-sm text-muted-foreground">
                 <SearchX className="size-6" aria-hidden="true" />
                 <p>No products match &ldquo;{q.trim()}&rdquo;. Check the spelling, or search by brand.</p>
-                <button type="button" onClick={() => go(`/advisor?ask=${encodeURIComponent(`I'm looking for: ${q.trim()}`)}`)} className="font-medium text-foreground underline underline-offset-4">
+                <button
+                  type="button"
+                  onClick={() => go(`/advisor?ask=${encodeURIComponent(`I'm looking for: ${q.trim()}`)}`)}
+                  className="font-medium text-foreground underline underline-offset-4"
+                >
                   Ask the Solar Advisor instead
                 </button>
               </div>
@@ -167,12 +182,20 @@ export function ProductSearch() {
                       </span>
                     </span>
                     <span className="shrink-0 text-right">
-                      <span className="num block text-sm font-semibold">{formatRand(r.price)}</span>
+                      <span className="num flex items-center justify-end gap-1.5 text-sm font-semibold">
+                        <DiscountPill price={r.price} compareAt={r.compareAt} />
+                        {formatRand(r.price)}
+                      </span>
                       <span className={cn("block text-xs", r.inStock ? "text-success" : "text-muted-foreground")}>{r.stock}</span>
                     </span>
                   </li>
                 ))}
               </ul>
+            )}
+            {results.length > 0 && (
+              <button type="button" onClick={() => go(`/shop?q=${encodeURIComponent(q.trim())}`)} className="mt-1 w-full rounded-xl p-3 text-center text-sm font-medium hover:bg-muted">
+                See all results for &ldquo;{q.trim()}&rdquo;
+              </button>
             )}
           </div>
         </DialogContent>

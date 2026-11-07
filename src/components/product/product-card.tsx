@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { canPurchase, productUrl, type Product } from "@/lib/catalogue/types";
+import { canPurchase, productTitle, productUrl, type Product } from "@/lib/catalogue/types";
+import { DiscountRibbon } from "./discount-ribbon";
 import { artLabel, cardSpecs } from "./key-specs";
 import { Price } from "./price";
 import { ProductArt } from "./product-art";
@@ -10,7 +11,7 @@ import { StockBadge } from "./stock-badge";
 export function ProductCard({ product, priority = false }: { product: Product; priority?: boolean }) {
   const image = product.images[0];
   const specs = cardSpecs(product);
-  const quickAdd = canPurchase(product) ? <QuickAdd productId={product.id} name={product.name} /> : null;
+  const quickAdd = canPurchase(product) ? <QuickAdd productId={product.id} name={productTitle(product)} /> : null;
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border bg-card transition-all duration-300 hover:-translate-y-1 hover:border-foreground/15 hover:shadow-xl hover:shadow-navy/10">
       {image ? (
@@ -23,11 +24,15 @@ export function ProductCard({ product, priority = false }: { product: Product; p
             className="object-contain p-2 transition-transform duration-500 group-hover:scale-105"
             priority={priority}
           />
+          <DiscountRibbon price={product.priceInclVat} compareAt={product.compareAtPriceInclVat} />
           {quickAdd}
         </div>
       ) : (
         <div className="relative p-3 pb-0">
-          <ProductArt category={product.category} label={artLabel(product)} />
+          <div className="relative overflow-hidden rounded-xl">
+            <ProductArt category={product.category} label={artLabel(product)} />
+            <DiscountRibbon price={product.priceInclVat} compareAt={product.compareAtPriceInclVat} />
+          </div>
           {quickAdd}
         </div>
       )}
@@ -35,7 +40,7 @@ export function ProductCard({ product, priority = false }: { product: Product; p
         {product.brand && <p className="text-sm font-medium text-muted-foreground">{product.brand}</p>}
         <h3 className="line-clamp-2 font-sans text-sm leading-snug font-medium sm:text-base">
           <Link href={productUrl(product)} className="after:absolute after:inset-0 after:rounded-2xl">
-            {product.name}
+            {productTitle(product)}
           </Link>
         </h3>
         {specs.length > 0 && (

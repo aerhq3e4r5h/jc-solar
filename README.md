@@ -99,6 +99,15 @@ Note: PayFast's shared public sandbox merchant (10000100) currently rejects sign
 
 DSV publishes booking and tracking APIs on its developer portal (https://developer.dsv.com) once your DSV account is given API subscription keys. When you have them, they plug into `src/lib/shipping/providers.ts` (`bookShipment`, `trackShipment`) without changing checkout.
 
+## Admin: prices, sales and stock
+
+`/admin` is the admin area (admins and sales staff; your account role is set in `profiles.role`).
+
+- **Overview** (`/admin`): orders to dispatch, sales in the last 30 days, products on sale, out of stock.
+- **Products and prices** (`/admin/products`): search and filter every product, edit price, "was" price, stock and whether it shows in the shop. Saves are logged (audit log, stock movements) and the shop updates straight away.
+- **Sales**: lower a price and the old price becomes the "was" price automatically; the shop then shows a "15% OFF" ribbon on the photo, the old price struck through and "Save R…". Select several products to take a percentage off in one go, or end their sale (back to the was-price). Rules live in `src/lib/pricing/sale.ts` (tested).
+- Sale items appear in an "On sale now" section on the home page and under the "On sale" filter in each category.
+
 ## Setup
 
 Requirements: Node 22+, a Supabase project (or the Supabase CLI with Docker for local development).

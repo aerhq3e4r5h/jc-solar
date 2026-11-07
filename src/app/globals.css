@@ -40,6 +40,7 @@
   --color-navy-foreground: var(--navy-foreground);
   --color-sun: var(--sun);
   --color-cell: var(--cell);
+  --color-sale: var(--sale);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -55,6 +56,8 @@
   --sun: oklch(0.8 0.155 75);
   /* Solar-cell blue: selected and interactive states. */
   --cell: oklch(0.48 0.17 262);
+  /* Sale ribbons and discount badges. */
+  --sale: oklch(0.56 0.21 25);
   --navy: oklch(0.22 0.04 258);
   --navy-foreground: oklch(0.975 0.006 85);
 
@@ -104,6 +107,7 @@
   --warning: oklch(0.8 0.14 70);
   --amber-ink: oklch(0.83 0.14 78);
   --cell: oklch(0.6 0.16 262);
+  --sale: oklch(0.62 0.2 25);
 }
 
 @layer base {

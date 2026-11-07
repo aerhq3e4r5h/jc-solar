@@ -2,6 +2,7 @@
 // listing pages, product pages, compare, cart and the compatibility engine.
 
 import type { CategorySlug } from "./classify";
+import { displayName } from "./display-name";
 
 export type ProductSpec = {
   key: string;
@@ -103,4 +104,15 @@ export function availability(product: Pick<Product, "stockQty" | "allowBackorder
 
 export function canPurchase(product: Pick<Product, "stockQty" | "allowBackorder">, available?: number) {
   return (available ?? product.stockQty) > 0 || product.allowBackorder;
+}
+
+/** Clean title for the shop (no brand prefix, SKU or wiring details). */
+export function productTitle(product: Pick<Product, "name" | "sku">): string {
+  return displayName(product.name, product.sku);
+}
+
+/** Brand and clean title, e.g. for page titles and search results. */
+export function productFullTitle(product: Pick<Product, "name" | "sku" | "brand">): string {
+  const title = productTitle(product);
+  return product.brand && !title.toLowerCase().startsWith(product.brand.toLowerCase()) ? `${product.brand} ${title}` : title;
 }

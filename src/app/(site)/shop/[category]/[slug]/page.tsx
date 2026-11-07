@@ -3,9 +3,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Suspense } from "react";
+import { PaymentMethods } from "@/components/brand/payment-methods";
 import { DeliveryEstimate } from "@/components/product/delivery-estimate";
+import { DiscountRibbon } from "@/components/product/discount-ribbon";
 import { Gallery } from "@/components/product/gallery";
-import { artLabel } from "@/components/product/key-specs";
+import { artLabel, highlightSpecs } from "@/components/product/key-specs";
 import { Price } from "@/components/product/price";
 import { ProductArt } from "@/components/product/product-art";
 import { ProductCard } from "@/components/product/product-card";
@@ -15,7 +17,7 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { Breadcrumbs } from "@/components/shop/breadcrumbs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getApprovedReviews, getCatalogue, getCompatibilityOverrides } from "@/lib/catalogue/queries";
-import { availability, canPurchase, CATEGORIES, productUrl, specText, type Product } from "@/lib/catalogue/types";
+import { availability, canPurchase, CATEGORIES, productFullTitle, productTitle, productUrl, specText, type Product } from "@/lib/catalogue/types";
 import { checkPair, maxPanelsPerString, type Override } from "@/lib/compatibility/engine";
 import { siteUrl } from "@/lib/env";
 
@@ -42,10 +44,10 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const p = await findProduct(slug);
   if (!p) return {};
   return {
-    title: p.name,
+    title: productFullTitle(p),
     description: describe(p),
     alternates: { canonical: productUrl(p) },
-    openGraph: { title: p.name, description: describe(p), type: "website", images: p.images.slice(0, 1).map((i) => i.url) },
+    openGraph: { title: productFullTitle(p), description: describe(p), type: "website", images: p.images.slice(0, 1).map((i) => i.url) },
   };
 }
 
@@ -158,17 +160,24 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
           { href: "/", label: "Home" },
           { href: "/shop", label: "Shop" },
           { href: `/shop/${product.category}`, label: c.name },
-          { href: productUrl(product), label: product.name },
+          { href: productUrl(product), label: productTitle(product) },
         ]}
       />
 
       <div className="mt-6 grid gap-10 lg:grid-cols-2 lg:gap-14">
         <div className="lg:sticky lg:top-24 lg:self-start">
           {product.images.length ? (
-            <Gallery images={product.images} name={product.name} />
+            <Gallery
+              images={product.images}
+              name={productFullTitle(product)}
+              sale={<DiscountRibbon price={product.priceInclVat} compareAt={product.compareAtPriceInclVat} size="lg" />}
+            />
           ) : (
             <div>
-              <ProductArt category={product.category} label={artLabel(product)} className="rounded-2xl border" />
+              <div className="relative overflow-hidden rounded-2xl border">
+                <ProductArt category={product.category} label={artLabel(product)} className="rounded-none" />
+                <DiscountRibbon price={product.priceInclVat} compareAt={product.compareAtPriceInclVat} size="lg" />
+              </div>
               <p className="mt-2 text-xs text-muted-foreground">Illustration. Product photos coming soon.</p>
             </div>
           )}
@@ -177,7 +186,7 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
         <div className="space-y-6">
           <div>
             {product.brand && <p className="font-medium text-muted-foreground">{product.brand}</p>}
-            <h1 className="mt-1 text-2xl leading-tight font-semibold sm:text-3xl">{product.name}</h1>
+            <h1 className="mt-1 text-2xl leading-tight font-semibold sm:text-3xl">{productTitle(product)}</h1>
             <p className="mt-2 font-mono text-xs text-muted-foreground">SKU {product.sku}</p>
           </div>
 
@@ -195,13 +204,24 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
             </p>
           )}
 
+          {highlightSpecs(product).length > 0 && (
+            <dl className="grid grid-cols-3 gap-2">
+              {highlightSpecs(product).map((h) => (
+                <div key={h.label} className="rounded-xl border bg-card px-3 py-2.5">
+                  <dt className="text-xs text-muted-foreground">{h.label}</dt>
+                  <dd className="num mt-0.5 font-display text-lg leading-tight font-semibold">{h.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
           {product.shortDescription && <p className="leading-relaxed text-muted-foreground">{product.shortDescription}</p>}
 
           <PurchasePanel
             productId={product.id}
             slug={product.slug}
             category={product.category}
-            name={product.name}
+            name={productTitle(product)}
             price={product.priceInclVat}
             canBuy={canPurchase(product)}
             maxQty={product.allowBackorder ? 500 : product.stockQty}
@@ -242,6 +262,8 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
               </li>
             )}
           </ul>
+
+          <PaymentMethods />
 
           {product.datasheetUrl && (
             <a
@@ -307,7 +329,7 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
         data={{
           "@context": "https://schema.org",
           "@type": "Product",
-          name: product.name,
+          name: productFullTitle(product),
           sku: product.sku,
           ...(product.brand && { brand: { "@type": "Brand", name: product.brand } }),
           ...(product.images.length && { image: product.images.map((i) => i.url) }),

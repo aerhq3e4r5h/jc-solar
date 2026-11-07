@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth";
 import { loadCart } from "@/lib/cart/load";
+import { productFullTitle } from "@/lib/catalogue/types";
 
 export const metadata: Metadata = { title: "Checkout", robots: { index: false } };
 
@@ -24,7 +25,7 @@ async function Checkout() {
   return (
     <CheckoutForm
       defaultEmail={user?.email}
-      lines={cart.items.map((i) => ({ key: i.product.id, name: i.product.name, quantity: i.quantity, lineTotal: i.lineTotal }))}
+      lines={cart.items.map((i) => ({ key: i.product.id, name: productFullTitle(i.product), quantity: i.quantity, lineTotal: i.lineTotal }))}
       productsTotal={cart.subtotalInclVat}
       installationRequested={cart.installationRequested}
     />

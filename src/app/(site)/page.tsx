@@ -1,4 +1,4 @@
-import { ArrowRight, BadgeCheck, Check, ShieldCheck, Sparkles, Truck, Wrench } from "lucide-react";
+import { ArrowRight, BadgeCheck, BadgePercent, Check, ShieldCheck, Sparkles, Truck, Wrench } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import heroImage from "@/assets/backgrounds/hero-array.webp";
@@ -6,14 +6,16 @@ import installersImage from "@/assets/backgrounds/installers-roof.webp";
 import fieldImage from "@/assets/backgrounds/field-array.webp";
 import { BackupPlanner } from "@/components/home/backup-planner";
 import { Reveal, RevealItem, RevealList } from "@/components/motion/reveal";
+import { CategoryGlyph } from "@/components/product/product-art";
 import { ProductCard } from "@/components/product/product-card";
+import { discountPercent } from "@/lib/pricing/sale";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { shopNav, site } from "@/config/site";
 import type { CategorySlug } from "@/lib/catalogue/classify";
 import { sortProducts } from "@/lib/catalogue/filters";
 import { getCatalogue } from "@/lib/catalogue/queries";
-import { availability, canPurchase, productUrl, specNum, specText, type Product } from "@/lib/catalogue/types";
+import { availability, canPurchase, productFullTitle, productUrl, specNum, specText, type Product } from "@/lib/catalogue/types";
 import { batteryBus, inverterBus } from "@/lib/compatibility/engine";
 import type { PlannerStock } from "@/lib/planner/match";
 import { formatRand } from "@/lib/pricing/vat";
@@ -97,16 +99,20 @@ export default async function HomePage() {
       ...item,
       count: items.length,
       from: items.length ? Math.min(...items.map((p) => p.priceInclVat)) : null,
-      image: topInStock(products, slug, 1)[0]?.images[0] ?? null,
+      slug,
     };
   });
+  const onSale = products
+    .filter((p) => canPurchase(p) && discountPercent(p.priceInclVat, p.compareAtPriceInclVat))
+    .sort((a, b) => (discountPercent(b.priceInclVat, b.compareAtPriceInclVat) ?? 0) - (discountPercent(a.priceInclVat, a.compareAtPriceInclVat) ?? 0))
+    .slice(0, 8);
   const featured = (["inverters", "batteries", "solar-panels", "kits"] as const).flatMap((c) => topInStock(products, c, 2));
   const brandList = [...brands].sort() as string[];
 
   // Compact stock list for the backup planner (runs in the browser).
   const plannerItem = (p: Product) => ({
     id: p.id,
-    name: p.name,
+    name: productFullTitle(p),
     brand: p.brand,
     url: productUrl(p),
     image: p.images[0]?.url ?? null,
@@ -201,49 +207,74 @@ export default async function HomePage() {
             View all products <ArrowRight className="size-4" />
           </Link>
         </Reveal>
-        <RevealList className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {categories.map((c) => (
-            <RevealItem key={c.href}>
+            <li key={c.href}>
               <Link
                 href={c.href}
-                className="group relative flex h-full flex-col overflow-hidden rounded-3xl border bg-card transition-all duration-300 hover:-translate-y-1 hover:border-foreground/15 hover:shadow-2xl hover:shadow-navy/10"
+                className="group relative isolate flex h-full min-h-72 flex-col justify-between overflow-hidden rounded-3xl bg-navy p-7 text-white transition-transform duration-300 hover:-translate-y-1 dark:bg-secondary"
               >
-                <div className="relative aspect-[4/3] overflow-hidden bg-white">
-                  {c.image && (
-                    <Image
-                      src={c.image.url}
-                      alt=""
-                      fill
-                      sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-                      className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
-                    />
+                {/* Low sun behind the drawing */}
+                <span
+                  aria-hidden="true"
+                  className="absolute -top-16 -right-16 -z-10 size-64 rounded-full bg-sun/25 blur-3xl transition-opacity duration-500 group-hover:opacity-80"
+                />
+                <CategoryGlyph
+                  category={c.slug}
+                  className="absolute top-6 right-4 -z-10 size-40 opacity-95 transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2 sm:size-44"
+                />
+                <span className="max-w-[60%] text-sm text-white/70">
+                  {c.count > 0 ? (
+                    <>
+                      <span className="num font-medium text-white">{c.count}</span> products
+                      {c.from !== null && (
+                        <>
+                          <br />
+                          from <span className="num font-medium text-white">{formatRand(c.from)}</span>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    "Coming soon"
                   )}
-                </div>
-                <div className="flex flex-1 flex-col gap-2 border-t p-6">
-                  <span className="flex items-center justify-between font-display text-2xl font-semibold">
+                </span>
+                <span className="mt-16 block">
+                  <span className="flex items-center justify-between gap-3 font-display text-2xl font-semibold">
                     {c.label}
-                    <span className="grid size-9 place-items-center rounded-full bg-muted transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white/10 transition-colors group-hover:bg-sun group-hover:text-navy">
                       <ArrowRight className="size-4" aria-hidden="true" />
                     </span>
                   </span>
-                  <span className="text-muted-foreground">{c.description}</span>
-                  {c.count > 0 && (
-                    <span className="mt-auto pt-3 text-sm text-muted-foreground">
-                      <span className="num font-medium text-foreground">{c.count}</span> products
-                      {c.from !== null && (
-                        <>
-                          {" "}
-                          · from <span className="num font-medium text-foreground">{formatRand(c.from)}</span>
-                        </>
-                      )}
-                    </span>
-                  )}
-                </div>
+                  <span className="mt-1.5 block text-white/70">{c.description}</span>
+                </span>
               </Link>
-            </RevealItem>
+            </li>
           ))}
-        </RevealList>
+        </ul>
       </section>
+
+      {/* On sale (only when the admin has discounted something) */}
+      {onSale.length > 0 && (
+        <section className="container-page pb-20 lg:pb-28" aria-labelledby="sale-heading">
+          <div className="mb-10 flex flex-wrap items-end justify-between gap-4 border-t pt-16">
+            <div>
+              <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-sale/10 px-3 py-1 text-sm font-semibold text-sale">
+                <BadgePercent className="size-4" aria-hidden="true" /> Limited-time prices
+              </p>
+              <h2 id="sale-heading" className="text-4xl font-semibold sm:text-5xl">
+                On sale now
+              </h2>
+            </div>
+          </div>
+          <ul className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+            {onSale.map((p) => (
+              <li key={p.id}>
+                <ProductCard product={p} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Featured products */}
       {featured.length > 0 && (
@@ -301,19 +332,29 @@ export default async function HomePage() {
 
       {/* Brands */}
       {brandList.length > 0 && (
-        <section className="container-page py-16" aria-labelledby="brands-heading">
-          <Reveal>
-            <h2 id="brands-heading" className="text-center font-sans text-base font-medium text-muted-foreground">
-              Brands we stock
-            </h2>
-            <ul className="mx-auto mt-8 flex max-w-5xl flex-wrap justify-center gap-x-10 gap-y-4">
+        <section className="container-page py-20" aria-labelledby="brands-heading">
+          <div className="grid gap-10 lg:grid-cols-[1fr_2.2fr] lg:items-center">
+            <div>
+              <h2 id="brands-heading" className="text-3xl font-semibold sm:text-4xl">
+                {brandList.length} brands, one shop
+              </h2>
+              <p className="mt-3 max-w-sm text-muted-foreground">
+                Tier-one panels, lithium batteries and inverters from the names South African installers trust, all with manufacturer warranties.
+              </p>
+            </div>
+            <ul className="grid grid-cols-2 overflow-hidden rounded-2xl border sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
               {brandList.map((b) => (
-                <li key={b} className="font-display text-xl font-semibold text-foreground/45 transition-colors hover:text-foreground sm:text-2xl">
-                  {b}
+                <li key={b} className="-mr-px -mb-px border-r border-b">
+                  <Link
+                    href={`/shop?q=${encodeURIComponent(b)}`}
+                    className="flex h-16 items-center justify-center px-3 text-center font-display text-lg font-semibold text-foreground/55 transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    {b}
+                  </Link>
                 </li>
               ))}
             </ul>
-          </Reveal>
+          </div>
         </section>
       )}
 

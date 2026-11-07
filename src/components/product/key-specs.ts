@@ -35,3 +35,11 @@ export function artLabel(product: Product): string | null {
   }[product.category];
   return spec(product, key)?.valueText ?? null;
 }
+
+/** Headline specs with their labels, for the tiles under a product's title. */
+export function highlightSpecs(product: Product): { label: string; value: string }[] {
+  return CARD_SPECS[product.category]
+    .map((key) => spec(product, key))
+    .filter((s): s is NonNullable<typeof s> => s !== undefined)
+    .map((s) => ({ label: s.label.replace(/ \(.*\)$/, ""), value: s.key === "voltage_class" ? (s.valueText.includes("High") ? "High voltage" : "Low voltage") : s.valueText }));
+}

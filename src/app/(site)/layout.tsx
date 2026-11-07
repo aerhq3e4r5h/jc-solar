@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { CartDrawer } from "@/components/cart/cart-drawer";
 import { CompareBar } from "@/components/compare/compare-bar";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -16,6 +17,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         <Suspense>
           <CompareBar />
         </Suspense>
+        <CartDrawer />
       </div>
     </MotionProvider>
   );

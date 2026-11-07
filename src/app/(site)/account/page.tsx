@@ -27,10 +27,11 @@ const STATUS: Record<string, string> = {
 async function AccountContents() {
   const user = await requireRole(["customer", "admin", "sales", "technician"], "/account");
   const supabase = await createClient();
-  // RLS returns only this customer's own orders.
+  // Filtered to this user: staff can read every order, but this page is "your orders".
   const { data: orders } = await supabase
     .from("orders")
     .select("id, order_number, status, total_incl_vat, created_at")
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -43,7 +44,7 @@ async function AccountContents() {
         </div>
         <div className="flex gap-2">
           {(user.role === "admin" || user.role === "sales") && (
-            <Link href="/admin/import" className="rounded-md border px-3 py-2 text-sm hover:bg-muted">
+            <Link href="/admin" className="rounded-md border px-3 py-2 text-sm hover:bg-muted">
               Admin
             </Link>
           )}

@@ -8,7 +8,7 @@ import { artLabel } from "@/components/product/key-specs";
 import { ProductArt } from "@/components/product/product-art";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { productUrl } from "@/lib/catalogue/types";
+import { productTitle, productUrl } from "@/lib/catalogue/types";
 import { loadCart } from "@/lib/cart/load";
 import { formatRand } from "@/lib/pricing/vat";
 
@@ -71,7 +71,7 @@ async function CartContents() {
                 <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
                   <div className="min-w-0">
                     <Link href={productUrl(item.product)} className="line-clamp-2 font-medium hover:underline">
-                      {item.product.name}
+                      {productTitle(item.product)}
                     </Link>
                     <p className="mt-0.5 text-sm text-muted-foreground">
                       {formatRand(item.product.priceInclVat)} each · SKU {item.product.sku}
@@ -85,7 +85,7 @@ async function CartContents() {
                 )}
                 <CartLineControls
                   productId={item.product.id}
-                  name={item.product.name}
+                  name={productTitle(item.product)}
                   quantity={item.quantity}
                   maxQty={item.product.allowBackorder ? 500 : Math.max(item.available, 1)}
                   installation={item.installation}
