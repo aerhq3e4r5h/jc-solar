@@ -120,7 +120,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
           ).slice(0, 4);
           if (top.length === 0) return null;
           return (
-            <section key={slug} className="mt-20" aria-labelledby={`${slug}-heading`}>
+            <section key={slug} className="scroll-rise mt-20" aria-labelledby={`${slug}-heading`}>
               <div className="mb-6 flex items-end justify-between gap-4">
                 <h2 id={`${slug}-heading`} className="text-3xl font-semibold">
                   {CATEGORIES[slug].name} in stock

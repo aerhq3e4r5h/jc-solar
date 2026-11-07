@@ -92,7 +92,7 @@ async function Results({ category, searchParams }: { category: CategorySlug; sea
         ) : (
           <ul className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-3 2xl:grid-cols-4">
             {results.map((p, i) => (
-              <li key={p.id}>
+              <li key={p.id} className="scroll-rise" style={{ "--i": i % 4 } as React.CSSProperties}>
                 <ProductCard product={p} priority={i < 3} />
               </li>
             ))}

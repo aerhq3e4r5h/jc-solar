@@ -170,3 +170,105 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+/*
+ * Scroll effects. Built on CSS scroll-driven animations, so they need no
+ * JavaScript and cost almost nothing to run. Browsers without support, and
+ * visitors who ask for reduced motion, simply see the content in place.
+ */
+.scroll-progress {
+  display: none;
+}
+
+@keyframes jc-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes jc-rise {
+  from {
+    opacity: 0;
+    transform: translateY(48px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes jc-parallax {
+  from {
+    transform: translateY(0) scale(1.08);
+  }
+  to {
+    transform: translateY(18%) scale(1.15);
+  }
+}
+@keyframes jc-drift-up {
+  to {
+    transform: translateY(-60px);
+    opacity: 0.35;
+  }
+}
+@keyframes jc-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: scroll()) {
+    .scroll-progress {
+      display: block;
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 60;
+      height: 3px;
+      background: linear-gradient(90deg, var(--sun), oklch(0.7 0.18 50));
+      transform-origin: 0 50%;
+      animation: jc-grow-x linear both;
+      animation-timeline: scroll(root);
+    }
+    /* Hero photo drifts slower than the page; hero text lifts away. */
+    .parallax-hero {
+      animation: jc-parallax linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 100vh;
+    }
+    .drift-up {
+      animation: jc-drift-up linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 70vh;
+    }
+  }
+  @supports (animation-timeline: view()) {
+    /* Rises into place as it scrolls into view. Stagger with style="--i: n". */
+    .scroll-rise {
+      animation: jc-rise linear both;
+      animation-timeline: view();
+      animation-range: entry calc(var(--i, 0) * 4%) cover calc(22% + var(--i, 0) * 4%);
+    }
+    .parallax-band {
+      animation: jc-parallax linear both;
+      animation-timeline: view();
+    }
+  }
+  /* Continuous tickers (pause when hovered or focused). */
+  .marquee-track {
+    animation: jc-marquee var(--marquee-duration, 40s) linear infinite;
+  }
+  .marquee-track.reverse {
+    animation-direction: reverse;
+  }
+  .marquee:hover .marquee-track,
+  .marquee:focus-within .marquee-track {
+    animation-play-state: paused;
+  }
+}
+@keyframes jc-flow {
+  to {
+    stroke-dashoffset: -14;
+  }
+}

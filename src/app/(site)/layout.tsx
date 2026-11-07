@@ -9,6 +9,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
   return (
     <MotionProvider>
       <div className="flex min-h-dvh flex-col">
+        <div className="scroll-progress" aria-hidden="true" />
         <SiteHeader />
         <main id="main" className="flex-1">
           {children}

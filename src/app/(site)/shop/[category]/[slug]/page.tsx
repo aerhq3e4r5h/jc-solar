@@ -278,7 +278,7 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
         </div>
       </div>
 
-      <section className="mt-16 grid gap-10 lg:grid-cols-2" aria-labelledby="specs-heading">
+      <section className="scroll-rise mt-16 grid gap-10 lg:grid-cols-2" aria-labelledby="specs-heading">
         <div>
           <h2 id="specs-heading" className="mb-4 text-2xl font-semibold">
             Specifications
@@ -301,7 +301,7 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
       </section>
 
       {related && related.items.length > 0 && (
-        <section className="mt-16" aria-labelledby="related-heading">
+        <section className="scroll-rise mt-16" aria-labelledby="related-heading">
           <h2 id="related-heading" className="text-2xl font-semibold">
             {related.title}
           </h2>

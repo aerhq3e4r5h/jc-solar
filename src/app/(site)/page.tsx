@@ -1,11 +1,16 @@
-import { ArrowRight, BadgeCheck, BadgePercent, Check, ShieldCheck, Sparkles, Truck, Wrench } from "lucide-react";
+import { ArrowRight, BadgePercent, Check, Sparkles, Sun } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import heroImage from "@/assets/backgrounds/hero-array.webp";
 import installersImage from "@/assets/backgrounds/installers-roof.webp";
 import fieldImage from "@/assets/backgrounds/field-array.webp";
 import { BackupPlanner } from "@/components/home/backup-planner";
-import { Reveal, RevealItem, RevealList } from "@/components/motion/reveal";
+import { SolarDay } from "@/components/home/solar-day";
+import { Carousel } from "@/components/motion/carousel";
+import { CountUp } from "@/components/motion/count-up";
+import { HorizontalScroll } from "@/components/motion/horizontal-scroll";
+import { Marquee } from "@/components/motion/marquee";
+import { Reveal } from "@/components/motion/reveal";
 import { CategoryGlyph } from "@/components/product/product-art";
 import { ProductCard } from "@/components/product/product-card";
 import { discountPercent } from "@/lib/pricing/sale";
@@ -32,29 +37,6 @@ const steps = [
   {
     title: "We install",
     body: "Add installation by our registered technician, or use your own installer. Installed systems get a Certificate of Compliance.",
-  },
-];
-
-const trust = [
-  {
-    icon: Wrench,
-    title: "Registered technician",
-    body: "Installations certified with a CoC",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Manufacturer warranties",
-    body: "Plus your rights under the CPA",
-  },
-  {
-    icon: BadgeCheck,
-    title: "Compatibility checked",
-    body: "Inverter and battery matched before you pay",
-  },
-  {
-    icon: Truck,
-    title: "Nationwide delivery",
-    body: "Anywhere in South Africa",
   },
 ];
 
@@ -131,6 +113,23 @@ export default async function HomePage() {
       .map((p) => ({ ...plannerItem(p), kwh: specNum(p, "capacity_kwh")!, bus: String(batteryBus(p)) })),
   };
 
+  const ticker = [
+    "Delivered anywhere in South Africa",
+    "Every price includes VAT",
+    "Inverter and battery matched before you pay",
+    "Installation by a registered technician",
+    "Certificate of Compliance on installed systems",
+    "Manufacturer warranties",
+    "Secure payment with PayFast or EFT",
+    `${brands.size || 25} trusted brands`,
+  ];
+  const stats = [
+    { label: "Products in stock and on order", value: products.length || 218, suffix: "" },
+    { label: "Brands", value: brands.size || 25, suffix: "" },
+    { label: "Provinces we deliver to", value: 9, suffix: "" },
+    { label: "Prices with VAT included", value: 100, suffix: "%" },
+  ];
+
   const facts = [
     `${products.length || 199} products from ${brands.size || 24} brands, prices include VAT`,
     "Delivered anywhere in South Africa",
@@ -141,10 +140,12 @@ export default async function HomePage() {
     <>
       {/* Hero: the backup planner is the centrepiece */}
       <section className="relative isolate -mt-px overflow-hidden bg-navy text-white">
-        <Image src={heroImage} alt="" fill priority placeholder="blur" sizes="100vw" className="-z-20 object-cover" />
+        <div className="parallax-hero absolute inset-0 -z-20">
+          <Image src={heroImage} alt="" fill priority placeholder="blur" sizes="100vw" className="object-cover" />
+        </div>
         <div className="photo-wash absolute inset-0 -z-10" aria-hidden="true" />
         <div className="container-page py-12 lg:py-16">
-          <div className="grid items-end gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700 lg:grid-cols-[1.4fr_1fr]">
+          <div className="drift-up grid items-end gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700 lg:grid-cols-[1.4fr_1fr]">
             <div>
               <h1 className="max-w-3xl text-5xl leading-[1.02] font-semibold sm:text-6xl xl:text-7xl">Keep the lights on when the power goes off.</h1>
               <p className="mt-5 max-w-xl text-lg leading-relaxed text-white/80">
@@ -178,80 +179,89 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Trust strip */}
-      <section aria-label="Why buy from us" className="border-b bg-card">
-        <RevealList className="container-page grid grid-cols-2 gap-6 py-10 lg:grid-cols-4">
-          {trust.map(({ icon: Icon, title, body }) => (
-            <RevealItem key={title} className="flex items-start gap-4">
-              <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-accent text-amber-ink">
-                <Icon className="size-6" aria-hidden="true" />
-              </span>
-              <span>
-                <span className="block font-semibold">{title}</span>
-                <span className="block text-sm text-muted-foreground">{body}</span>
-              </span>
-            </RevealItem>
-          ))}
-        </RevealList>
-      </section>
-
-      {/* Categories */}
-      <section className="container-page py-20 lg:py-28" aria-labelledby="categories-heading">
-        <Reveal className="mb-12 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 id="categories-heading" className="text-4xl font-semibold sm:text-5xl">
-              Everything for a complete system
-            </h2>
-          </div>
-          <Link href="/shop" className="inline-flex items-center gap-1 font-medium hover:underline">
-            View all products <ArrowRight className="size-4" />
-          </Link>
-        </Reveal>
-        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {categories.map((c) => (
-            <li key={c.href}>
-              <Link
-                href={c.href}
-                className="group relative isolate flex h-full min-h-72 flex-col justify-between overflow-hidden rounded-3xl bg-navy p-7 text-white transition-transform duration-300 hover:-translate-y-1 dark:bg-secondary"
-              >
-                {/* Low sun behind the drawing */}
-                <span
-                  aria-hidden="true"
-                  className="absolute -top-16 -right-16 -z-10 size-64 rounded-full bg-sun/25 blur-3xl transition-opacity duration-500 group-hover:opacity-80"
-                />
-                <CategoryGlyph
-                  category={c.slug}
-                  className="absolute top-4 right-5 -z-10 size-32 opacity-95 transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2 sm:size-36"
-                />
-                <span className="max-w-[60%] text-sm text-white/70">
-                  {c.count > 0 ? (
-                    <>
-                      <span className="num font-medium text-white">{c.count}</span> products
-                      {c.from !== null && (
-                        <>
-                          <br />
-                          from <span className="num font-medium text-white">{formatRand(c.from)}</span>
-                        </>
-                      )}
-                    </>
-                  ) : (
-                    "Coming soon"
-                  )}
-                </span>
-                <span className="mt-16 block">
-                  <span className="flex items-center justify-between gap-3 font-display text-2xl font-semibold">
-                    {c.label}
-                    <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white/10 transition-colors group-hover:bg-sun group-hover:text-navy">
-                      <ArrowRight className="size-4" aria-hidden="true" />
-                    </span>
-                  </span>
-                  <span className="mt-1.5 block text-white/70">{c.description}</span>
-                </span>
-              </Link>
+      {/* Ticker of what you get */}
+      <div className="border-b bg-sun text-navy">
+        <Marquee label="Why buy from JC Solar" seconds={45} className="py-4">
+          {ticker.map((t) => (
+            <li key={t} className="flex items-center gap-6 pr-6 font-display text-lg font-semibold whitespace-nowrap sm:text-xl">
+              {t}
+              <Sun className="size-5 shrink-0" aria-hidden="true" />
             </li>
           ))}
-        </ul>
+        </Marquee>
+      </div>
+
+      {/* The numbers */}
+      <section aria-label="JC Solar in numbers" className="border-b bg-card">
+        <dl className="container-page grid grid-cols-2 gap-y-8 py-12 lg:grid-cols-4">
+          {stats.map((st, i) => (
+            <div key={st.label} className="scroll-rise border-l-2 border-sun pl-5" style={{ "--i": i } as React.CSSProperties}>
+              <dt className="text-sm text-muted-foreground">{st.label}</dt>
+              <dd className="mt-1 font-display text-4xl font-semibold sm:text-5xl">
+                <CountUp to={st.value} suffix={st.suffix} />
+              </dd>
+            </div>
+          ))}
+        </dl>
       </section>
+
+      {/* Categories: slide sideways as you scroll */}
+      <HorizontalScroll
+        className="py-16 lg:py-0"
+        header={
+          <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+            <h2 id="categories-heading" className="max-w-2xl text-4xl font-semibold sm:text-5xl">
+              Everything for a complete system
+            </h2>
+            <Link href="/shop" className="inline-flex items-center gap-1 font-medium hover:underline">
+              View all products <ArrowRight className="size-4" />
+            </Link>
+          </div>
+        }
+      >
+        {categories.map((c) => (
+          <div key={c.href} className="w-[82vw] shrink-0 snap-start sm:w-[24rem] lg:w-[27rem]">
+            <Link
+              href={c.href}
+              className="group relative isolate flex h-full min-h-72 flex-col justify-between overflow-hidden rounded-3xl bg-navy p-7 text-white transition-transform duration-300 hover:-translate-y-1 dark:bg-secondary"
+            >
+              {/* Low sun behind the drawing */}
+              <span
+                aria-hidden="true"
+                className="absolute -top-16 -right-16 -z-10 size-64 rounded-full bg-sun/25 blur-3xl transition-opacity duration-500 group-hover:opacity-80"
+              />
+              <CategoryGlyph
+                category={c.slug}
+                className="absolute top-4 right-5 -z-10 size-32 opacity-95 transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2 sm:size-36"
+              />
+              <span className="max-w-[60%] text-sm text-white/70">
+                {c.count > 0 ? (
+                  <>
+                    <span className="num font-medium text-white">{c.count}</span> products
+                    {c.from !== null && (
+                      <>
+                        <br />
+                        from <span className="num font-medium text-white">{formatRand(c.from)}</span>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  "Coming soon"
+                )}
+              </span>
+              <span className="mt-16 block">
+                <span className="flex items-center justify-between gap-3 font-display text-2xl font-semibold">
+                  {c.label}
+                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white/10 transition-colors group-hover:bg-sun group-hover:text-navy">
+                    <ArrowRight className="size-4" aria-hidden="true" />
+                  </span>
+                </span>
+                <span className="mt-1.5 block text-white/70">{c.description}</span>
+              </span>
+            </Link>
+          </div>
+        ))}
+      </HorizontalScroll>
 
       {/* On sale (only when the admin has discounted something) */}
       {onSale.length > 0 && (
@@ -276,6 +286,9 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* A day on solar, driven by scrolling */}
+      <SolarDay />
+
       {/* Featured products */}
       {featured.length > 0 && (
         <section className="border-y bg-muted/50 py-20 lg:py-28" aria-labelledby="featured-heading">
@@ -290,20 +303,22 @@ export default async function HomePage() {
                 Shop everything <ArrowRight className="size-4" />
               </Link>
             </Reveal>
-            <RevealList className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+            <Carousel label="Popular products">
               {featured.map((p) => (
-                <RevealItem key={p.id}>
+                <li key={p.id}>
                   <ProductCard product={p} />
-                </RevealItem>
+                </li>
               ))}
-            </RevealList>
+            </Carousel>
           </div>
         </section>
       )}
 
       {/* How it works, over a photo */}
       <section className="relative isolate overflow-hidden bg-navy text-navy-foreground" aria-labelledby="how-heading">
-        <Image src={installersImage} alt="" fill placeholder="blur" sizes="100vw" className="-z-20 object-cover" />
+        <div className="parallax-band absolute inset-0 -z-20">
+          <Image src={installersImage} alt="" fill placeholder="blur" sizes="100vw" className="object-cover" />
+        </div>
         <div className="absolute inset-0 -z-10 bg-navy/88" aria-hidden="true" />
         <div className="container-page py-20 lg:py-28">
           <Reveal>
@@ -311,15 +326,15 @@ export default async function HomePage() {
               From your electricity bill to a working system in three steps
             </h2>
           </Reveal>
-          <RevealList className="mt-14 grid gap-5 md:grid-cols-3">
+          <ol className="mt-14 grid gap-5 md:grid-cols-3">
             {steps.map((step, i) => (
-              <RevealItem key={step.title} className="glass relative rounded-3xl p-8">
+              <li key={step.title} className="glass scroll-rise relative rounded-3xl p-8" style={{ "--i": i } as React.CSSProperties}>
                 <span className="grid size-12 place-items-center rounded-full bg-sun font-mono text-lg font-semibold text-navy">{i + 1}</span>
                 <h3 className="mt-6 text-2xl font-semibold text-white">{step.title}</h3>
                 <p className="mt-3 leading-relaxed text-white/75">{step.body}</p>
-              </RevealItem>
+              </li>
             ))}
-          </RevealList>
+          </ol>
           <Reveal>
             <Button asChild size="lg" className="mt-14 h-14 px-8 text-base">
               <Link href="/advisor">
@@ -330,37 +345,37 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Brands */}
+      {/* Brands, scrolling both ways */}
       {brandList.length > 0 && (
-        <section className="container-page py-20" aria-labelledby="brands-heading">
-          <div className="grid gap-10 lg:grid-cols-[1fr_2.2fr] lg:items-center">
-            <div>
-              <h2 id="brands-heading" className="text-3xl font-semibold sm:text-4xl">
-                {brandList.length} brands, one shop
-              </h2>
-              <p className="mt-3 max-w-sm text-muted-foreground">
-                Tier-one panels, lithium batteries and inverters from the names South African installers trust, all with manufacturer warranties.
-              </p>
-            </div>
-            <ul className="grid grid-cols-2 overflow-hidden rounded-2xl border sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
-              {brandList.map((b) => (
-                <li key={b} className="-mr-px -mb-px border-r border-b">
-                  <Link
-                    href={`/shop?q=${encodeURIComponent(b)}`}
-                    className="flex h-16 items-center justify-center px-3 text-center font-display text-lg font-semibold text-foreground/55 transition-colors hover:bg-muted hover:text-foreground"
-                  >
-                    {b}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+        <section className="overflow-hidden py-20" aria-labelledby="brands-heading">
+          <div className="container-page mb-10 flex flex-wrap items-end justify-between gap-4">
+            <h2 id="brands-heading" className="scroll-rise text-4xl font-semibold sm:text-5xl">
+              {brandList.length} brands, one shop
+            </h2>
+            <p className="max-w-sm text-muted-foreground">Tier-one names South African installers trust, all with manufacturer warranties.</p>
+          </div>
+          <div className="space-y-4">
+            {[brandList.slice(0, Math.ceil(brandList.length / 2)), brandList.slice(Math.ceil(brandList.length / 2))].map((row, r) => (
+              <Marquee key={r} label={r === 0 ? "Brands" : "More brands"} reverse={r === 1} seconds={50}>
+                {row.map((b) => (
+                  <li key={b} className="pr-4">
+                    <Link
+                      href={`/shop?q=${encodeURIComponent(b)}`}
+                      className="flex h-20 min-w-48 items-center justify-center rounded-2xl border bg-card px-8 font-display text-2xl font-semibold whitespace-nowrap text-foreground/60 transition-colors hover:border-sun hover:text-foreground"
+                    >
+                      {b}
+                    </Link>
+                  </li>
+                ))}
+              </Marquee>
+            ))}
           </div>
         </section>
       )}
 
       {/* FAQ */}
       <section className="container-page grid gap-12 border-t py-20 lg:grid-cols-[1fr_1.4fr] lg:py-28" aria-labelledby="faq-heading">
-        <Reveal>
+        <Reveal className="scroll-rise">
           <h2 id="faq-heading" className="text-4xl font-semibold sm:text-5xl">
             Straight answers
           </h2>
@@ -390,7 +405,7 @@ export default async function HomePage() {
 
       {/* Final CTA, over a solar field */}
       <section className="container-page">
-        <Reveal className="relative isolate overflow-hidden rounded-[2rem] bg-navy px-6 py-16 text-white sm:px-14 sm:py-20">
+        <Reveal className="scroll-rise relative isolate overflow-hidden rounded-[2rem] bg-navy px-6 py-16 text-white sm:px-14 sm:py-20">
           <Image src={fieldImage} alt="" fill placeholder="blur" sizes="(min-width: 1440px) 1440px, 100vw" className="-z-20 object-cover" />
           <div className="photo-wash absolute inset-0 -z-10" aria-hidden="true" />
           <div className="max-w-2xl">
