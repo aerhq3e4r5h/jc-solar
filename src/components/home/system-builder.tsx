@@ -67,7 +67,7 @@ export function SystemBuilder({ data }: { data: BuilderData }) {
   return (
     <div className="grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-12" data-builder>
       {/* The roof */}
-      <div className="rounded-xl bg-ink p-4 sm:p-8">
+      <div className="rounded-xl bg-ink p-4 sm:p-8 dark:border dark:border-white/10">
         <svg viewBox="0 0 600 400" className="w-full" data-roof role="img" aria-label={`${n} solar panels on a roof, ${kwp.toFixed(2)} kW in total`}>
           <rect y="330" width="600" height="70" fill="#2a2a27" />
           <rect x="70" y="250" width="460" height="80" fill="#e8e6de" />

@@ -59,7 +59,7 @@ export function VelocityMarquee({
   if (reduce) {
     return (
       <div role="region" aria-label={label} className={cn("container-page", className)}>
-        <ul className="flex flex-wrap items-center gap-y-2">{children}</ul>
+        <ul className="flex flex-wrap items-center gap-y-2 [&_a]:text-2xl sm:[&_a]:text-4xl">{children}</ul>
       </div>
     );
   }
