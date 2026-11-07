@@ -303,3 +303,30 @@ Spend boldness in a few places. Each item needs a reduced-motion fallback.
   - what changed (with screenshots),
   - what you verified,
   - anything you skipped and why.
+
+---
+
+## Status (7 November 2026)
+
+**Done.**
+- Section 1, all of it.
+- Section 2, all of it.
+- Section 3, all of it.
+- Section 4, all of it.
+- Section 5, all of it except the wishlist heart (there is no wishlist).
+- 6.2 to 6.4, 6.6, 7.2, 8.1 (lazy loading), 8.2 (sitemap and structured
+  data).
+
+**Waiting on the owner.**
+- 6.1: the logo.
+- 6.5: the official payment logos.
+- 6.7: business details. The WhatsApp button appears once
+  `site.company.whatsapp` is set.
+- 7.1: an email provider for review requests.
+- 7.3: real installation photos.
+- 7.4 and 7.5: go-ahead to add the `promotions` table and the sale-date
+  columns to the production database.
+- 8.4: the analytics tool and a cookie notice.
+
+**Not measured here.** Lighthouse scores (no Lighthouse in the build
+environment) and a full screen-reader audit.
