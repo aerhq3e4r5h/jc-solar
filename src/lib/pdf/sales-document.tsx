@@ -1,4 +1,4 @@
-import { Circle, Document, Font, G, Line, Link, Page, Path, Rect, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
+import { Document, Font, G, Link, Page, Path, Rect, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
 import path from "node:path";
 import { formatRand } from "@/lib/pricing/vat";
 
@@ -102,15 +102,15 @@ const s = StyleSheet.create({
 });
 
 function SunMark() {
+  // The JC Solar mark (see src/components/brand/logo.tsx): the "power on" symbol drawn as a sun.
   return (
-    <Svg width={30} height={30} viewBox="0 0 32 32">
-      <Rect x={0} y={0} width={32} height={32} rx={9} fill={C.navySoft} />
-      <Circle cx={16} cy={14} r={5.5} fill={C.sun} />
-      <G stroke={C.sun} strokeWidth={1.6} strokeLinecap="round">
-        <Path d="M16 4.5v2.2M6.5 14h2.2M23.3 14h2.2M9.3 7.3l1.5 1.5M22.7 7.3l-1.5 1.5" />
+    <Svg width={30} height={30} viewBox="0 0 100 100">
+      <Rect x={0} y={0} width={100} height={100} rx={22} fill={C.sun} />
+      <G stroke={C.ink} strokeLinecap="round" fill="none">
+        <Path d="M60.89 38.23A20 20 0 1 1 39.11 38.23" strokeWidth={10} />
+        <Path d="M50 53V20" strokeWidth={10} />
+        <Path d="M19 55H13.5M28.08 33.08L24.19 29.19M71.92 33.08L75.81 29.19M81 55H86.5M71.92 76.92L75.81 80.81M28.08 76.92L24.19 80.81" strokeWidth={5.5} />
       </G>
-      <Line x1={6} y1={24.5} x2={26} y2={24.5} stroke="#ffffff" strokeWidth={1.6} strokeLinecap="round" />
-      <Line x1={9} y1={27.5} x2={23} y2={27.5} stroke="#ffffff" strokeWidth={1.6} strokeLinecap="round" strokeOpacity={0.5} />
     </Svg>
   );
 }

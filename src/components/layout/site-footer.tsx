@@ -1,6 +1,6 @@
 import { BadgeCheck, PlugZap, ReceiptText, Truck } from "lucide-react";
 import Link from "next/link";
-import { Logo } from "@/components/brand/logo";
+import { Logo, LogoMark } from "@/components/brand/logo";
 import { Spotlight } from "@/components/motion/spotlight";
 import { PaymentMethods } from "@/components/brand/payment-methods";
 import { footerNav, site } from "@/config/site";
@@ -34,8 +34,9 @@ export function SiteFooter() {
           ))}
         </ul>
       </section>
-      <div className="dark relative isolate bg-background text-foreground">
+      <div className="dark grain relative isolate overflow-hidden bg-background text-foreground">
         <Spotlight />
+        <LogoMark tile={false} className="pointer-events-none absolute -right-28 -bottom-32 -z-10 size-[30rem] text-white/[0.04]" />
         <div className="container-page grid gap-12 py-16 md:grid-cols-[1.5fr_repeat(3,1fr)] lg:py-20">
           <div className="max-w-sm space-y-5">
             <Logo />

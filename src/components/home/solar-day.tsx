@@ -122,7 +122,7 @@ export function SolarDay() {
   };
 
   return (
-    <section ref={ref} className="relative h-[340vh] bg-ink text-white lg:h-[400vh]" aria-labelledby="day-heading">
+    <section ref={ref} className="grain relative h-[340vh] bg-ink text-white lg:h-[400vh]" aria-labelledby="day-heading">
       {/*
         The panel sits just below the sticky header and always fits the screen:
         on phones the scene takes whatever height is left over (flex-1), on

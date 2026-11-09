@@ -4,6 +4,7 @@ import Link from "next/link";
 import installersImage from "@/assets/backgrounds/installers-roof.webp";
 import homeImage from "@/assets/backgrounds/home-roof.webp";
 import { LazyPlanner, LazySolarDay } from "@/components/home/lazy-sections";
+import { PowerOn } from "@/components/home/power-on";
 import { BrandWall } from "@/components/home/brand-wall";
 import { SavingsCalculator } from "@/components/home/savings-calculator";
 import { Carousel } from "@/components/motion/carousel";
@@ -374,6 +375,9 @@ export default async function HomePage() {
         <SavingsCalculator prices={calculatorPrices(products)} />
       </section>
 
+      {/* The bold moment: the words light up and the logo switches on as you scroll */}
+      <PowerOn />
+
       {/* A day on solar, driven by scrolling */}
       <LazySolarDay />
 
@@ -403,7 +407,7 @@ export default async function HomePage() {
 
       {/* How it works, over a photo */}
       <section className="container-page pt-20 lg:pt-28" aria-labelledby="how-heading">
-        <div className="relative isolate overflow-hidden rounded-xl bg-ink text-ink-foreground">
+        <div className="grain relative isolate overflow-hidden rounded-xl bg-ink text-ink-foreground">
           <div className="parallax-band absolute inset-0 -z-20">
             <Image src={installersImage} alt="" fill placeholder="blur" sizes="(min-width: 1440px) 1440px, 100vw" className="object-cover" />
           </div>

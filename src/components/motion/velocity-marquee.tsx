@@ -1,16 +1,7 @@
 "use client";
 
-import {
-  motion,
-  useAnimationFrame,
-  useMotionValue,
-  useReducedMotion,
-  useScroll,
-  useSpring,
-  useTransform,
-  useVelocity,
-} from "motion/react";
-import { useRef } from "react";
+import { motion, useAnimationFrame, useMotionValue, useScroll, useSpring, useTransform, useVelocity } from "motion/react";
+import { useRef, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 
 /** Keeps v inside [min, max), wrapping around like a clock. */
@@ -39,7 +30,7 @@ export function VelocityMarquee({
   label: string;
   className?: string;
 }) {
-  const reduce = useReducedMotion();
+  const reduce = useReducedMotionAfterHydration();
   const offset = useMotionValue(0);
   const { scrollY } = useScroll();
   const velocity = useSpring(useVelocity(scrollY), { damping: 50, stiffness: 400 });
@@ -78,4 +69,18 @@ export function VelocityMarquee({
       </motion.div>
     </div>
   );
+}
+
+const QUERY = "(prefers-reduced-motion: reduce)";
+const subscribe = (cb: () => void) => {
+  const m = window.matchMedia(QUERY);
+  m.addEventListener("change", cb);
+  return () => m.removeEventListener("change", cb);
+};
+/**
+ * The reduced-motion setting, but `false` while hydrating, so the browser's
+ * first render matches the server's HTML (the server can't know the setting).
+ */
+function useReducedMotionAfterHydration() {
+  return useSyncExternalStore(subscribe, () => window.matchMedia(QUERY).matches, () => false);
 }
