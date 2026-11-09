@@ -80,7 +80,7 @@ export function Gallery({ images, name, sale, productId }: { images: Photo[]; na
           className="group relative hidden aspect-square w-full cursor-zoom-in overflow-hidden rounded-xl border bg-white sm:block"
           aria-label={`Open full-screen photos: ${current.alt}`}
         >
-          <Image src={current.url} alt={current.alt} fill priority sizes="(min-width: 1024px) 50vw, 100vw" className="object-contain" />
+          <Image src={current.url} alt={current.alt} fill priority quality={90} sizes="(min-width: 1024px) 50vw, 100vw" className="object-contain" />
           {lens && (
             <span
               aria-hidden="true"
@@ -113,7 +113,7 @@ export function Gallery({ images, name, sale, productId }: { images: Photo[]; na
             {images.map((img, i) => (
               <li key={img.url} className="relative aspect-square w-full shrink-0 snap-center">
                 <button type="button" className="absolute inset-0" onClick={() => setViewer(true)} aria-label={`Open full-screen photo ${i + 1}`}>
-                  <Image src={img.url} alt={img.alt} fill priority={i === 0} sizes="100vw" className="object-contain" />
+                  <Image src={img.url} alt={img.alt} fill priority={i === 0} quality={90} sizes="100vw" className="object-contain" />
                 </button>
               </li>
             ))}
@@ -234,6 +234,7 @@ function Viewer({
               src={img.url}
               alt={img.alt}
               fill
+              quality={90}
               sizes="100vw"
               className="object-contain transition-transform duration-300"
               style={

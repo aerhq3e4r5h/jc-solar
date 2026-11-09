@@ -38,6 +38,8 @@ const nextConfig: NextConfig = {
     serverActions: { bodySizeLimit: "21mb" },
   },
   images: {
+    // 90 for the product gallery, where detail matters; 75 (the default) elsewhere.
+    qualities: [75, 90],
     remotePatterns: supabaseHost
       ? [{ protocol: "https", hostname: supabaseHost, pathname: "/storage/v1/object/public/**" }]
       : [],

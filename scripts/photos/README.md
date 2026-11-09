@@ -41,3 +41,30 @@ python3 -m venv .venv-photos
 - **When the mask misses part of a product** that has a convex outline
   (for example a dark corner of a panel against a dark background), fill
   the mask's convex hull instead (this is how the GCL 625 W photo was fixed).
+
+## Sharper photos from the supplier's full-size uploads
+
+Solar Europe's product pages use 800 x 800 thumbnails (`...-800x800.png`); the
+full-size upload sits at the same URL without the size suffix, usually 1000 to
+1400 px. `rerender_hires.py` redraws each finished white photo from that
+original, so it keeps every cut-out decision already made (islands dropped,
+hull fixes, panel rectangles):
+
+```bash
+# pairs.tsv lines: "<current w-n.webp>\t<full-size original>\t<new output .webp>"
+.venv-photos/bin/pip install opencv-python-headless
+.venv-photos/bin/python -I scripts/photos/rerender_hires.py pairs.tsv report.tsv
+```
+
+- **How it lines up the two:** SIFT feature matching, with a template-match
+  fallback, finds where the original sits in today's photo. ECC refines the fit.
+- **How it rebuilds the photo:** it recovers the cut-out's edge from the two
+  images and redraws the product from the original's pixels.
+- **Sizing:** a product is never enlarged past 1:1 with the original. Small
+  originals shrink in the frame, but never below 85% of their old size.
+- **Sharpening:** a light unsharp mask is applied to the product, and the file
+  is saved as WebP at quality 90.
+- **Checking:** `report.tsv` lists the match quality per photo. Look at any row
+  marked `check` side by side with the old photo before installing it.
+- **Share images:** regenerate `og.jpg` (480 px JPEG of the main photo) in each
+  folder afterwards.
