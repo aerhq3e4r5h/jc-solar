@@ -1,43 +1,55 @@
-"""The JC Solar mark: the "power on" symbol drawn as a sun.
-A thick ring open at the top (the sun), the power stroke rising through the
-gap as the noon ray, and six short rays around it (none straight down: the
-sun sits on the horizon). Coordinates are for a 100 x 100 tile."""
+"""GridAnchor mark: an anchor that is also a "power on" symbol.
+The anchor's curved arms are the power symbol's open ring, the shank is the
+power stroke rising through the gap, topped by the anchor's crossbar and
+ring. Coordinates are for a 100 x 100 tile."""
 import math
 
 INK = "#1e1e1c"
 SUN = "#ffc414"
-CX, CY, R, W = 50, 55, 20, 10
-RAYS = (-90, -45, 45, 90, 135, 225)  # clockwise from the top; the top ray is the power stroke
+CX, CY, R, GAP = 50, 53, 26, 116
+W = 9.5
 
-def ring(cx=CX, cy=CY, r=R, gap=66):
-    a0 = math.radians(-90 + gap / 2)
-    a1 = math.radians(270 - gap / 2)
-    x0, y0 = cx + r * math.cos(a0), cy + r * math.sin(a0)
-    x1, y1 = cx + r * math.cos(a1), cy + r * math.sin(a1)
-    return f"M{x0:.2f} {y0:.2f}A{r} {r} 0 1 1 {x1:.2f} {y1:.2f}"
+def tips():
+    a = math.radians(GAP / 2)
+    dx, dy = R * math.sin(a), R * math.cos(a)
+    return (CX + dx, CY - dy), (CX - dx, CY - dy)
 
-def rays(cx=CX, cy=CY, r=R, inner=11, outer=16.5):
-    out = []
-    for deg in RAYS:
-        a = math.radians(deg - 90 + 90 - 90) if False else math.radians(deg - 90)
-        x0, y0 = cx + (r + inner) * math.cos(a), cy + (r + inner) * math.sin(a)
-        x1, y1 = cx + (r + outer) * math.cos(a), cy + (r + outer) * math.sin(a)
-        out.append(f"M{x0:.2f} {y0:.2f}L{x1:.2f} {y1:.2f}")
-    return "".join(out)
+def paths(flukes=False):
+    (rx, ry), (lx, ly) = tips()
+    d = {
+        "arms": f"M{rx:.2f} {ry:.2f}A{R} {R} 0 1 1 {lx:.2f} {ly:.2f}",
+        "shank": f"M{CX} {CY + R}V21",
+        "stock": f"M39 30H61",
+        "ring": (CX, 14.5, 5.5),
+    }
+    if flukes:
+        d["flukes"] = f"M{rx:.2f} {ry:.2f}l7 3.5M{lx:.2f} {ly:.2f}l-7 3.5"
+    return d
 
-def mark(fg=INK, bg=SUN, with_rays=True, tile=True, radius=22, ray_w=5.5):
+def mark(fg=INK, bg=SUN, tile=True, radius=22, flukes=False):
+    d = paths(flukes)
     p = []
     if tile:
         p.append(f'<rect width="100" height="100" rx="{radius}" fill="{bg}"/>')
-    p.append(f'<path d="{ring()}" fill="none" stroke="{fg}" stroke-width="{W}" stroke-linecap="round"/>')
-    p.append(f'<path d="M{CX} {CY - 2}V{CY - R - 15}" stroke="{fg}" stroke-width="{W}" stroke-linecap="round"/>')
-    if with_rays:
-        p.append(f'<path d="{rays()}" stroke="{fg}" stroke-width="{ray_w}" stroke-linecap="round"/>')
+    p.append(f'<g fill="none" stroke="{fg}" stroke-linecap="round" stroke-linejoin="round">')
+    p.append(f'<path d="{d["arms"]}" stroke-width="{W}"/>')
+    p.append(f'<path d="{d["shank"]}" stroke-width="{W}"/>')
+    p.append(f'<path d="{d["stock"]}" stroke-width="{W * 0.75}"/>')
+    if flukes:
+        p.append(f'<path d="{d["flukes"]}" stroke-width="{W * 0.75}"/>')
+    cx, cy, r = d["ring"]
+    p.append(f'<circle cx="{cx}" cy="{cy}" r="{r}" stroke-width="{W * 0.62}"/>')
+    p.append("</g>")
     return "".join(p)
 
-def svg(inner, w=100, h=100, title="JC Solar"):
+def svg(inner, w=100, h=100, title="GridAnchor"):
     return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" role="img" aria-label="{title}"><title>{title}</title>{inner}</svg>'
 
-if __name__ == "__main__":
-    open("mark.svg", "w").write(svg(mark()))
-    open("mark-simple.svg", "w").write(svg(mark(with_rays=False)))
+def mark_simple(fg=INK, bg=SUN):
+    """For 16 px: no ring (it blurs), a longer shank and a heavier stroke."""
+    (rx, ry), (lx, ly) = tips()
+    return (
+        f'<rect width="100" height="100" rx="22" fill="{bg}"/>'
+        f'<g fill="none" stroke="{fg}" stroke-linecap="round" stroke-width="12">'
+        f'<path d="M{rx:.2f} {ry:.2f}A{R} {R} 0 1 1 {lx:.2f} {ly:.2f}"/><path d="M{CX} {CY + R}V13"/><path d="M37 28H63" stroke-width="10"/></g>'
+    )

@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * JC Solar design tokens: a bright, sunlit hardware store.
+ * GridAnchor design tokens: a bright, sunlit hardware store.
  * White shop floor, graphite ink (the colour of inverter casings), signal
  * yellow used as solid fills with graphite text on it (like a price label),
  * charge green for "in stock" and sale red for markdowns. No blue anywhere.
@@ -562,7 +562,7 @@ main#main > * {
       animation-range: cover 44% cover 52%;
     }
     .statement-rays {
-      transform-origin: 50px 55px;
+      transform-origin: 50px 30px;
       transform-box: view-box;
       animation: jc-rays-on cubic-bezier(0.2, 1.4, 0.4, 1) both;
       animation-timeline: --statement;
@@ -573,5 +573,33 @@ main#main > * {
       animation-timeline: --statement;
       animation-range: cover 50% cover 60%;
     }
+  }
+}
+
+/* The logo's anchor swings from its ring, like it's hanging, when the logo is hovered. */
+@keyframes jc-anchor-swing {
+  0% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(11deg);
+  }
+  50% {
+    transform: rotate(-7deg);
+  }
+  72% {
+    transform: rotate(3deg);
+  }
+  100% {
+    transform: rotate(0);
+  }
+}
+.anchor-swing {
+  transform-origin: 50px 14.5px;
+  transform-box: view-box;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .group:hover .anchor-swing {
+    animation: jc-anchor-swing 1.1s cubic-bezier(0.3, 0.6, 0.4, 1);
   }
 }

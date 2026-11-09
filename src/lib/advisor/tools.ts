@@ -17,7 +17,7 @@ export const TOOL_DECLARATIONS = [
   {
     name: "search_products",
     description:
-      "Search JC Solar's catalogue. Returns real products with SKU, price (incl. VAT), stock and key specs. Size is in W for solar-panels, kWh for batteries, kW for inverters and kits (inverter size), kVA for voltage-stabilizers and BTU for air-conditioners.",
+      "Search GridAnchor's catalogue. Returns real products with SKU, price (incl. VAT), stock and key specs. Size is in W for solar-panels, kWh for batteries, kW for inverters and kits (inverter size), kVA for voltage-stabilizers and BTU for air-conditioners.",
     parameters: {
       type: "object",
       properties: {

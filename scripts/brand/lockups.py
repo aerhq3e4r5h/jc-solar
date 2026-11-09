@@ -1,12 +1,10 @@
-# Needs the Archivo Expanded ExtraBold and SemiBold TTFs (Google Fonts) next to it: archivo-1.ttf and archivo-0.ttf.
-# Run: pip install fonttools uharfbuzz, then python lockups.py (writes out/).
-"""Builds the JC Solar logo files: outlined wordmark + the power-sun mark."""
+"""Builds the GridAnchor logo files: outlined wordmark + the anchor mark."""
 import os
 import uharfbuzz as hb
 from fontTools.ttLib import TTFont
 from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.pens.transformPen import TransformPen
-from mark import mark, svg, INK, SUN
+from mark import mark, mark_simple, svg, INK, SUN
 
 WIDE = "archivo-1.ttf"   # Archivo Expanded ExtraBold (the site's .type-wide)
 TEXT = "archivo-0.ttf"   # Archivo SemiBold (tagline)
@@ -35,13 +33,13 @@ def write(name, content):
     open(os.path.join("out", name), "w").write(content)
 
 os.makedirs("out", exist_ok=True)
-word, ww, cap = outline("JC Solar", WIDE, 100, tracking=-0.02)
+word, ww, cap = outline("GridAnchor", WIDE, 100, tracking=-0.02)
 
 # Mark tiles
-write("jc-solar-mark.svg", svg(mark()))
-write("jc-solar-mark-simple.svg", svg(mark(with_rays=False)))
-write("jc-solar-mark-ink.svg", svg(mark(tile=False)))          # one colour, no tile
-write("jc-solar-mark-white.svg", svg(mark(fg="#ffffff", tile=False)))
+write("gridanchor-mark.svg", svg(mark()))
+write("gridanchor-mark-simple.svg", svg(mark_simple()))
+write("gridanchor-mark-ink.svg", svg(mark(tile=False)))          # one colour, no tile
+write("gridanchor-mark-white.svg", svg(mark(fg="#ffffff", tile=False)))
 
 def horizontal(text_fill, bg=None):
     # mark 100 high; cap height of the wordmark ~ 46% of the mark, vertically centred
@@ -60,8 +58,8 @@ def stacked(text_fill):
     inner = f'<g transform="translate({mx:.2f} 0)">{mark()}</g><g transform="translate({(W - ww * k) / 2:.2f} {100 + 22 + 30:.2f}) scale({k:.4f})"><path d="{word}" fill="{text_fill}"/></g>'
     return svg(inner, w=round(W, 1), h=100 + 22 + 30 + 8)
 
-write("jc-solar-logo.svg", horizontal(INK))
-write("jc-solar-logo-on-dark.svg", horizontal("#ffffff"))
-write("jc-solar-logo-stacked.svg", stacked(INK))
-write("jc-solar-logo-stacked-on-dark.svg", stacked("#ffffff"))
+write("gridanchor-logo.svg", horizontal(INK))
+write("gridanchor-logo-on-dark.svg", horizontal("#ffffff"))
+write("gridanchor-logo-stacked.svg", stacked(INK))
+write("gridanchor-logo-stacked-on-dark.svg", stacked("#ffffff"))
 print("wordmark width", round(ww), "cap", round(cap, 1))

@@ -61,7 +61,7 @@ export function SiteHeader() {
         </a>
         <div className="container-page flex h-16 items-center gap-2 lg:h-[4.5rem] lg:gap-4">
           <MobileNav />
-          <Link href="/" className="group shrink-0 rounded-md" aria-label="JC Solar home">
+          <Link href="/" className="group shrink-0 rounded-md" aria-label="GridAnchor home">
             <Logo />
           </Link>
           <div className="ml-auto flex min-w-0 items-center md:mx-4 md:ml-6 md:flex-1 lg:mx-8">

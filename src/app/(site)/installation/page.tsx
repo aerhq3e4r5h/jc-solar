@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
   title: "Solar installation by a registered technician",
-  description: "Add professional installation to any JC Solar order. Site assessment, installation to SANS 10142-1 and a Certificate of Compliance.",
+  description: "Add professional installation to any GridAnchor order. Site assessment, installation to SANS 10142-1 and a Certificate of Compliance.",
   alternates: { canonical: "/installation" },
 };
 

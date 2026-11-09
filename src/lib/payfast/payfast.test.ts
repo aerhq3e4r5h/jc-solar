@@ -18,7 +18,7 @@ const REQUEST_FIELDS: Field[] = [
   ["cell_number", "0821234567"],
   ["m_payment_id", "8a0e5b2c-1111-4222-8333-444455556666"],
   ["amount", "27662.20"],
-  ["item_name", "JC Solar order JC-100001"],
+  ["item_name", "GridAnchor order JC-100001"],
   ["item_description", ""],
 ];
 
@@ -26,7 +26,7 @@ const ITN_FIELDS: Field[] = [
   ["m_payment_id", "8a0e5b2c-1111-4222-8333-444455556666"],
   ["pf_payment_id", "1089250"],
   ["payment_status", "COMPLETE"],
-  ["item_name", "JC Solar order JC-100001"],
+  ["item_name", "GridAnchor order JC-100001"],
   ["item_description", ""],
   ["amount_gross", "27662.20"],
   ["amount_fee", "-636.23"],
@@ -37,7 +37,7 @@ const ITN_FIELDS: Field[] = [
   ["email_address", "thandi+solar@example.com"],
   ["merchant_id", "10000100"],
 ];
-const ITN_SIGNATURE = "8182c3485902c097df9351b829ed6517";
+const ITN_SIGNATURE = "2cfa41a8adb6063f2e647c5604c32571";
 
 function itnBody(fields: Field[], sig: string) {
   // Encoded the way PayFast posts it (form encoding).
@@ -51,7 +51,7 @@ describe("encoding and signatures", () => {
     expect(phpUrlEncode("100% ~*!")).toBe("100%25+%7E%2A%21");
   });
   it("matches the reference signature for a payment request (empty fields skipped)", () => {
-    expect(signature(REQUEST_FIELDS, "jt7NOE43FZPn", { skipEmpty: true })).toBe("a5a3ef68e670ee6f76f553fb95fe2c93");
+    expect(signature(REQUEST_FIELDS, "jt7NOE43FZPn", { skipEmpty: true })).toBe("6411ce18efbb0cbb9495eb1d6cd94311");
   });
   it("matches the reference signature for a notification (empty fields kept)", () => {
     expect(signature(ITN_FIELDS, "jt7NOE43FZPn", { skipEmpty: false })).toBe(ITN_SIGNATURE);
@@ -81,7 +81,7 @@ describe("buildPaymentFields", () => {
       "email_address", "cell_number", "m_payment_id", "amount", "item_name", "signature",
     ]);
     // Same values as the reference request, so the same signature.
-    expect(fields.at(-1)).toEqual(["signature", "a5a3ef68e670ee6f76f553fb95fe2c93"]);
+    expect(fields.at(-1)).toEqual(["signature", "6411ce18efbb0cbb9495eb1d6cd94311"]);
   });
   it("formats amounts and phone numbers for PayFast", () => {
     expect(formatAmount(1234.5)).toBe("1234.50");

@@ -9,7 +9,7 @@ export const contentType = "image/png";
 
 export default async function Image({ params }: { params: Promise<{ category: string }> }) {
   const { category } = await params;
-  if (!isCategorySlug(category)) return shareImage({ eyebrow: "JC Solar", title: "Shop", image: null });
+  if (!isCategorySlug(category)) return shareImage({ eyebrow: "GridAnchor", title: "Shop", image: null });
   const items = (await getCatalogue()).filter((p) => p.category === category);
   const top = sortProducts(
     items.filter((p) => p.images[0]?.url.startsWith("/")),

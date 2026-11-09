@@ -7,7 +7,7 @@ const fields: Field[] = [
   ["m_payment_id", "8a0e5b2c-1111-4222-8333-444455556666"],
   ["pf_payment_id", "1089250"],
   ["payment_status", "COMPLETE"],
-  ["item_name", "JC Solar order JC-100001"],
+  ["item_name", "GridAnchor order JC-100001"],
   ["amount_gross", "27662.20"],
   ["merchant_id", "10000100"],
 ];

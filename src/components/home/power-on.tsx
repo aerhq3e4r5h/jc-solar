@@ -28,9 +28,12 @@ export function PowerOn() {
           <div className="statement-glow absolute inset-[-25%] rounded-full bg-[radial-gradient(circle,oklch(0.86_0.17_88/0.38),transparent_62%)]" />
           <svg viewBox="0 0 100 100" className="relative size-full overflow-visible">
             <g fill="none" stroke="var(--sun)" strokeLinecap="round">
-              <path className="statement-ring" d={MARK.ring} strokeWidth="10" pathLength={1} />
-              <path className="statement-stroke" d={MARK.stroke} strokeWidth="10" pathLength={1} />
-              <path className="statement-rays" d={MARK.rays} strokeWidth="5.5" />
+              <path className="statement-ring" d={MARK.arms} strokeWidth="9.5" pathLength={1} />
+              <path className="statement-stroke" d={MARK.shank} strokeWidth="9.5" pathLength={1} />
+              <g className="statement-rays">
+                <path d={MARK.stock} strokeWidth="7.1" />
+                <circle cx={MARK.ring.cx} cy={MARK.ring.cy} r={MARK.ring.r} strokeWidth="5.9" />
+              </g>
             </g>
           </svg>
         </div>

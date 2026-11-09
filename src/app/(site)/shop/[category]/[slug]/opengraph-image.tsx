@@ -9,7 +9,7 @@ export const contentType = "image/png";
 export default async function Image({ params }: { params: Promise<{ category: string; slug: string }> }) {
   const { slug } = await params;
   const p = (await getCatalogue()).find((x) => x.slug === slug);
-  if (!p) return shareImage({ eyebrow: "JC Solar", title: "Solar panels, batteries and inverters", image: null });
+  if (!p) return shareImage({ eyebrow: "GridAnchor", title: "Solar panels, batteries and inverters", image: null });
   const photo = p.images[0]?.url ?? null;
   return shareImage({
     eyebrow: [p.brand, CATEGORIES[p.category].name].filter(Boolean).join(", "),

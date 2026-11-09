@@ -1,4 +1,4 @@
-// Decides which shop category a spreadsheet row belongs to. JC Solar sells
+// Decides which shop category a spreadsheet row belongs to. GridAnchor sells
 // solar panels, batteries, inverters, system kits, voltage stabilizers and
 // Jetman inverter aircons; every other row is skipped with a reason so the
 // import report explains it.

@@ -63,14 +63,10 @@ export async function shareImage({
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <svg width="56" height="56" viewBox="0 0 100 100">
               <rect width="100" height="100" rx="22" fill={SUN} />
-              <path d="M60.89 38.23A20 20 0 1 1 39.11 38.23" stroke={INK} strokeWidth="10" strokeLinecap="round" fill="none" />
-              <path d="M50 53V20" stroke={INK} strokeWidth="10" strokeLinecap="round" />
-              <path
-                d="M19 55H13.5M28.08 33.08L24.19 29.19M71.92 33.08L75.81 29.19M81 55H86.5M71.92 76.92L75.81 80.81M28.08 76.92L24.19 80.81"
-                stroke={INK}
-                strokeWidth="5.5"
-                strokeLinecap="round"
-              />
+              <path d="M72.05 39.22A26 26 0 1 1 27.95 39.22" stroke={INK} strokeWidth="9.5" strokeLinecap="round" fill="none" />
+              <path d="M50 79V21" stroke={INK} strokeWidth="9.5" strokeLinecap="round" />
+              <path d="M39 30H61" stroke={INK} strokeWidth="7.1" strokeLinecap="round" />
+              <circle cx="50" cy="14.5" r="5.5" stroke={INK} strokeWidth="5.9" fill="none" />
             </svg>
             <div style={{ fontFamily: "Archivo Black", fontSize: 34, color: INK }}>{site.name}</div>
           </div>

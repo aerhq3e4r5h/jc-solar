@@ -38,3 +38,6 @@ python3 -m venv .venv-photos
   `public/products/<slug>/`, and `src/data/product-images.json` maps each SKU
   to them. `sameRange: true` marks a sister model's photo, used where the
   supplier has no photo of the exact model.
+- **When the mask misses part of a product** that has a convex outline
+  (for example a dark corner of a panel against a dark background), fill
+  the mask's convex hull instead (this is how the GCL 625 W photo was fixed).

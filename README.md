@@ -1,4 +1,4 @@
-# JC Solar
+# GridAnchor
 
 Online shop for solar panels, lithium batteries, inverters and system kits, with optional installation by a registered technician. Built with Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui and Supabase.
 

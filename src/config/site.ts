@@ -2,8 +2,8 @@
 // business confirms them; the footer and legal pages only show what is set.
 
 export const site = {
-  name: "JC Solar",
-  advisorName: "JC Solar Advisor",
+  name: "GridAnchor",
+  advisorName: "GridAnchor Solar Advisor",
   tagline: "Solar power for South African homes and businesses",
   description:
     "Solar panels, lithium batteries, inverters and complete backup kits, with optional installation by our registered technician. Delivered anywhere in South Africa.",

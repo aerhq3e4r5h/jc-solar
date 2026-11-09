@@ -95,7 +95,7 @@ export type ExportProduct = {
 /** Writes the catalogue back out in the same column layout it is imported from. */
 export async function writeCatalogueWorkbook(products: ExportProduct[]): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "JC Solar";
+  wb.creator = "GridAnchor";
   const ws = wb.addWorksheet(PRODUCT_SHEET, { views: [{ state: "frozen", ySplit: 1 }] });
   ws.columns = EXPORT_ORDER.map((key) => ({
     header: COLUMNS[key],

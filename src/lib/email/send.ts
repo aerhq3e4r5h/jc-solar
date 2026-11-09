@@ -8,7 +8,7 @@ export type Email = { to: string; subject: string; html: string; text: string; a
 
 export async function sendEmail(email: Email): Promise<{ sent: boolean; error?: string }> {
   const key = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM || "JC Solar <orders@example.com>";
+  const from = process.env.EMAIL_FROM || "GridAnchor <orders@example.com>";
   if (!key) {
     console.info(`[email not sent: RESEND_API_KEY missing] to=${email.to} subject="${email.subject}"`);
     return { sent: false, error: "not configured" };

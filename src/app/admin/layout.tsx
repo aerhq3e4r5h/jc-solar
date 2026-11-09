@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { requireRole } from "@/lib/auth";
 import { AdminNav } from "./admin-nav";
 
-export const metadata: Metadata = { title: { default: "Admin", template: "%s | JC Solar admin" }, robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: { default: "Admin", template: "%s | GridAnchor admin" }, robots: { index: false, follow: false } };
 
 async function StaffGate({ children }: { children: React.ReactNode }) {
   await requireRole(["admin", "sales"], "/admin");

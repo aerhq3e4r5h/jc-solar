@@ -94,7 +94,7 @@ export function buildPaymentFields(req: PaymentRequest, config: PayFastConfig): 
       ["m_payment_id", req.orderId],
       ["amount", formatAmount(req.amount)],
       // Kept plain so it reads well on the PayFast page and bank statement.
-      ["item_name", `JC Solar order ${req.orderNumber}`],
+      ["item_name", `GridAnchor order ${req.orderNumber}`],
     ] satisfies Field[]
   ).filter(([, v]) => v.trim() !== "");
   fields.push(["signature", signature(fields, config.passphrase, { skipEmpty: true })]);

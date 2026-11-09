@@ -268,7 +268,7 @@ export default async function HomePage() {
 
       {/* Ticker of what you get */}
       <div className="mt-3 bg-ink text-ink-foreground">
-        <Marquee label="Why buy from JC Solar" seconds={50} className="py-3.5">
+        <Marquee label="Why buy from GridAnchor" seconds={50} className="py-3.5">
           {ticker.map((t) => (
             <li key={t} className="flex items-center gap-6 pr-6 text-base font-semibold whitespace-nowrap sm:text-lg">
               {t}

@@ -1,4 +1,4 @@
-import { Document, Font, G, Link, Page, Path, Rect, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
+import { Circle, Document, Font, G, Link, Page, Path, Rect, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
 import path from "node:path";
 import { formatRand } from "@/lib/pricing/vat";
 
@@ -40,7 +40,6 @@ const s = StyleSheet.create({
   },
   brand: { flexDirection: "row", alignItems: "center" },
   brandName: { color: "#ffffff", fontSize: 20, fontWeight: 700, marginLeft: 10 },
-  brandSun: { color: C.sun },
   tagline: { color: "#c9cfdb", fontSize: 8, marginTop: 2, marginLeft: 10 },
   docTitle: { color: "#ffffff", fontSize: 22, fontWeight: 600, textAlign: "right" },
   docMeta: { color: "#c9cfdb", fontSize: 9, textAlign: "right", marginTop: 3 },
@@ -102,14 +101,15 @@ const s = StyleSheet.create({
 });
 
 function SunMark() {
-  // The JC Solar mark (see src/components/brand/logo.tsx): the "power on" symbol drawn as a sun.
+  // The GridAnchor mark (see src/components/brand/logo.tsx): an anchor that is also the "power on" symbol.
   return (
     <Svg width={30} height={30} viewBox="0 0 100 100">
       <Rect x={0} y={0} width={100} height={100} rx={22} fill={C.sun} />
       <G stroke={C.ink} strokeLinecap="round" fill="none">
-        <Path d="M60.89 38.23A20 20 0 1 1 39.11 38.23" strokeWidth={10} />
-        <Path d="M50 53V20" strokeWidth={10} />
-        <Path d="M19 55H13.5M28.08 33.08L24.19 29.19M71.92 33.08L75.81 29.19M81 55H86.5M71.92 76.92L75.81 80.81M28.08 76.92L24.19 80.81" strokeWidth={5.5} />
+        <Path d="M72.05 39.22A26 26 0 1 1 27.95 39.22" strokeWidth={9.5} />
+        <Path d="M50 79V21" strokeWidth={9.5} />
+        <Path d="M39 30H61" strokeWidth={7.1} />
+        <Circle cx={50} cy={14.5} r={5.5} strokeWidth={5.9} />
       </G>
     </Svg>
   );
@@ -146,7 +146,7 @@ export function SalesDocument(p: SalesDocumentProps) {
   // A VAT-registered supplier issues a "Tax invoice" showing its VAT number.
   const title = p.kind === "invoice" && p.supplier.vatNumber ? "Tax invoice" : TITLES[p.kind];
   return (
-    <Document title={`${title} ${p.number}`} author="JC Solar" creator="JC Solar" language="en-ZA">
+    <Document title={`${title} ${p.number}`} author="GridAnchor" creator="GridAnchor" language="en-ZA">
       <Page size="A4" style={s.page}>
         {/* Top margin on continuation pages (page 1 starts with the band). */}
         <View fixed render={({ pageNumber }) => (pageNumber > 1 ? <View style={{ height: 36 }} /> : null)} />
@@ -154,9 +154,7 @@ export function SalesDocument(p: SalesDocumentProps) {
           <View>
             <View style={s.brand}>
               <SunMark />
-              <Text style={s.brandName}>
-                JC <Text style={s.brandSun}>Solar</Text>
-              </Text>
+              <Text style={s.brandName}>GridAnchor</Text>
             </View>
             <Text style={s.tagline}>Solar panels · Batteries · Inverters · Installation</Text>
           </View>

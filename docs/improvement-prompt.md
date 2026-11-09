@@ -1,4 +1,4 @@
-# JC Solar: next round of improvements (prompt for a coding agent)
+# GridAnchor: next round of improvements (prompt for a coding agent)
 
 Paste everything below the line into a new Claude Code session on the
 `jc-solar` repository. It is written so the agent can work through it in
@@ -6,10 +6,10 @@ order, verify each step, and ship in small, safe pushes.
 
 ---
 
-You are working on **JC Solar** (https://jc-solars.netlify.app), a South
+You are working on **GridAnchor** (https://jc-solars.netlify.app), a South
 African online store for inverters, lithium batteries, solar panels, backup
 kits, voltage stabilizers and Jetman aircons. Products and photos come from
-the supplier Solar Europe (JC Solar has their permission to use the photos).
+the supplier Solar Europe (GridAnchor has their permission to use the photos).
 Customers are homeowners and small businesses who want backup power, plus
 installers who know the specs.
 
@@ -51,7 +51,7 @@ installers who know the specs.
   - No fake reviews, ratings, sold counts, countdown timers or "X people
     are viewing this".
   - Stock urgency only from real `stock_qty`.
-  - Don't claim services JC Solar does not offer. In particular:
+  - Don't claim services GridAnchor does not offer. In particular:
     - Nobody configures or tests equipment before dispatch.
     - Installation is optional, and it does not include free delivery.
   - Delivery is by DSV from Solar Europe's warehouse, priced at checkout.
@@ -216,8 +216,8 @@ Spend boldness in a few places. Each item needs a reduced-motion fallback.
 
 ## 6. Visual polish
 
-1. **Real logo:** ask the owner for the JC Solar logo. Until then keep the
-   placeholder mark in `src/components/brand/logo.tsx`.
+1. **Logo:** done. The GridAnchor anchor mark and logo files are in
+   `public/brand`; the site's copy is `src/components/brand/logo.tsx`.
 2. **Prices:**
    - Show whole rands without cents when the cents are zero, for example
      "R15,870" instead of "R15,870.00".
@@ -239,7 +239,7 @@ Spend boldness in a few places. Each item needs a reduced-motion fallback.
 6. **Dark-mode review:** go page by page. Check contrast of muted text,
    borders on white tiles, and the yellow-on-graphite buttons.
 7. **Footer:**
-   - Add a short "About JC Solar" paragraph and the business address and
+   - Add a short "About GridAnchor" paragraph and the business address and
      contact details once the owner supplies them (`site.company` in
      `src/config/site.ts`).
    - Add a newsletter sign-up only if an email provider is set up (Resend
@@ -254,7 +254,7 @@ Spend boldness in a few places. Each item needs a reduced-motion fallback.
 2. **WhatsApp button:** a floating "Chat on WhatsApp" button, shown only when
    `site.company.whatsapp` is set, with the product name pre-filled on
    product pages.
-3. **Installations gallery:** a page of real JC Solar installs (photos from
+3. **Installations gallery:** a page of real GridAnchor installs (photos from
    the owner) with system size, location (town only) and a short quote.
 4. **Admin-editable promotions:**
    - A `promotions` table plus an admin screen to edit the announcement-bar
@@ -318,7 +318,6 @@ Spend boldness in a few places. Each item needs a reduced-motion fallback.
   data).
 
 **Waiting on the owner.**
-- 6.1: the logo.
 - 6.5: the official payment logos.
 - 6.7: business details. The WhatsApp button appears once
   `site.company.whatsapp` is set.
