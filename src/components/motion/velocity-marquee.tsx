@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useAnimationFrame, useMotionValue, useScroll, useSpring, useTransform, useVelocity } from "motion/react";
-import { useRef, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 
 /** Keeps v inside [min, max), wrapping around like a clock. */
@@ -14,7 +14,9 @@ const wrap = (min: number, max: number, v: number) => {
  * A row that loops round and round on its own, speeds up while the page
  * scrolls, and turns around when you scroll back up. The items are rendered
  * twice so the loop is seamless; the copy is hidden from screen readers and
- * keyboard. With reduced motion it's a static, wrapping row.
+ * keyboard. It stops while the pointer or keyboard focus is on it, and the
+ * caller can pause it. With reduced motion it still turns, but slowly and
+ * steadily: no scroll speed-up and no change of direction.
  */
 export function VelocityMarquee({
   children,
@@ -31,6 +33,7 @@ export function VelocityMarquee({
   className?: string;
 }) {
   const reduce = useReducedMotionAfterHydration();
+  const [held, setHeld] = useState(false);
   const offset = useMotionValue(0);
   const { scrollY } = useScroll();
   const velocity = useSpring(useVelocity(scrollY), { damping: 50, stiffness: 400 });
@@ -39,26 +42,28 @@ export function VelocityMarquee({
   const x = useTransform(offset, (v) => `${wrap(-50, 0, v)}%`);
 
   useAnimationFrame((_, delta) => {
-    if (reduce || paused) return;
+    if (paused || held) return;
+    // Long gaps (a background tab) would make it jump; skip them.
+    const dt = Math.min(delta, 100) / 1000;
+    if (reduce) {
+      offset.set(offset.get() + speed * 0.4 * dt);
+      return;
+    }
     const b = boost.get();
     if (b < 0) direction.current = -1;
     else if (b > 0) direction.current = 1;
-    const step = direction.current * speed * (delta / 1000);
+    const step = direction.current * speed * dt;
     offset.set(offset.get() + step + step * Math.abs(b));
   });
-
-  if (reduce) {
-    return (
-      <div role="region" aria-label={label} className={cn("container-page", className)}>
-        <ul className="flex flex-wrap items-center gap-y-2 [&_a]:text-2xl sm:[&_a]:text-4xl">{children}</ul>
-      </div>
-    );
-  }
 
   return (
     <div
       role="region"
       aria-label={label}
+      onPointerEnter={(e) => e.pointerType === "mouse" && setHeld(true)}
+      onPointerLeave={() => setHeld(false)}
+      onFocus={() => setHeld(true)}
+      onBlur={(e) => !e.currentTarget.contains(e.relatedTarget) && setHeld(false)}
       className={cn("relative overflow-hidden [mask-image:linear-gradient(90deg,transparent,black_6%,black_94%,transparent)]", className)}
     >
       <motion.div className="flex w-max will-change-transform" style={{ x }}>
@@ -82,5 +87,9 @@ const subscribe = (cb: () => void) => {
  * first render matches the server's HTML (the server can't know the setting).
  */
 function useReducedMotionAfterHydration() {
-  return useSyncExternalStore(subscribe, () => window.matchMedia(QUERY).matches, () => false);
+  return useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(QUERY).matches,
+    () => false,
+  );
 }

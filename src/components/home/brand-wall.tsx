@@ -22,10 +22,11 @@ export function BrandWall({ brands }: { brands: string[] }) {
           type="button"
           onClick={() => setPaused((p) => !p)}
           aria-pressed={paused}
-          className="inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground hover:text-foreground motion-reduce:hidden"
+          className="inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
         >
           {paused ? <Play className="size-3.5" aria-hidden="true" /> : <Pause className="size-3.5" aria-hidden="true" />}
           {paused ? "Play" : "Pause"}
+          <span className="sr-only"> the brand list</span>
         </button>
       </div>
       <div className="space-y-2">
