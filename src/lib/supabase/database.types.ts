@@ -2199,6 +2199,7 @@ export type Database = {
       booked_slot_ids: { Args: { p_from: string; p_to: string }; Returns: string[] };
       cancel_pending_order: { Args: { p_order_id: string }; Returns: Json };
       confirm_order_paid: { Args: { p_order_id: string; p_payment_id: string }; Returns: number };
+      claim_guest_orders: { Args: Record<PropertyKey, never>; Returns: number };
       create_checkout_order: { Args: { p: Json }; Returns: Json };
       create_quote: { Args: { p: Json }; Returns: Json };
       current_technician_id: { Args: Record<PropertyKey, never>; Returns: string };

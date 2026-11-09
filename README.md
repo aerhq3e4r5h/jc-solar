@@ -16,7 +16,7 @@ Online shop for solar panels, lithium batteries, inverters and system kits, with
 | Excel import: read, clean, classify, specs, validate, plan | `src/lib/catalogue/` |
 | Import and export scripts | `scripts/import-catalogue.ts`, `scripts/export-catalogue.ts` |
 | Admin import page and Excel export | `/admin/import`, `/admin/catalogue/export` |
-| Sign-in (Google and email link) | `/login`, `src/app/auth/callback/` |
+| Customer accounts: email and password, email link, optional Google; password reset; order and quote history | `/login`, `/signup`, `/account`, `/account/password`, `src/app/auth/callback/` |
 | Product data file | `data/products.xlsx`, seed generated to `supabase/seed.sql` |
 
 ## Phase 2 contents
@@ -136,7 +136,10 @@ npm run db:types            # regenerate src/lib/supabase/database.types.ts
 
 Then enable these in the Supabase dashboard:
 
-- **Auth > Providers > Google**: add the Google OAuth client ID and secret, and add `https://<your-site>/auth/callback` to the redirect URLs.
+- **Auth > Providers > Email**: on by default. Keep "Confirm email" on: past guest orders join an account only once its email is confirmed. Set the minimum password length to 8 to match the sign-up form.
+- **Auth > SMTP Settings**: the built-in mailer sends only a couple of emails an hour, which is enough for testing but not for customers. Add an SMTP sender (for example Resend) before launch, so confirmation and password-reset emails always arrive.
+- **Auth > URL Configuration**: the site URL and `https://<your-site>/**` in the redirect URLs, so confirmation and reset links come back to `/auth/callback`.
+- **Auth > Providers > Google** (optional): add the Google OAuth client ID and secret, add `https://<your-site>/auth/callback` to the redirect URLs, then set `NEXT_PUBLIC_GOOGLE_SIGN_IN=1` on Netlify to show the Google button.
 - **Database > Extensions > pg_cron**: lets unpaid orders release their reserved stock every 5 minutes. Re-run the last block of `20261022000003_commerce.sql` after enabling it.
 - **Backups**: daily backups are included on the Pro plan; turn on point-in-time recovery if you need it.
 
@@ -156,6 +159,7 @@ The repo includes `netlify.toml`; Netlify builds it with its official Next.js ad
 | Variable | Value | Notes |
 |---|---|---|
 | `NEXT_PUBLIC_SITE_URL` | your site address, e.g. `https://jc-solar.netlify.app` | Used in emails, PDFs and PayFast return links |
+| `NEXT_PUBLIC_GOOGLE_SIGN_IN` | `1` once Google is set up in Supabase | Optional. Shows "Continue with Google" on the sign-in page |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase publishable (anon) key | Public by design |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key | **Secret.** Needed for checkout, quotes and orders. Mark it secret in Netlify |

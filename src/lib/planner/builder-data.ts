@@ -5,28 +5,50 @@ import { checkPair, planStrings, type Override } from "@/lib/compatibility/engin
 // browser gets only what it needs: which panel counts each inverter can take
 // (string voltage and PV input checked) and which batteries suit it.
 
-export type BuilderItem = { id: string; name: string; url: string; image: string | null; price: number };
+export type BuilderItem = {
+  id: string;
+  name: string;
+  brand: string | null;
+  url: string;
+  image: string | null;
+  price: number;
+  /** How many we can sell now. */ stock: number;
+};
 export type BuilderPanel = BuilderItem & { watts: number };
 export type BuilderInverter = BuilderItem & { kw: number; counts: Record<string, number[]>; batteryIds: string[] };
-export type BuilderBattery = BuilderItem & { kwh: number };
+export type BuilderBattery = BuilderItem & { kwh: number; voltage: number | null };
 export type BuilderData = { panels: BuilderPanel[]; inverters: BuilderInverter[]; batteries: BuilderBattery[] };
 
 const MAX_PANELS = 30;
+/** Batteries of one model the builder offers; the technician confirms how many the inverter takes. */
+export const MAX_BATTERIES = 8;
+const MIN_PANEL_STOCK = 6;
 const inStock = (p: Product) => availability(p).state === "in_stock" || availability(p).state === "low_stock";
-const item = (p: Product): BuilderItem => ({ id: p.id, name: productFullTitle(p), url: productUrl(p), image: p.images[0]?.url ?? null, price: p.priceInclVat });
+const item = (p: Product): BuilderItem => ({
+  id: p.id,
+  name: productFullTitle(p),
+  brand: p.brand,
+  url: productUrl(p),
+  image: p.images[0]?.url ?? null,
+  price: p.priceInclVat,
+  stock: p.allowBackorder ? 999 : p.stockQty,
+});
 
 export function builderData(products: Product[], overrides: Override[] = []): BuilderData {
   // A few mainstream panels: best value per watt, one per brand.
   const seen = new Set<string | null>();
   const panels = products
-    .filter((p) => p.category === "solar-panels" && inStock(p) && specNum(p, "voc_v") !== null)
+    // enough in stock for a real system, not just a couple of panels
+    .filter((p) => p.category === "solar-panels" && inStock(p) && (p.allowBackorder || p.stockQty >= MIN_PANEL_STOCK) && specNum(p, "voc_v") !== null)
     .map((p) => ({ p, w: specNum(p, "wattage_w") ?? 0 }))
     .filter(({ w }) => w >= 400 && w <= 650)
     .sort((a, b) => a.p.priceInclVat / a.w - b.p.priceInclVat / b.w)
     .filter(({ p }) => !seen.has(p.brand) && seen.add(p.brand))
     .slice(0, 4);
 
-  const batteries = products.filter((b) => b.category === "batteries" && inStock(b) && specNum(b, "capacity_kwh") !== null && b.priceInclVat < 80_000);
+  const batteries = products.filter(
+    (b) => b.category === "batteries" && inStock(b) && specNum(b, "capacity_kwh") !== null && b.priceInclVat < 80_000,
+  );
 
   const inverters: BuilderInverter[] = [];
   for (const inv of products) {
@@ -57,7 +79,7 @@ export function builderData(products: Product[], overrides: Override[] = []): Bu
     inverters,
     batteries: batteries
       .filter((b) => usedBatteries.has(b.id))
-      .map((b) => ({ ...item(b), kwh: specNum(b, "capacity_kwh")! }))
+      .map((b) => ({ ...item(b), kwh: specNum(b, "capacity_kwh")!, voltage: specNum(b, "nominal_voltage_v") }))
       .sort((a, b) => a.price - b.price),
   };
 }

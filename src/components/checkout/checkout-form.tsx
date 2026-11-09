@@ -112,11 +112,15 @@ function DeliveryOptions({ delivery }: { delivery: Delivery }) {
 
 export function CheckoutForm({
   defaultEmail,
+  defaultName,
+  defaultPhone,
   lines,
   productsTotal,
   installationRequested,
 }: {
   defaultEmail?: string | null;
+  defaultName?: { first: string; last: string };
+  defaultPhone?: string;
   lines: { key: string; name: string; quantity: number; lineTotal: number }[];
   productsTotal: number;
   installationRequested: boolean;
@@ -126,10 +130,10 @@ export function CheckoutForm({
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [v, setV] = useState({
-    firstName: "",
-    lastName: "",
+    firstName: defaultName?.first ?? "",
+    lastName: defaultName?.last ?? "",
     email: defaultEmail ?? "",
-    phone: "",
+    phone: defaultPhone ?? "",
     line1: "",
     line2: "",
     suburb: "",

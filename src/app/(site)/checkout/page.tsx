@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { UserRound } from "lucide-react";
 import { CheckoutForm } from "@/components/checkout/checkout-form";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSessionUser } from "@/lib/auth";
 import { loadCart } from "@/lib/cart/load";
 import { productFullTitle } from "@/lib/catalogue/types";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Checkout", robots: { index: false } };
 
@@ -22,13 +24,29 @@ async function Checkout() {
       </div>
     );
   }
+  const profile = user ? (await (await createClient()).from("profiles").select("full_name, phone").eq("id", user.id).maybeSingle()).data : null;
+  const [firstName, ...rest] = (profile?.full_name ?? "").trim().split(/\s+/);
   return (
-    <CheckoutForm
-      defaultEmail={user?.email}
-      lines={cart.items.map((i) => ({ key: i.product.id, name: productFullTitle(i.product), quantity: i.quantity, lineTotal: i.lineTotal }))}
-      productsTotal={cart.subtotalInclVat}
-      installationRequested={cart.installationRequested}
-    />
+    <>
+      {!user && (
+        <p className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border bg-shelf px-4 py-3 text-sm">
+          <UserRound className="size-4" aria-hidden="true" />
+          <span>Have an account?</span>
+          <Link href="/login?next=/checkout" className="font-semibold underline underline-offset-4">
+            Sign in
+          </Link>
+          <span className="text-muted-foreground">for faster checkout and your order history. Or check out as a guest below.</span>
+        </p>
+      )}
+      <CheckoutForm
+        defaultEmail={user?.email}
+        defaultName={{ first: firstName ?? "", last: rest.join(" ") }}
+        defaultPhone={profile?.phone ?? ""}
+        lines={cart.items.map((i) => ({ key: i.product.id, name: productFullTitle(i.product), quantity: i.quantity, lineTotal: i.lineTotal }))}
+        productsTotal={cart.subtotalInclVat}
+        installationRequested={cart.installationRequested}
+      />
+    </>
   );
 }
 

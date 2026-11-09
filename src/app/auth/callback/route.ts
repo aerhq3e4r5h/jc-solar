@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-// Completes Google and email-link sign-in by exchanging the one-time code
+// Completes email confirmation, password reset, email-link and Google sign-in by exchanging the one-time code
 // for a session cookie, then returns the user to where they were going.
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
@@ -13,7 +13,14 @@ export async function GET(request: NextRequest) {
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(`${origin}${safeNext}`);
+    if (!error) {
+      // Orders and quotes placed as a guest with this (now confirmed) email join the account.
+      await supabase.rpc("claim_guest_orders").then(
+        () => undefined,
+        () => undefined,
+      );
+      return NextResponse.redirect(`${origin}${safeNext}`);
+    }
   }
   return NextResponse.redirect(`${origin}/login?error=callback`);
 }

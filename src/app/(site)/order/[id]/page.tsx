@@ -1,4 +1,4 @@
-import { Building2, CheckCircle2, Clock, FileText, Lock, XCircle } from "lucide-react";
+import { Building2, CheckCircle2, Clock, FileText, Lock, UserPlus, XCircle } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -9,6 +9,7 @@ import { orderDeliverySummary } from "@/lib/shipping/format";
 import { AwaitPayment, ChangeOrderButton } from "@/components/order/order-actions";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getSessionUser } from "@/lib/auth";
 import { siteUrl } from "@/lib/env";
 import { eftDetails, payfastConfig } from "@/lib/env.server";
 import { loadOrderForViewer, type OrderView } from "@/lib/orders/orders";
@@ -84,7 +85,7 @@ function BankDetails({ order }: { order: OrderView }) {
 async function OrderContents({ params, searchParams }: Props) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);
   const token = typeof sp.t === "string" ? sp.t : null;
-  const order = await loadOrderForViewer(id, token);
+  const [order, viewer] = await Promise.all([loadOrderForViewer(id, token), getSessionUser()]);
   if (!order) notFound();
 
   const pdfUrl = `/api/orders/${order.id}/pdf${order.token ? `?t=${encodeURIComponent(order.token)}` : ""}`;
@@ -102,14 +103,33 @@ async function OrderContents({ params, searchParams }: Props) {
             <CheckCircle2 className="size-8 text-success" aria-hidden="true" /> Thank you, payment received
           </h1>
         )}
-        {pending && <h1 className="type-wide text-3xl sm:text-4xl">{order.paymentMethod === "eft" ? "Order placed: awaiting EFT payment" : "Review and pay"}</h1>}
+        {pending && (
+          <h1 className="type-wide text-3xl sm:text-4xl">
+            {order.paymentMethod === "eft" ? "Order placed: awaiting EFT payment" : "Review and pay"}
+          </h1>
+        )}
         {(order.status === "cancelled" || order.status === "expired") && (
           <h1 className="flex items-center gap-3 type-wide text-3xl sm:text-4xl">
-            <XCircle className="size-8 text-muted-foreground" aria-hidden="true" /> This order was {order.status === "expired" ? "not paid in time" : "cancelled"}
+            <XCircle className="size-8 text-muted-foreground" aria-hidden="true" /> This order was{" "}
+            {order.status === "expired" ? "not paid in time" : "cancelled"}
           </h1>
         )}
         <p className="text-muted-foreground">We&apos;ve emailed the details to {order.email}.</p>
       </header>
+
+      {!viewer && (
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border bg-shelf p-5">
+          <p className="max-w-xl text-sm">
+            <span className="block font-semibold">Keep this order in an account</span>
+            Create a free account with {order.email} and this order, its invoice and tracking join your order history once you confirm your email.
+          </p>
+          <Button asChild variant="outline">
+            <Link href={`/signup?email=${encodeURIComponent(order.email)}&next=/account`}>
+              <UserPlus /> Create account
+            </Link>
+          </Button>
+        </div>
+      )}
 
       <div className="grid gap-10 lg:grid-cols-[1fr_400px]">
         <div className="space-y-6">

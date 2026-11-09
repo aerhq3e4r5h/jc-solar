@@ -26,7 +26,7 @@ export default function ContactPage() {
           {email && <p>Email: <a href={`mailto:${email}`} className="underline underline-offset-4">{email}</a></p>}
           {phone && <p>Phone: <a href={`tel:${phone.replace(/\s/g, "")}`} className="underline underline-offset-4">{phone}</a></p>}
           {address && <p className="text-muted-foreground">{address}</p>}
-          <p className="text-muted-foreground">For orders, include your order number (it starts with JC-) so we can find it quickly.</p>
+          <p className="text-muted-foreground">For orders, include your order number (it starts with GA-) so we can find it quickly.</p>
         </aside>
       </div>
     </div>

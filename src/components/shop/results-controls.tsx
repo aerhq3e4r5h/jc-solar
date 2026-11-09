@@ -9,7 +9,8 @@ import { filtersToQuery, PAGE_SIZE, type Filters } from "@/lib/catalogue/filters
 import { cn } from "@/lib/utils";
 
 /** A number that rolls to its new value when it changes (filters applied). */
-export function AnimatedCount({ value }: { value: number }) {
+/** A number that counts to its new value; `format` renders it (plain digits by default). */
+export function AnimatedCount({ value, format }: { value: number; format?: (n: number) => string }) {
   const [shown, setShown] = useState(value);
   const from = useRef(value);
   useEffect(() => {
@@ -26,14 +27,15 @@ export function AnimatedCount({ value }: { value: number }) {
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [value]);
-  return <span className="num">{shown}</span>;
+  return <span className="num">{format ? format(shown) : shown}</span>;
 }
 
 function useResultsNav(filters: Filters) {
   const router = useRouter();
   const pathname = usePathname();
   const [pending, startTransition] = useTransition();
-  const go = (next: Partial<Filters>) => startTransition(() => router.replace(`${pathname}${filtersToQuery({ ...filters, ...next })}`, { scroll: false }));
+  const go = (next: Partial<Filters>) =>
+    startTransition(() => router.replace(`${pathname}${filtersToQuery({ ...filters, ...next })}`, { scroll: false }));
   return { go, pending };
 }
 
@@ -49,7 +51,9 @@ export function ViewToggle({ filters }: { filters: Filters }) {
       title={label}
       className={cn(
         "grid size-9 place-items-center rounded-full transition-colors",
-        filters.view === view ? "bg-ink text-ink-foreground dark:bg-foreground dark:text-background" : "text-muted-foreground hover:bg-shelf hover:text-foreground",
+        filters.view === view
+          ? "bg-ink text-ink-foreground dark:bg-foreground dark:text-background"
+          : "text-muted-foreground hover:bg-shelf hover:text-foreground",
       )}
     >
       <Icon className="size-4" aria-hidden="true" />
@@ -71,7 +75,12 @@ export function LoadMore({ filters, total }: { filters: Filters; total: number }
   return (
     <div className="mt-10">
       {pending && (
-        <div className={cn("mb-10 grid gap-x-4 gap-y-10 sm:gap-x-6", filters.view === "list" ? "grid-cols-1" : "grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4")}>
+        <div
+          className={cn(
+            "mb-10 grid gap-x-4 gap-y-10 sm:gap-x-6",
+            filters.view === "list" ? "grid-cols-1" : "grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4",
+          )}
+        >
           {Array.from({ length: Math.min(PAGE_SIZE, remaining, filters.view === "list" ? 4 : 8) }).map((_, i) =>
             filters.view === "list" ? <Skeleton key={i} className="h-28 rounded-lg" /> : <TileSkeleton key={i} />,
           )}

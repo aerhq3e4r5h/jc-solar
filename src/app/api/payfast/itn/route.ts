@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
           orderUrl: `${siteUrl()}/order/${order.id}`,
           total: order.total,
         }),
-        attachments: [{ filename: `JC-Solar-Invoice-${order.invoice?.code ?? order.orderNumber}.pdf`, content: pdf }],
+        attachments: [{ filename: `GridAnchor-Invoice-${order.invoice?.code ?? order.orderNumber}.pdf`, content: pdf }],
       });
     },
   });

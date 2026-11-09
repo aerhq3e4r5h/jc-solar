@@ -603,3 +603,18 @@ main#main > * {
     animation: jc-anchor-swing 1.1s cubic-bezier(0.3, 0.6, 0.4, 1);
   }
 }
+
+/* Build-a-system: power running along the cable from the roof */
+.builder-flow {
+  stroke-dasharray: 2 9;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .builder-flow {
+    animation: jc-builder-flow 0.9s linear infinite;
+  }
+}
+@keyframes jc-builder-flow {
+  to {
+    stroke-dashoffset: -22;
+  }
+}

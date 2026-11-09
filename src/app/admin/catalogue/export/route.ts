@@ -16,7 +16,7 @@ export async function GET() {
   return new Response(new Uint8Array(body), {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="jc-solar-catalogue-${date}.xlsx"`,
+      "Content-Disposition": `attachment; filename="gridanchor-catalogue-${date}.xlsx"`,
       "Cache-Control": "no-store",
     },
   });
