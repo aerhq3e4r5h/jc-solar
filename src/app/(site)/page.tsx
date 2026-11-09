@@ -207,16 +207,16 @@ export default async function HomePage() {
               </span>
               <span>
                 <span className="type-wide block text-5xl leading-[0.95] sm:text-6xl">
-                  Up to <span className="num">{topDiscount}%</span>
+                  Up to
                   <br />
-                  off
+                  <span className="num">{topDiscount}%</span> off
                 </span>
                 <span className="mt-3 inline-flex items-center gap-2 font-semibold underline-offset-4 group-hover:underline">
                   Shop {onSale.length} markdowns <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
                 </span>
               </span>
               {saleImage && (
-                <span className="absolute top-5 right-5 size-28 rotate-6 overflow-hidden rounded-lg shadow-xl transition-transform duration-500 group-hover:rotate-2 sm:size-32">
+                <span className="absolute top-5 right-5 size-20 rotate-6 overflow-hidden rounded-lg shadow-xl transition-transform duration-500 group-hover:rotate-2 min-[390px]:size-24 sm:size-32">
                   <Image src={saleImage.url} alt="" fill sizes="128px" className="object-cover" />
                 </span>
               )}

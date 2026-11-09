@@ -68,10 +68,10 @@ const batteryKw = (h: number) => ((batteryPct(Math.min(24, h + 0.1)) - batteryPc
 
 /** Moments you can jump to: the hour each one shows. */
 const JUMPS = [
-  { label: "Morning", hour: 7 },
-  { label: "Midday", hour: 12 },
-  { label: "Load shedding at 18:00", hour: 18.25 },
-  { label: "Night", hour: 22 },
+  { label: "Morning", short: "Morning", hour: 7 },
+  { label: "Midday", short: "Midday", hour: 12 },
+  { label: "Load shedding at 18:00", short: "Load shedding", hour: 18.25 },
+  { label: "Night", short: "Night", hour: 22 },
 ];
 
 const clock = (h: number) => {
@@ -123,78 +123,42 @@ export function SolarDay() {
 
   return (
     <section ref={ref} className="relative h-[340vh] bg-ink text-white lg:h-[400vh]" aria-labelledby="day-heading">
-      <div className="sticky top-0 flex h-svh items-center overflow-hidden">
-        <div className="container-page grid w-full items-center gap-6 py-6 lg:grid-cols-[1fr_1.25fr] lg:gap-14">
-          <div className="order-2 lg:order-1">
-            <h2 id="day-heading" className="type-wide text-3xl sm:text-5xl">
+      {/*
+        The panel sits just below the sticky header and always fits the screen:
+        on phones the scene takes whatever height is left over (flex-1), on
+        large screens the text and scene sit side by side.
+      */}
+      <div className="sticky top-16 h-[calc(100svh-4rem)] overflow-hidden lg:top-[4.5rem] lg:h-[calc(100svh-4.5rem)]">
+        <div className="container-page flex h-full flex-col gap-3 py-3 sm:gap-4 sm:py-5 lg:grid lg:grid-cols-[1fr_1.25fr] lg:grid-rows-[1fr_auto_auto_1fr] lg:gap-x-14 lg:gap-y-5 lg:py-6">
+          <div className="shrink-0 lg:col-start-1 lg:row-start-2">
+            <h2 id="day-heading" className="type-wide text-2xl sm:text-4xl xl:text-5xl">
               24 hours on solar
             </h2>
-            <p className="mt-2 text-sm text-white/60 sm:text-base">Scroll through a day with a 5 kW system and a 10 kWh battery.</p>
-            <div className="mt-4 flex flex-wrap gap-2" aria-label="Jump to a time of day">
+            <p className="mt-2 hidden text-white/60 sm:block">Scroll through a day with a 5 kW system and a 10 kWh battery.</p>
+            <div className="mt-2.5 flex gap-1.5 sm:mt-4 sm:flex-wrap sm:gap-2" aria-label="Jump to a time of day">
               {JUMPS.map((j) => (
                 <button
                   key={j.label}
                   type="button"
                   onClick={() => jump(j.hour)}
+                  aria-label={`Jump to ${j.label.toLowerCase()}`}
                   className={cn(
-                    "rounded-full border px-3 py-1 text-xs font-semibold transition-colors sm:text-sm",
+                    "shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold whitespace-nowrap transition-colors sm:px-3 sm:text-sm",
                     j.hour === 18.25 ? "border-sale text-white hover:bg-sale" : "border-white/25 text-white/80 hover:border-white hover:text-white",
                   )}
                 >
-                  {j.label}
+                  {j.short}
                 </button>
               ))}
             </div>
-
-            <p className="num type-wide mt-5 text-6xl leading-none text-sun sm:text-8xl" aria-hidden="true">
-              {clock(h)}
-            </p>
-            <div className="mt-4 min-h-28 sm:min-h-32" aria-hidden="true">
-              <p className="text-xl font-semibold sm:text-2xl">{phase.title}</p>
-              <p className="mt-2 max-w-md text-white/75 sm:text-lg">{phase.body}</p>
-            </div>
-            {/* The whole story for screen readers, rather than the moving version. */}
-            <ol className="sr-only">
-              {PHASES.map((p) => (
-                <li key={p.title}>
-                  {p.title}: {p.body}
-                </li>
-              ))}
-            </ol>
-
-            <dl className="mt-4 grid grid-cols-3 gap-2 text-sm" aria-hidden="true">
-              <div className="rounded-lg bg-white/[0.06] p-3">
-                <dt className="flex items-center gap-1.5 text-white/60">
-                  <Sun className="size-3.5 text-sun" /> Solar
-                </dt>
-                <dd className="num mt-1 font-display text-xl font-bold">{solar.toFixed(1)} kW</dd>
-              </div>
-              <div className="rounded-lg bg-white/[0.06] p-3">
-                <dt className="flex items-center gap-1.5 text-white/60">
-                  <BatteryMedium className="size-3.5 text-charge" /> Battery
-                </dt>
-                <dd className="num mt-1 font-display text-xl font-bold">{Math.round(batteryPct(h))}%</dd>
-              </div>
-              <div className={cn("rounded-xl p-3 ring-1 transition-colors", off ? "bg-sale ring-sale" : "bg-white/[0.06] ring-transparent")}>
-                <dt className={cn("flex items-center gap-1.5", off ? "text-white" : "text-white/60")}>
-                  <PlugZap className={cn("size-3.5", off ? "text-white" : "text-white/60")} /> Grid
-                </dt>
-                <dd className="mt-1 font-display text-xl font-bold">{off ? "Off" : "On"}</dd>
-              </div>
-            </dl>
-
-            <EnergyFlow solar={solar} house={house} battery={battery} grid={grid} off={off} />
-
-            <div className="mt-5 h-1 overflow-hidden rounded-full bg-white/10" aria-hidden="true">
-              <motion.div className="h-full rounded-full bg-sun" style={{ width: progress }} />
-            </div>
           </div>
 
-          <div className="order-1 lg:order-2" aria-hidden="true">
-            <svg viewBox="0 0 600 420" className="w-full overflow-visible rounded-2xl">
+          <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl lg:col-start-2 lg:row-span-4 lg:row-start-1 lg:aspect-[600/420] lg:flex-none lg:self-center" aria-hidden="true">
+            {/* "slice" fills the box; on short phone screens it trims the plain ground first. */}
+            <svg viewBox="0 0 600 420" preserveAspectRatio="xMidYMin slice" className="absolute inset-0 h-full w-full">
               <defs>
                 <clipPath id="day-frame">
-                  <rect width="600" height="420" rx="18" />
+                  <rect width="600" height="420" />
                 </clipPath>
                 <radialGradient id="day-sun" cx="0.5" cy="0.5" r="0.5">
                   <stop offset="0" stopColor="#fff4c7" stopOpacity="1" />
@@ -310,7 +274,56 @@ export function SolarDay() {
                 </g>
               </g>
             </svg>
-            <p className="mt-2 text-center text-xs text-white/50">Illustration. Real output depends on your roof, location and weather.</p>
+            <p className="absolute right-2 bottom-2 rounded bg-black/45 px-1.5 py-0.5 text-[10px] text-white/85 sm:text-xs">Illustration. Real output depends on your roof and weather.</p>
+          </div>
+
+          <div className="shrink-0 lg:col-start-1 lg:row-start-3">
+            <div className="flex items-end gap-4 lg:block">
+              <p className="num type-wide text-5xl leading-none text-sun sm:text-7xl xl:text-8xl" aria-hidden="true">
+                {clock(h)}
+              </p>
+              <p className="pb-1 text-lg leading-tight font-semibold sm:text-xl lg:mt-4 lg:pb-0 lg:text-2xl" aria-hidden="true">
+                {phase.title}
+              </p>
+            </div>
+            <p className="mt-1.5 line-clamp-3 min-h-[3.75rem] max-w-md text-sm text-white/75 sm:text-base lg:mt-2 lg:min-h-[4.5rem] lg:text-lg" aria-hidden="true">
+              {phase.body}
+            </p>
+            {/* The whole story for screen readers, rather than the moving version. */}
+            <ol className="sr-only">
+              {PHASES.map((p) => (
+                <li key={p.title}>
+                  {p.title}: {p.body}
+                </li>
+              ))}
+            </ol>
+
+            <dl className="mt-2 grid grid-cols-3 gap-2 text-xs sm:mt-4 sm:text-sm" aria-hidden="true">
+              <div className="rounded-lg bg-white/[0.06] px-2.5 py-2 sm:p-3">
+                <dt className="flex items-center gap-1.5 text-white/60">
+                  <Sun className="size-3.5 text-sun" /> Solar
+                </dt>
+                <dd className="num mt-0.5 font-display text-base font-bold sm:mt-1 sm:text-xl">{solar.toFixed(1)} kW</dd>
+              </div>
+              <div className="rounded-lg bg-white/[0.06] px-2.5 py-2 sm:p-3">
+                <dt className="flex items-center gap-1.5 text-white/60">
+                  <BatteryMedium className="size-3.5 text-charge" /> Battery
+                </dt>
+                <dd className="num mt-0.5 font-display text-base font-bold sm:mt-1 sm:text-xl">{Math.round(batteryPct(h))}%</dd>
+              </div>
+              <div className={cn("rounded-lg px-2.5 py-2 transition-colors sm:p-3", off ? "bg-sale" : "bg-white/[0.06]")}>
+                <dt className={cn("flex items-center gap-1.5", off ? "text-white" : "text-white/60")}>
+                  <PlugZap className={cn("size-3.5", off ? "text-white" : "text-white/60")} /> Grid
+                </dt>
+                <dd className="mt-0.5 font-display text-base font-bold sm:mt-1 sm:text-xl">{off ? "Off" : "On"}</dd>
+              </div>
+            </dl>
+
+            <EnergyFlow solar={solar} house={house} battery={battery} grid={grid} off={off} />
+
+            <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/10 sm:mt-5" aria-hidden="true">
+              <motion.div className="h-full rounded-full bg-sun" style={{ width: progress }} />
+            </div>
           </div>
         </div>
       </div>
@@ -357,7 +370,7 @@ function EnergyFlow({ solar, house, battery, grid, off }: { solar: number; house
     </g>
   );
   return (
-    <svg viewBox="0 0 340 150" className="mt-4 hidden w-full max-w-md sm:block" aria-hidden="true">
+    <svg viewBox="0 0 340 150" className="mt-4 hidden w-full max-w-md lg:[@media(min-height:800px)]:block" aria-hidden="true">
       {link("M88 34 C 116 34, 112 75, 134 75", solar, "#ffc414")}
       {link("M88 116 C 116 116, 112 75, 134 75", grid, "#b8b8b0")}
       {link("M222 75 C 244 75, 230 34, 252 34", house, "white")}
