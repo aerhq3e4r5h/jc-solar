@@ -1,7 +1,6 @@
 import { BadgeCheck, PlugZap, ReceiptText, Truck } from "lucide-react";
 import Link from "next/link";
 import { Logo, LogoMark } from "@/components/brand/logo";
-import { MotionSwitch } from "@/components/motion/motion-menu";
 import { Spotlight } from "@/components/motion/spotlight";
 import { PaymentMethods } from "@/components/brand/payment-methods";
 import { footerNav, site } from "@/config/site";
@@ -68,10 +67,8 @@ export function SiteFooter() {
         </div>
         <div className="border-t">
           <div className="container-page flex flex-col gap-2 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-            <p>
-              © {company.legalName ?? site.name}. All prices include 15% VAT.{details && <> {details}.</>}
-            </p>
-            <MotionSwitch />
+            <p>© {company.legalName ?? site.name}. All prices include 15% VAT.</p>
+            {details && <p>{details}</p>}
           </div>
         </div>
       </div>

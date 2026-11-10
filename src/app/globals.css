@@ -3,7 +3,7 @@
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
-/* Motion levels (see src/lib/motion/pref.ts): style by level with motion-full:, motion-calm:, motion-off:. */
+/* Motion levels (the site is fixed at "full": see src/lib/motion/pref.ts). Style by level with motion-full:, motion-calm:, motion-off:. */
 @custom-variant motion-full (&:is([data-motion="full"] *));
 @custom-variant motion-calm (&:is([data-motion="calm"] *));
 @custom-variant motion-off (&:is([data-motion="off"] *));
@@ -157,11 +157,11 @@
     @apply outline-2 outline-offset-2 outline-ring;
   }
   /*
-   * Motion levels. Colour and opacity changes are never switched off by
-   * "calm": a visitor who asks for less motion still gets a site that feels
-   * alive, just without anything sliding, zooming or flying.
+   * Motion levels. The site always runs at "full" (MOTION_LEVEL in
+   * src/lib/motion/pref.ts, written onto <html data-motion>); the rules for
+   * "calm" and "off" below only apply if that constant is ever changed.
    */
-  /* "Off" (picked in the Animations menu): nothing animates at all. */
+  /* "Off": nothing animates at all. */
   :root[data-motion="off"] *,
   :root[data-motion="off"] *::before,
   :root[data-motion="off"] *::after {
@@ -170,16 +170,6 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     transition-delay: 0s !important;
-  }
-  /* No JavaScript, so no level was set: follow the device setting. */
-  @media (prefers-reduced-motion: reduce) {
-    :root:not([data-motion]) *,
-    :root:not([data-motion]) *::before,
-    :root:not([data-motion]) *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-    }
   }
   /* "Calm": menus, dialogs and drawers fade in place instead of sliding or zooming. */
   :root[data-motion="calm"] * {
@@ -400,14 +390,6 @@
   }
 }
 
-/* The line that offers full animations: only while the device, not the visitor, chose "calm". */
-.motion-hint {
-  display: none;
-}
-:root[data-motion-hint] .motion-hint {
-  display: block;
-}
-
 /*
  * Departments row on the home page. With full motion on a big screen it pins
  * and slides sideways as you scroll (see HorizontalScroll); otherwise big
@@ -523,14 +505,7 @@
   animation-duration: 0s !important;
   animation-delay: 0s !important;
 }
-@media (prefers-reduced-motion: reduce) {
-  :root:not([data-motion])::view-transition-old(*),
-  :root:not([data-motion])::view-transition-new(*),
-  :root:not([data-motion])::view-transition-group(*) {
-    animation-duration: 0s !important;
-    animation-delay: 0s !important;
-  }
-}
+
 
 /*
  * Home entrance, once per visit (a tiny inline script sets data-intro on

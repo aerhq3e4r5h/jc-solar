@@ -270,21 +270,14 @@ Status of each item. Legal text on the site is a starting point, not legal advic
 - **Product photos** (`public/products/<slug>/<n>.webp`, indexed by SKU in `src/data/product-images.json`) are Solar Europe's, used with their permission. A product uses them until an admin uploads its own images to Supabase Storage.
 - **Background photos** (`src/assets/backgrounds/`) are from Pexels under its free commercial licence; sources are in `src/assets/backgrounds/CREDITS.md`.
 
-## Motion levels
+## Motion
 
-How much the site animates is one setting with three levels, kept on `<html data-motion>`:
+The site always runs with full animation, for every visitor, whatever their device's "reduce motion" setting says. That is the owner's decision; there is no menu or switch for visitors.
 
-| Level | What moves | When |
-|---|---|---|
-| `full` | Everything: parallax, slides, the pinned departments row, fly to cart | The default |
-| `calm` | Fades, colour, count-ups, slow tickers, cross-fading pages. Nothing slides, zooms or flies | The default when the device asks for reduced motion |
-| `off` | Nothing | Only when the visitor picks it |
-
-- A visitor's own choice (the **Animations** menu in the top bar, or the switch in the footer) is saved in `localStorage` and overrides the device.
-- While the device, not the visitor, has chosen `calm`, one line under the top bar offers the full animations.
-- The level is set by a small inline script before first paint (`src/lib/motion/pref.ts`), so there is no flash. Without JavaScript the stylesheet falls back to the device setting.
-- In CSS, scope rules with `:root[data-motion="full"]` (or the `motion-full:`, `motion-calm:`, `motion-off:` Tailwind variants). In components, use `useMotion()` from `src/components/motion/use-motion.ts`; outside React, `currentMotion()`.
-- **Scroll reveals:** put `data-reveal` on any element (`"up"` by default, or `fade`, `left`, `right`, `scale`, `drop`). For a headline that arrives word by word, use `data-reveal="words"` with `<Words text="..." />` inside. The same inline script marks elements `data-shown` as they scroll into view, so it works in server components and never hides content when JavaScript is off.
+- The level is one constant, `MOTION_LEVEL` in `src/lib/motion/pref.ts`, written onto `<html data-motion>` by the root layout. The stylesheet and components also understand `calm` (fades only; nothing slides, zooms or flies) and `off` (nothing animates). Changing that constant runs the whole site at another level.
+- In CSS, animation rules are scoped with `:root[data-motion="full"]` (or the `motion-full:`, `motion-calm:`, `motion-off:` Tailwind variants). In components, use `useMotion()` from `src/components/motion/use-motion.ts`; outside React, `currentMotion()`.
+- **Scroll reveals:** put `data-reveal` on any element (`"up"` by default, or `fade`, `left`, `right`, `scale`, `drop`). For a headline that arrives word by word, use `data-reveal="words"` with `<Words text="..." />` inside. A small inline script (`REVEAL_SCRIPT`) marks elements `data-shown` as they scroll into view, so it works in server components and never hides content when JavaScript is off.
+- The brand row keeps its own Pause button, so its links are easy to click.
 
 ## Guides and calculators
 
