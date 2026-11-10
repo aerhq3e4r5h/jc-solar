@@ -269,3 +269,26 @@ Status of each item. Legal text on the site is a starting point, not legal advic
 
 - **Product photos** (`public/products/<slug>/<n>.webp`, indexed by SKU in `src/data/product-images.json`) are Solar Europe's, used with their permission. A product uses them until an admin uploads its own images to Supabase Storage.
 - **Background photos** (`src/assets/backgrounds/`) are from Pexels under its free commercial licence; sources are in `src/assets/backgrounds/CREDITS.md`.
+
+## Motion levels
+
+How much the site animates is one setting with three levels, kept on `<html data-motion>`:
+
+| Level | What moves | When |
+|---|---|---|
+| `full` | Everything: parallax, slides, the pinned departments row, fly to cart | The default |
+| `calm` | Fades, colour, count-ups, slow tickers, cross-fading pages. Nothing slides, zooms or flies | The default when the device asks for reduced motion |
+| `off` | Nothing | Only when the visitor picks it |
+
+- A visitor's own choice (the **Animations** menu in the top bar, or the switch in the footer) is saved in `localStorage` and overrides the device.
+- While the device, not the visitor, has chosen `calm`, one line under the top bar offers the full animations.
+- The level is set by a small inline script before first paint (`src/lib/motion/pref.ts`), so there is no flash. Without JavaScript the stylesheet falls back to the device setting.
+- In CSS, scope rules with `:root[data-motion="full"]` (or the `motion-full:`, `motion-calm:`, `motion-off:` Tailwind variants). In components, use `useMotion()` from `src/components/motion/use-motion.ts`; outside React, `currentMotion()`.
+- **Scroll reveals:** put `data-reveal` on any element (`"up"` by default, or `fade`, `left`, `right`, `scale`, `drop`). For a headline that arrives word by word, use `data-reveal="words"` with `<Words text="..." />` inside. The same inline script marks elements `data-shown` as they scroll into view, so it works in server components and never hides content when JavaScript is off.
+
+## Guides and calculators
+
+- Guides live in `src/app/(site)/learn/`, listed in `src/lib/guides.ts`, and share one layout (`src/components/content/guide-shell.tsx`). To add one: add it to the list, create its page with `<GuideShell slug="...">`, and add its URL to `src/app/sitemap.ts`.
+- The calculators are in `src/components/tools/`: `LoadCheck` (what an inverter runs at once), `Runtime` (how long a battery lasts), `PanelYield` and `PanelsNeeded` (panels), and `InverterTypes` (the switchable diagram). Give them a fixed value (`kw`, `kwh`, `watts`) and they describe one product; leave it out and the size becomes a slider.
+- Product pages pick the right calculator from the product's category and specs (`src/components/product/plain-terms-section.tsx`). Appliance wattages are shared with the home page planner (`src/lib/planner/appliances.ts`).
+- Every figure is an estimate and says so on the page. The assumptions (90% usable lithium capacity, 93% inverter efficiency, 4.8 kWh a day per kW of panels) are constants at the top of `src/components/tools/plain-terms.tsx`.
