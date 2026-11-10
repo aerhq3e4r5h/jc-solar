@@ -1,6 +1,7 @@
 import { ArrowRight, BadgePercent, BadgeCheck, Sun } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { Fragment } from "react";
 import installersImage from "@/assets/backgrounds/installers-roof.webp";
 import homeImage from "@/assets/backgrounds/home-roof.webp";
 import { LazyPlanner, LazySolarDay } from "@/components/home/lazy-sections";
@@ -66,7 +67,10 @@ const faqs = [
 ];
 
 // Runs as the page HTML is parsed, before the hero paints, so there's no flash.
-const INTRO_SCRIPT = `try{if(!sessionStorage.getItem("jc-intro")){sessionStorage.setItem("jc-intro","1");var d=document.documentElement;d.dataset.intro="1";setTimeout(function(){delete d.dataset.intro},1400)}}catch(e){}`;
+const INTRO_SCRIPT = `try{if(!sessionStorage.getItem("jc-intro")){sessionStorage.setItem("jc-intro","1");var d=document.documentElement;d.dataset.intro="1";setTimeout(function(){delete d.dataset.intro},3400)}}catch(e){}`;
+
+// The headline acts out what it says: "on" is lit, "off." is dim (see .hero-title in globals.css).
+const HEADLINE = ["Keep", "the", "lights", "on", "when", "the", "grid", "goes", "off."];
 
 /** The first n in-stock products with photos, one per brand so the row has variety. */
 function topInStock(products: Product[], category: CategorySlug, n: number) {
@@ -166,7 +170,7 @@ export default async function HomePage() {
         <div className="grid gap-3 lg:h-[min(76svh,46rem)] lg:grid-cols-3 lg:grid-rows-2">
           <div className="relative isolate flex min-h-[32rem] flex-col justify-end overflow-hidden rounded-xl bg-ink text-white lg:col-span-2 lg:row-span-2 lg:min-h-0">
             <div className="parallax-hero absolute inset-0 -z-20">
-              <Image src={homeImage} alt="" fill priority placeholder="blur" sizes="(min-width: 1024px) 66vw, 100vw" className="object-cover" />
+              <Image src={homeImage} alt="" fill priority placeholder="blur" sizes="(min-width: 1024px) 66vw, 100vw" className="hero-photo object-cover" />
             </div>
             <div className="photo-wash-bottom absolute inset-0 -z-10 lg:hidden" aria-hidden="true" />
             <div className="photo-wash absolute inset-0 -z-10 hidden lg:block" aria-hidden="true" />
@@ -177,13 +181,20 @@ export default async function HomePage() {
                   <span className="num type-wide text-xl">{formatPrice(kitsFrom)}</span>
                 </p>
               )}
-              <h1 id="hero-heading" className="intro-sweep type-wide max-w-3xl text-[2.35rem] leading-[0.95] sm:text-6xl xl:text-7xl">
-                Keep the lights on when the grid goes off.
+              <h1 id="hero-heading" className="hero-title type-wide max-w-3xl text-[2.35rem] leading-[0.95] sm:text-6xl xl:text-7xl">
+                {HEADLINE.map((w, i) => (
+                  <Fragment key={i}>
+                    <span className={w === "on" ? "hw hero-on" : w === "off." ? "hw hero-off" : "hw"} style={{ "--w": i } as React.CSSProperties}>
+                      {w}
+                    </span>
+                    {i < HEADLINE.length - 1 ? " " : ""}
+                  </Fragment>
+                ))}
               </h1>
-              <p className="mt-5 max-w-xl text-lg leading-relaxed text-white/80">
+              <p className="intro-rise mt-5 max-w-xl text-lg leading-relaxed text-white/80" style={{ "--i": 3 } as React.CSSProperties}>
                 Inverters, lithium batteries and solar panels for South African homes and businesses. Every price includes VAT.
               </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <div className="intro-rise mt-8 flex flex-col gap-3 sm:flex-row" style={{ "--i": 4 } as React.CSSProperties}>
                 <Button asChild size="lg" className="h-13 px-7 text-base">
                   <Link href="/shop/kits">Shop backup kits</Link>
                 </Button>
@@ -323,7 +334,7 @@ export default async function HomePage() {
                 </span>
                 <CategoryGlyph
                   category={c.slug}
-                  className="mx-auto mt-auto size-56 transition-transform duration-500 ease-out group-hover:scale-105 group-hover:-rotate-3"
+                  className="glyph-live mx-auto mt-auto size-56 transition-transform duration-500 ease-out group-hover:scale-105 group-hover:-rotate-3"
                 />
               </Link>
             </Shared>

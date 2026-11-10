@@ -31,7 +31,7 @@ export function ProductCard({ product, priority = false, morph = true }: { produ
   return (
     <article className="group relative flex h-full flex-col">
       <MaybeShared on={morph} name={vtName("product", product.id)}>
-        <div className="relative aspect-square overflow-hidden rounded-lg border bg-white transition-colors duration-300 group-hover:border-foreground/30">
+        <div className="relative aspect-square overflow-hidden rounded-lg border bg-white transition-[border-color,box-shadow,translate] duration-300 ease-out group-hover:border-foreground/30 group-hover:shadow-[0_18px_40px_-18px_rgb(0_0_0/0.35)] motion-full:group-hover:-translate-y-1">
           {image ? (
             <>
               <Image

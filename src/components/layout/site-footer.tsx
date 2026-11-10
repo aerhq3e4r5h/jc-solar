@@ -41,7 +41,10 @@ export function SiteFooter() {
       </section>
       <div className="dark grain relative isolate overflow-hidden bg-background text-foreground">
         <Spotlight />
-        <LogoMark tile={false} className="pointer-events-none absolute -right-28 -bottom-32 -z-10 size-[30rem] text-white/[0.04]" />
+        {/* The big anchor drops in and settles as the footer comes into view. */}
+        <div data-reveal="drop" className="pointer-events-none absolute -right-28 -bottom-32 -z-10">
+          <LogoMark tile={false} className="size-[30rem] text-white opacity-[0.05]" />
+        </div>
         <div className="container-page grid gap-12 py-16 md:grid-cols-[1.5fr_repeat(3,1fr)] lg:py-20">
           <div className="max-w-sm space-y-5">
             <Logo />
