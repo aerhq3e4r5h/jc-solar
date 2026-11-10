@@ -3,6 +3,10 @@
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
+/* Motion levels (see src/lib/motion/pref.ts): style by level with motion-full:, motion-calm:, motion-off:. */
+@custom-variant motion-full (&:is([data-motion="full"] *));
+@custom-variant motion-calm (&:is([data-motion="calm"] *));
+@custom-variant motion-off (&:is([data-motion="off"] *));
 
 /*
  * GridAnchor design tokens: a bright, sunlit hardware store.
@@ -123,8 +127,10 @@
     @apply border-border outline-ring/50;
   }
   html {
-    scroll-behavior: smooth;
     text-rendering: optimizeLegibility;
+  }
+  :root[data-motion="full"] {
+    scroll-behavior: smooth;
   }
   /* Slightly larger type on big screens; everything is rem-based so it scales together. */
   @media (min-width: 1280px) {
@@ -150,16 +156,43 @@
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-ring;
   }
+  /*
+   * Motion levels. Colour and opacity changes are never switched off by
+   * "calm": a visitor who asks for less motion still gets a site that feels
+   * alive, just without anything sliding, zooming or flying.
+   */
+  /* "Off" (picked in the Animations menu): nothing animates at all. */
+  :root[data-motion="off"] *,
+  :root[data-motion="off"] *::before,
+  :root[data-motion="off"] *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+  /* No JavaScript, so no level was set: follow the device setting. */
   @media (prefers-reduced-motion: reduce) {
-    html {
-      scroll-behavior: auto;
-    }
-    *,
-    *::before,
-    *::after {
+    :root:not([data-motion]) *,
+    :root:not([data-motion]) *::before,
+    :root:not([data-motion]) *::after {
       animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
+  }
+  /* "Calm": menus, dialogs and drawers fade in place instead of sliding or zooming. */
+  :root[data-motion="calm"] * {
+    --tw-enter-translate-x: 0 !important;
+    --tw-enter-translate-y: 0 !important;
+    --tw-enter-scale: 1 !important;
+    --tw-enter-rotate: 0 !important;
+    --tw-enter-opacity: 0 !important;
+    --tw-exit-translate-x: 0 !important;
+    --tw-exit-translate-y: 0 !important;
+    --tw-exit-scale: 1 !important;
+    --tw-exit-rotate: 0 !important;
+    --tw-exit-opacity: 0 !important;
   }
 }
 
@@ -191,8 +224,9 @@
 
 /*
  * Scroll effects. Built on CSS scroll-driven animations, so they need no
- * JavaScript and cost almost nothing to run. Browsers without support, and
- * visitors who ask for reduced motion, simply see the content in place.
+ * JavaScript and cost almost nothing to run. Browsers without support simply
+ * see the content in place. Parallax is for "full" only; the thin progress
+ * bar and the tickers also run on "calm" (the tickers at less than half speed).
  */
 .scroll-progress {
   display: none;
@@ -204,16 +238,6 @@
   }
   to {
     transform: scaleX(1);
-  }
-}
-@keyframes jc-rise {
-  from {
-    opacity: 0;
-    transform: translateY(48px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: none;
   }
 }
 /* Photos sit inside rounded frames, so they're scaled up enough that the
@@ -238,53 +262,168 @@
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  @supports (animation-timeline: scroll()) {
-    .scroll-progress {
-      display: block;
-      position: fixed;
-      inset: 0 0 auto 0;
-      z-index: 60;
-      height: 3px;
-      background: var(--sun);
-      transform-origin: 0 50%;
-      animation: jc-grow-x linear both;
-      animation-timeline: scroll(root);
-    }
-    /* Hero photo drifts slower than the page; hero text lifts away. */
-    .parallax-hero {
-      animation: jc-parallax linear both;
-      animation-timeline: scroll(root);
-      animation-range: 0 100vh;
-    }
-    .drift-up {
-      animation: jc-drift-up linear both;
-      animation-timeline: scroll(root);
-      animation-range: 0 70vh;
-    }
+@supports (animation-timeline: scroll()) {
+  :root:is([data-motion="full"], [data-motion="calm"]) .scroll-progress {
+    display: block;
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 60;
+    height: 3px;
+    background: var(--sun);
+    transform-origin: 0 50%;
+    animation: jc-grow-x linear both;
+    animation-timeline: scroll(root);
   }
-  @supports (animation-timeline: view()) {
-    /* Rises into place as it scrolls into view. Stagger with style="--i: n". */
-    .scroll-rise {
-      animation: jc-rise linear both;
-      animation-timeline: view();
-      animation-range: entry calc(var(--i, 0) * 4%) cover calc(22% + var(--i, 0) * 4%);
-    }
-    .parallax-band {
-      animation: jc-parallax linear both;
-      animation-timeline: view();
-    }
+  /* Hero photo drifts slower than the page; hero text lifts away. */
+  :root[data-motion="full"] .parallax-hero {
+    animation: jc-parallax linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 100vh;
   }
-  /* Continuous tickers (pause when hovered or focused). */
-  .marquee-track {
-    animation: jc-marquee var(--marquee-duration, 40s) linear infinite;
+  :root[data-motion="full"] .drift-up {
+    animation: jc-drift-up linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 70vh;
   }
-  .marquee-track.reverse {
-    animation-direction: reverse;
+}
+@supports (animation-timeline: view()) {
+  :root[data-motion="full"] .parallax-band {
+    animation: jc-parallax linear both;
+    animation-timeline: view();
   }
-  .marquee:hover .marquee-track,
-  .marquee:focus-within .marquee-track {
-    animation-play-state: paused;
+}
+/* Continuous tickers (pause when hovered or focused). */
+:root:is([data-motion="full"], [data-motion="calm"]) .marquee-track {
+  animation: jc-marquee var(--marquee-duration, 40s) linear infinite;
+}
+:root[data-motion="calm"] .marquee-track {
+  animation-duration: calc(var(--marquee-duration, 40s) * 2.4);
+}
+.marquee-track.reverse {
+  animation-direction: reverse;
+}
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track {
+  animation-play-state: paused;
+}
+
+/*
+ * Reveal on scroll. Put data-reveal on anything: "" or "up" rises in,
+ * "fade", "left", "right", "scale" do what they say, and "words" brings a
+ * headline in word by word (wrap its text in <Words>). The script in
+ * src/lib/motion/pref.ts adds data-shown when the element comes into view
+ * and staggers elements that arrive together (--rd); set --i to order them
+ * yourself. Elements are only ever hidden once that script is running
+ * (html[data-io]), so without JavaScript everything is simply there.
+ * "Calm" fades instead of moving; "off" shows everything at once.
+ */
+@keyframes ga-rise {
+  from {
+    opacity: 0;
+    transform: translateY(36px);
+  }
+}
+@keyframes ga-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes ga-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-48px);
+  }
+}
+@keyframes ga-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(48px);
+  }
+}
+@keyframes ga-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+/* A word rising from behind an invisible line. */
+@keyframes ga-word {
+  from {
+    transform: translateY(100%);
+    clip-path: inset(0 -0.1em 100% -0.1em);
+  }
+  to {
+    transform: none;
+    clip-path: inset(-0.2em -0.1em -0.3em -0.1em);
+  }
+}
+[data-reveal="words"] .w {
+  display: inline-block;
+}
+:root[data-io]:is([data-motion="full"], [data-motion="calm"]) [data-reveal]:not([data-shown], [data-reveal="words"]),
+:root[data-io]:is([data-motion="full"], [data-motion="calm"]) [data-reveal="words"]:not([data-shown]) .w {
+  opacity: 0;
+}
+:root[data-motion="full"] [data-reveal][data-shown]:not([data-reveal="words"]) {
+  animation: ga-rise 760ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: var(--rd, calc(var(--i, 0) * 80ms));
+}
+:root[data-motion="full"] [data-reveal="fade"][data-shown] {
+  animation-name: ga-fade;
+}
+:root[data-motion="full"] [data-reveal="left"][data-shown] {
+  animation-name: ga-from-left;
+}
+:root[data-motion="full"] [data-reveal="right"][data-shown] {
+  animation-name: ga-from-right;
+}
+:root[data-motion="full"] [data-reveal="scale"][data-shown] {
+  animation-name: ga-scale-in;
+}
+:root[data-motion="full"] [data-reveal="words"][data-shown] .w {
+  animation: ga-word 700ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--rd, 0ms) + var(--w, 0) * 55ms);
+}
+:root[data-motion="calm"] [data-reveal][data-shown]:not([data-reveal="words"]) {
+  animation: ga-fade 620ms ease-out backwards;
+  animation-delay: var(--rd, calc(var(--i, 0) * 60ms));
+}
+:root[data-motion="calm"] [data-reveal="words"][data-shown] .w {
+  animation: ga-fade 520ms ease-out backwards;
+  animation-delay: calc(var(--rd, 0ms) + var(--w, 0) * 45ms);
+}
+@media print {
+  [data-reveal],
+  [data-reveal] .w {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+}
+
+/* The line that offers full animations: only while the device, not the visitor, chose "calm". */
+.motion-hint {
+  display: none;
+}
+:root[data-motion-hint] .motion-hint {
+  display: block;
+}
+
+/*
+ * Departments row on the home page. With full motion on a big screen it pins
+ * and slides sideways as you scroll (see HorizontalScroll); otherwise big
+ * screens get a plain grid, and phones a row to swipe.
+ */
+@media (min-width: 1024px) {
+  :root:not([data-motion="full"]) .dept-track {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: visible;
+  }
+  :root:not([data-motion="full"]) .dept-track > * {
+    width: auto;
+  }
+  :root:not([data-motion="full"]) .dept-section {
+    padding-block: 5rem;
   }
 }
 @keyframes jc-flow {
@@ -362,10 +501,32 @@
 ::view-transition-new(site-header) {
   animation: none;
 }
+/* Calm: pages cross-fade in place; nothing slides or morphs. */
+:root[data-motion="calm"]::view-transition-group(*) {
+  animation-duration: 0s;
+}
+:root[data-motion="calm"]::view-transition-old(*) {
+  animation: 140ms ease-in both jc-vt-fade reverse;
+}
+:root[data-motion="calm"]::view-transition-new(*) {
+  animation: 240ms ease-out 100ms both jc-vt-fade;
+}
+:root[data-motion="calm"]::view-transition-image-pair(*) {
+  animation: none;
+}
+:root[data-motion="calm"]::view-transition-new(site-header) {
+  animation: none;
+}
+:root[data-motion="off"]::view-transition-old(*),
+:root[data-motion="off"]::view-transition-new(*),
+:root[data-motion="off"]::view-transition-group(*) {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+}
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(*),
-  ::view-transition-new(*),
-  ::view-transition-group(*) {
+  :root:not([data-motion])::view-transition-old(*),
+  :root:not([data-motion])::view-transition-new(*),
+  :root:not([data-motion])::view-transition-group(*) {
     animation-duration: 0s !important;
     animation-delay: 0s !important;
   }
@@ -409,22 +570,25 @@
     transform: none;
   }
 }
-@media (prefers-reduced-motion: no-preference) {
-  [data-intro] .intro-sweep {
-    background-image: linear-gradient(100deg, #fff 44%, var(--sun) 50%, #fff 56%);
-    background-size: 280% 100%;
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-    animation: jc-sweep 820ms cubic-bezier(0.3, 0, 0.2, 1) 60ms both;
-  }
-  [data-intro] .intro-stamp {
-    animation: jc-stamp 480ms cubic-bezier(0.2, 1.3, 0.4, 1) 160ms both;
-  }
-  [data-intro] .intro-rise {
-    animation: jc-tile-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-    animation-delay: calc(220ms + var(--i, 0) * 130ms);
-  }
+:root[data-motion="full"][data-intro] .intro-sweep {
+  background-image: linear-gradient(100deg, #fff 44%, var(--sun) 50%, #fff 56%);
+  background-size: 280% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: jc-sweep 820ms cubic-bezier(0.3, 0, 0.2, 1) 60ms both;
+}
+:root[data-motion="full"][data-intro] .intro-stamp {
+  animation: jc-stamp 480ms cubic-bezier(0.2, 1.3, 0.4, 1) 160ms both;
+}
+:root[data-motion="full"][data-intro] .intro-rise {
+  animation: jc-tile-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(220ms + var(--i, 0) * 130ms);
+}
+/* Calm: the same pieces simply fade in, one after another. */
+:root[data-motion="calm"][data-intro] :is(.intro-sweep, .intro-stamp, .intro-rise) {
+  animation: ga-fade 560ms ease-out backwards;
+  animation-delay: calc(80ms + var(--i, 0) * 140ms);
 }
 
 /* Two-handle range slider: only the thumbs take pointer events, so both handles can be dragged. */
@@ -469,10 +633,8 @@
 .dark .skeleton-shimmer {
   background-image: linear-gradient(100deg, transparent 30%, oklch(1 0 0 / 0.06) 50%, transparent 70%);
 }
-@media (prefers-reduced-motion: no-preference) {
-  .skeleton-shimmer {
-    animation: jc-shimmer 1.4s ease-in-out infinite;
-  }
+:root:is([data-motion="full"], [data-motion="calm"]) .skeleton-shimmer {
+  animation: jc-shimmer 1.4s ease-in-out infinite;
 }
 
 /* After a navigation, Next scrolls the new page into view: keep its top clear of the sticky header. */
@@ -536,43 +698,41 @@ main#main > * {
     transform: scale(0.6);
   }
 }
-@media (prefers-reduced-motion: no-preference) {
-  @supports (animation-timeline: view()) {
-    .statement {
-      view-timeline-name: --statement;
-    }
-    .statement-word {
-      animation: jc-word-on linear both;
-      animation-timeline: --statement;
-      animation-range: cover calc(18% + var(--i) * 2.2%) cover calc(22% + var(--i) * 2.2%);
-    }
-    .statement-word[data-accent] {
-      animation-name: jc-word-on;
-    }
-    .statement-ring,
-    .statement-stroke {
-      stroke-dasharray: 1;
-      animation: jc-draw linear both;
-      animation-timeline: --statement;
-    }
-    .statement-ring {
-      animation-range: cover 22% cover 46%;
-    }
-    .statement-stroke {
-      animation-range: cover 44% cover 52%;
-    }
-    .statement-rays {
-      transform-origin: 50px 30px;
-      transform-box: view-box;
-      animation: jc-rays-on cubic-bezier(0.2, 1.4, 0.4, 1) both;
-      animation-timeline: --statement;
-      animation-range: cover 50% cover 56%;
-    }
-    .statement-glow {
-      animation: jc-glow-on ease-out both;
-      animation-timeline: --statement;
-      animation-range: cover 50% cover 60%;
-    }
+@supports (animation-timeline: view()) {
+  :root:is([data-motion="full"], [data-motion="calm"]) .statement {
+    view-timeline-name: --statement;
+  }
+  :root:is([data-motion="full"], [data-motion="calm"]) .statement-word {
+    animation: jc-word-on linear both;
+    animation-timeline: --statement;
+    animation-range: cover calc(18% + var(--i) * 2.2%) cover calc(22% + var(--i) * 2.2%);
+  }
+  :root:is([data-motion="full"], [data-motion="calm"]) .statement-word[data-accent] {
+    animation-name: jc-word-on;
+  }
+  :root:is([data-motion="full"], [data-motion="calm"]) .statement-ring,
+  :root:is([data-motion="full"], [data-motion="calm"]) .statement-stroke {
+    stroke-dasharray: 1;
+    animation: jc-draw linear both;
+    animation-timeline: --statement;
+  }
+  :root:is([data-motion="full"], [data-motion="calm"]) .statement-ring {
+    animation-range: cover 22% cover 46%;
+  }
+  :root:is([data-motion="full"], [data-motion="calm"]) .statement-stroke {
+    animation-range: cover 44% cover 52%;
+  }
+  :root:is([data-motion="full"], [data-motion="calm"]) .statement-rays {
+    transform-origin: 50px 30px;
+    transform-box: view-box;
+    animation: jc-rays-on cubic-bezier(0.2, 1.4, 0.4, 1) both;
+    animation-timeline: --statement;
+    animation-range: cover 50% cover 56%;
+  }
+  :root:is([data-motion="full"], [data-motion="calm"]) .statement-glow {
+    animation: jc-glow-on ease-out both;
+    animation-timeline: --statement;
+    animation-range: cover 50% cover 60%;
   }
 }
 
@@ -598,20 +758,16 @@ main#main > * {
   transform-origin: 50px 14.5px;
   transform-box: view-box;
 }
-@media (prefers-reduced-motion: no-preference) {
-  .group:hover .anchor-swing {
-    animation: jc-anchor-swing 1.1s cubic-bezier(0.3, 0.6, 0.4, 1);
-  }
+:root:is([data-motion="full"], [data-motion="calm"]) .group:hover .anchor-swing {
+  animation: jc-anchor-swing 1.1s cubic-bezier(0.3, 0.6, 0.4, 1);
 }
 
 /* Build-a-system: power running along the cable from the roof */
 .builder-flow {
   stroke-dasharray: 2 9;
 }
-@media (prefers-reduced-motion: no-preference) {
-  .builder-flow {
-    animation: jc-builder-flow 0.9s linear infinite;
-  }
+:root:is([data-motion="full"], [data-motion="calm"]) .builder-flow {
+  animation: jc-builder-flow 0.9s linear infinite;
 }
 @keyframes jc-builder-flow {
   to {

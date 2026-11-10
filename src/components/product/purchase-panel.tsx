@@ -1,7 +1,8 @@
 "use client";
 
 import { Check, GitCompareArrows, Loader2, Minus, Plus, ShoppingCart, Wrench } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
+import { useMotion } from "@/components/motion/use-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -32,7 +33,7 @@ type Props = {
 export function PurchasePanel({ image = null, productId, slug, category, name, price, canBuy, maxQty, installationEligible }: Props) {
   const mainButton = useRef<HTMLDivElement>(null);
   const [showBar, setShowBar] = useState(false);
-  const reduce = useReducedMotion();
+  const reduce = useMotion() !== "full";
 
   // The phone bar appears only once the main Add to cart button is off screen.
   useEffect(() => {

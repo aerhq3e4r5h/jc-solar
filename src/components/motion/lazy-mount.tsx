@@ -7,7 +7,15 @@ import { useEffect, useRef, useState } from "react";
  * so heavy sections (and the code behind them) load when they're needed.
  * The placeholder keeps the same height, so the page doesn't jump.
  */
-export function LazyMount({ children, placeholderClassName, margin = "800px" }: { children: React.ReactNode; placeholderClassName: string; margin?: string }) {
+export function LazyMount({
+  children,
+  placeholderClassName,
+  margin = "800px",
+}: {
+  children: React.ReactNode;
+  placeholderClassName: string;
+  margin?: string;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [show, setShow] = useState(false);
   useEffect(() => {

@@ -1,6 +1,7 @@
 import { BadgeCheck, PlugZap, ReceiptText, Truck } from "lucide-react";
 import Link from "next/link";
 import { Logo, LogoMark } from "@/components/brand/logo";
+import { MotionSwitch } from "@/components/motion/motion-menu";
 import { Spotlight } from "@/components/motion/spotlight";
 import { PaymentMethods } from "@/components/brand/payment-methods";
 import { footerNav, site } from "@/config/site";
@@ -14,7 +15,11 @@ const PROMISES = [
 
 export function SiteFooter() {
   const { company } = site;
-  const details = [company.legalName, company.registrationNumber && `Reg. ${company.registrationNumber}`, company.vatNumber && `VAT ${company.vatNumber}`]
+  const details = [
+    company.legalName,
+    company.registrationNumber && `Reg. ${company.registrationNumber}`,
+    company.vatNumber && `VAT ${company.vatNumber}`,
+  ]
     .filter(Boolean)
     .join(", ");
   return (
@@ -60,8 +65,10 @@ export function SiteFooter() {
         </div>
         <div className="border-t">
           <div className="container-page flex flex-col gap-2 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-            <p>© {company.legalName ?? site.name}. All prices include 15% VAT.</p>
-            {details && <p>{details}</p>}
+            <p>
+              © {company.legalName ?? site.name}. All prices include 15% VAT.{details && <> {details}.</>}
+            </p>
+            <MotionSwitch />
           </div>
         </div>
       </div>

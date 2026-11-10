@@ -197,7 +197,7 @@ async function Results({ category, searchParams }: { category: CategorySlug; sea
             ) : (
               <ul className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 xl:grid-cols-3 2xl:grid-cols-4">
                 {shown.map((p, i) => (
-                  <li key={p.id} className="scroll-rise" style={{ "--i": i % 4 } as React.CSSProperties}>
+                  <li key={p.id} data-reveal>
                     <ProductCard product={p} priority={i < 3} />
                   </li>
                 ))}

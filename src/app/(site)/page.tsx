@@ -11,6 +11,7 @@ import { Carousel } from "@/components/motion/carousel";
 import { CountUp } from "@/components/motion/count-up";
 import { HorizontalScroll } from "@/components/motion/horizontal-scroll";
 import { Marquee } from "@/components/motion/marquee";
+import { Words } from "@/components/motion/words";
 import { Spotlight } from "@/components/motion/spotlight";
 import { PageTransition, Shared, vtName } from "@/components/motion/page-transition";
 import { CategoryGlyph } from "@/components/product/product-art";
@@ -334,16 +335,16 @@ export default async function HomePage() {
       {onSale.length > 0 && (
         <section className="container-page pb-20 lg:pb-24" aria-labelledby="sale-heading">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-            <h2 id="sale-heading" className="type-wide text-4xl sm:text-5xl">
-              On sale now
+            <h2 id="sale-heading" data-reveal="words" className="type-wide text-4xl sm:text-5xl">
+              <Words text="On sale now" />
             </h2>
             <Link href="/shop?sale=1" className="inline-flex items-center gap-1.5 font-semibold text-sale underline-offset-4 hover:underline">
               All markdowns <ArrowRight className="size-4" aria-hidden="true" />
             </Link>
           </div>
           <ul className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
-            {onSale.map((p, i) => (
-              <li key={p.id} className="scroll-rise" style={{ "--i": i % 4 } as React.CSSProperties}>
+            {onSale.map((p) => (
+              <li key={p.id} data-reveal>
                 <ProductCard product={p} />
               </li>
             ))}
@@ -367,12 +368,16 @@ export default async function HomePage() {
       {/* What solar saves: an estimate from the visitor's own bill */}
       <section className="container-page py-16 lg:py-24" aria-labelledby="savings-heading">
         <div className="mb-8 max-w-2xl">
-          <h2 id="savings-heading" className="type-wide text-4xl sm:text-5xl">
-            What could solar save you?
+          <h2 id="savings-heading" data-reveal="words" className="type-wide text-4xl sm:text-5xl">
+            <Words text="What could solar save you?" />
           </h2>
-          <p className="mt-3 text-lg text-muted-foreground">Move the sliders to your own bill. Prices come from what&apos;s in stock today.</p>
+          <p data-reveal="fade" className="mt-3 text-lg text-muted-foreground">
+            Move the sliders to your own bill. Prices come from what&apos;s in stock today.
+          </p>
         </div>
-        <SavingsCalculator prices={calculatorPrices(products)} />
+        <div data-reveal>
+          <SavingsCalculator prices={calculatorPrices(products)} />
+        </div>
       </section>
 
       {/* The bold moment: the words light up and the logo switches on as you scroll */}
@@ -385,8 +390,8 @@ export default async function HomePage() {
       {featured.length > 0 && (
         <section className="container-page py-20 lg:py-28" aria-labelledby="featured-heading">
           <div className="mb-2 flex flex-wrap items-end justify-between gap-4">
-            <h2 id="featured-heading" className="type-wide text-4xl sm:text-5xl">
-              Popular right now
+            <h2 id="featured-heading" data-reveal="words" className="type-wide text-4xl sm:text-5xl">
+              <Words text="Popular right now" />
             </h2>
             <Link href="/shop" className="inline-flex items-center gap-1.5 font-semibold underline-offset-4 hover:underline">
               Shop everything <ArrowRight className="size-4" aria-hidden="true" />
@@ -414,12 +419,12 @@ export default async function HomePage() {
           <div className="absolute inset-0 -z-10 bg-ink/85" aria-hidden="true" />
           <Spotlight />
           <div className="px-6 py-14 sm:px-10 lg:px-14 lg:py-20">
-            <h2 id="how-heading" className="type-wide max-w-3xl text-4xl leading-[0.98] sm:text-5xl">
-              From your electricity bill to a working system
+            <h2 id="how-heading" data-reveal="words" className="type-wide max-w-3xl text-4xl leading-[0.98] sm:text-5xl">
+              <Words text="From your electricity bill to a working system" />
             </h2>
             <ol className="mt-12 grid gap-8 md:grid-cols-3 md:gap-6">
               {steps.map((step, i) => (
-                <li key={step.title} className="scroll-rise border-t-2 border-sun pt-6" style={{ "--i": i } as React.CSSProperties}>
+                <li key={step.title} data-reveal className="border-t-2 border-sun pt-6" style={{ "--i": i } as React.CSSProperties}>
                   <p className="type-wide text-2xl text-white">
                     <span className="num mr-3 text-sun">{i + 1}</span>
                     {step.title}
@@ -450,8 +455,8 @@ export default async function HomePage() {
       {/* FAQ */}
       <section className="container-page grid gap-12 py-20 lg:grid-cols-[1fr_1.4fr] lg:py-28" aria-labelledby="faq-heading">
         <div>
-          <h2 id="faq-heading" className="type-wide text-4xl sm:text-5xl">
-            Straight answers
+          <h2 id="faq-heading" data-reveal="words" className="type-wide text-4xl sm:text-5xl">
+            <Words text="Straight answers" />
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
             More in our{" "}
@@ -465,7 +470,7 @@ export default async function HomePage() {
             .
           </p>
         </div>
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion type="single" collapsible className="w-full" data-reveal="fade">
           {faqs.map((f) => (
             <AccordionItem key={f.q} value={f.q}>
               <AccordionTrigger className="py-5 text-left text-lg font-semibold">{f.q}</AccordionTrigger>
@@ -474,7 +479,16 @@ export default async function HomePage() {
           ))}
         </Accordion>
       </section>
-      <JsonLd data={{ "@context": "https://schema.org", "@type": "OnlineStore", name: site.name, url: siteUrl(), description: site.description, areaServed: "ZA" }} />
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "OnlineStore",
+          name: site.name,
+          url: siteUrl(),
+          description: site.description,
+          areaServed: "ZA",
+        }}
+      />
     </PageTransition>
   );
 }

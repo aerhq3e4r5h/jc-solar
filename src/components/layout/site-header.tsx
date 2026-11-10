@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Logo } from "@/components/brand/logo";
 import { CartBadge } from "@/components/cart/cart-badge";
+import { MotionHint, MotionMenu } from "@/components/motion/motion-menu";
 import { ThemeToggle } from "@/components/theme";
 import { getCatalogue } from "@/lib/catalogue/queries";
 import { discountPercent } from "@/lib/pricing/sale";
@@ -46,12 +47,14 @@ export function SiteHeader() {
             <Link href="/contact" className="underline-offset-4 hover:underline">
               Contact
             </Link>
-            <span className="-mr-2 [&_button]:size-7 [&_button]:hover:bg-ink/10">
+            <MotionMenu />
+            <span className="-mr-2 -ml-3 [&_button]:size-7 [&_button]:hover:bg-ink/10">
               <ThemeToggle />
             </span>
           </nav>
         </div>
       </div>
+      <MotionHint />
       <header className="sticky top-0 z-40 border-b bg-background" style={{ viewTransitionName: "site-header" }}>
         <a
           href="#main"

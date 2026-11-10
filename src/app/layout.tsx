@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { site } from "@/config/site";
+import { MOTION_SCRIPT } from "@/lib/motion/pref";
 import "./globals.css";
 
 // One family throughout. Its width axis does the work: wide and heavy for
@@ -28,6 +29,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en-ZA" suppressHydrationWarning className={archivo.variable}>
       <body className="min-h-dvh">
+        {/* Sets the motion level and starts scroll reveals before anything paints. */}
+        <script dangerouslySetInnerHTML={{ __html: MOTION_SCRIPT }} />
         <ThemeProvider>
           <TooltipProvider>{children}</TooltipProvider>
           <Toaster />

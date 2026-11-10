@@ -1,19 +1,21 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useMotion } from "./use-motion";
 
 /**
  * A faint light that follows the mouse across a dark band. Mouse only (not
- * touch), very low intensity, and absent with reduced motion. Place inside a
+ * touch), very low intensity, and absent when animations are off. Place inside a
  * `relative` parent; it covers the parent and ignores clicks.
  */
 export function Spotlight() {
   const ref = useRef<HTMLDivElement>(null);
+  const motion = useMotion();
   useEffect(() => {
     const el = ref.current;
     const parent = el?.parentElement;
     if (!el || !parent) return;
-    if (!window.matchMedia("(pointer: fine) and (prefers-reduced-motion: no-preference)").matches) return;
+    if (motion === "off" || !window.matchMedia("(pointer: fine)").matches) return;
     const move = (e: PointerEvent) => {
       const r = parent.getBoundingClientRect();
       el.style.setProperty("--x", `${e.clientX - r.left}px`);
@@ -26,8 +28,9 @@ export function Spotlight() {
     return () => {
       parent.removeEventListener("pointermove", move);
       parent.removeEventListener("pointerleave", leave);
+      el.style.opacity = "0";
     };
-  }, []);
+  }, [motion]);
   return (
     <div
       ref={ref}

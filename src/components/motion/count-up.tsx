@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { currentMotion } from "./use-motion";
 
 /**
  * A number that counts up the first time it scrolls into view. The server
@@ -13,7 +14,7 @@ export function CountUp({ to, suffix = "", duration = 1400 }: { to: number; suff
 
   useEffect(() => {
     const el = ref.current;
-    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!el || currentMotion() === "off") return;
     const rect = el.getBoundingClientRect();
     if (rect.top < window.innerHeight && rect.bottom > 0) return; // already visible
     setValue(0);

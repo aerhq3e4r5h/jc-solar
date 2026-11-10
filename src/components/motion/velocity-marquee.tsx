@@ -1,8 +1,9 @@
 "use client";
 
 import { motion, useAnimationFrame, useMotionValue, useScroll, useSpring, useTransform, useVelocity } from "motion/react";
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useMotion } from "./use-motion";
 
 /** Keeps v inside [min, max), wrapping around like a clock. */
 const wrap = (min: number, max: number, v: number) => {
@@ -15,8 +16,8 @@ const wrap = (min: number, max: number, v: number) => {
  * scrolls, and turns around when you scroll back up. The items are rendered
  * twice so the loop is seamless; the copy is hidden from screen readers and
  * keyboard. It stops while the pointer or keyboard focus is on it, and the
- * caller can pause it. With reduced motion it still turns, but slowly and
- * steadily: no scroll speed-up and no change of direction.
+ * caller can pause it. On "calm" it still turns, but slowly and steadily:
+ * no scroll speed-up and no change of direction.
  */
 export function VelocityMarquee({
   children,
@@ -32,7 +33,7 @@ export function VelocityMarquee({
   label: string;
   className?: string;
 }) {
-  const reduce = useReducedMotionAfterHydration();
+  const reduce = useMotion() !== "full";
   const [held, setHeld] = useState(false);
   const offset = useMotionValue(0);
   const { scrollY } = useScroll();
@@ -73,23 +74,5 @@ export function VelocityMarquee({
         </ul>
       </motion.div>
     </div>
-  );
-}
-
-const QUERY = "(prefers-reduced-motion: reduce)";
-const subscribe = (cb: () => void) => {
-  const m = window.matchMedia(QUERY);
-  m.addEventListener("change", cb);
-  return () => m.removeEventListener("change", cb);
-};
-/**
- * The reduced-motion setting, but `false` while hydrating, so the browser's
- * first render matches the server's HTML (the server can't know the setting).
- */
-function useReducedMotionAfterHydration() {
-  return useSyncExternalStore(
-    subscribe,
-    () => window.matchMedia(QUERY).matches,
-    () => false,
   );
 }

@@ -84,7 +84,7 @@ export function Gallery({ images, name, sale, productId }: { images: Photo[]; na
           {lens && (
             <span
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 bg-white bg-no-repeat motion-safe:transition-[background-position] motion-safe:duration-75"
+              className="pointer-events-none absolute inset-0 bg-white bg-no-repeat transition-[background-position] duration-75"
               style={{
                 backgroundImage: `url(${current.url})`,
                 backgroundSize: "220%",

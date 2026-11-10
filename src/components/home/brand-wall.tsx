@@ -3,12 +3,16 @@
 import { Pause, Play } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useMotion } from "@/components/motion/use-motion";
 import { VelocityMarquee } from "@/components/motion/velocity-marquee";
 import { slugify } from "@/lib/catalogue/normalise";
 
 /** Every brand in the shop, in big type, looping in two rows that run opposite ways. */
 export function BrandWall({ brands }: { brands: string[] }) {
-  const [paused, setPaused] = useState(false);
+  // Starts paused when animations are off; the button still lets you play it.
+  const still = useMotion() === "off";
+  const [choice, setPaused] = useState<boolean | null>(null);
+  const paused = choice ?? still;
   const half = Math.ceil(brands.length / 2);
   const rows = [brands.slice(0, half), brands.slice(half)];
 
@@ -20,7 +24,7 @@ export function BrandWall({ brands }: { brands: string[] }) {
         </h2>
         <button
           type="button"
-          onClick={() => setPaused((p) => !p)}
+          onClick={() => setPaused(!paused)}
           aria-pressed={paused}
           className="inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
         >

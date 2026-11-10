@@ -1,8 +1,7 @@
 // "Fly to cart": a copy of the product photo arcs from where it was added
-// to the cart icon in the header, which then pops. Client only. With reduced
-// motion (or nothing to fly), it resolves at once and the cart just updates.
-
-const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+// to the cart icon in the header, which then pops. Client only. The flight is
+// for full motion; on "calm" the icon just pops, on "off" nothing moves.
+import { currentMotion } from "@/components/motion/use-motion";
 
 /** The visible header cart link (desktop and phone headers share one). */
 function cartTarget(): HTMLElement | null {
@@ -18,7 +17,7 @@ export function visibleProductPhoto(): Element | null {
 /** Pop the cart icon, like a spring. */
 export function popCart() {
   const target = cartTarget();
-  if (!target || reduced()) return;
+  if (!target || currentMotion() === "off") return;
   target.animate(
     [{ transform: "scale(1)" }, { transform: "scale(1.28)", offset: 0.35 }, { transform: "scale(0.94)", offset: 0.7 }, { transform: "scale(1)" }],
     { duration: 520, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" },
@@ -31,7 +30,11 @@ export function popCart() {
  */
 export function flyToCart(from: Element | null | undefined, image: string | null | undefined): Promise<void> {
   const target = cartTarget();
-  if (!from || !image || !target || reduced()) return Promise.resolve();
+  if (!from || !image || !target || currentMotion() === "off") return Promise.resolve();
+  if (currentMotion() === "calm") {
+    popCart();
+    return Promise.resolve();
+  }
   const a = from.getBoundingClientRect();
   // The photo is off screen (e.g. the phone's sticky bar): just pop the icon.
   if (!a.width || a.bottom < 0 || a.top > window.innerHeight) {

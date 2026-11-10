@@ -168,7 +168,7 @@ export function SavingsCalculator({ prices }: { prices: CalculatorPrices }) {
                   <span className="text-sm text-muted-foreground">{b.label}</span>
                   <span className="flex items-center gap-2">
                     <span
-                      className={cn("h-6 rounded-r-[4px] motion-safe:transition-[width] motion-safe:duration-500 motion-safe:ease-out", hover === b.key && "brightness-110")}
+                      className={cn("h-6 rounded-r-[4px] transition-[width] duration-500 ease-out", hover === b.key && "brightness-110")}
                       style={{ width: `max(2px, calc(${width}% - 6rem))`, background: b.fill }}
                     />
                     <span className="num shrink-0 text-sm font-bold">{formatPrice(Math.round(b.value))}</span>

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { filtersToQuery, PAGE_SIZE, type Filters } from "@/lib/catalogue/filters";
+import { currentMotion } from "@/components/motion/use-motion";
 import { cn } from "@/lib/utils";
 
 /** A number that rolls to its new value when it changes (filters applied). */
@@ -16,7 +17,7 @@ export function AnimatedCount({ value, format }: { value: number; format?: (n: n
   useEffect(() => {
     const start = from.current;
     from.current = value;
-    if (start === value || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return void setShown(value);
+    if (start === value || currentMotion() === "off") return void setShown(value);
     const t0 = performance.now();
     let frame = 0;
     const tick = (t: number) => {

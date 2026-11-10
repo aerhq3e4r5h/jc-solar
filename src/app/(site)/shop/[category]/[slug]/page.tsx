@@ -391,7 +391,7 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
       </div>
 
       {related && related.items.length > 0 && (
-        <section className="scroll-rise mt-16" aria-labelledby="related-heading">
+        <section data-reveal className="mt-16" aria-labelledby="related-heading">
           <h2 id="related-heading" className="text-2xl font-bold">
             {related.title}
           </h2>

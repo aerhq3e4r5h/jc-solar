@@ -1,11 +1,12 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
+import { useMotion } from "./use-motion";
 import { useState } from "react";
 
 /** A number that rolls up or down (like a slot machine) when it changes. */
 export function RollingNumber({ value, className }: { value: number; className?: string }) {
-  const reduce = useReducedMotion();
+  const reduce = useMotion() !== "full";
   // Which way to roll: remember the last value (updated during render, the React way).
   const [prev, setPrev] = useState(value);
   const [dir, setDir] = useState(1);

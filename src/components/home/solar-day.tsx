@@ -3,6 +3,7 @@
 import { BatteryMedium, PlugZap, Sun } from "lucide-react";
 import { motion, useMotionValueEvent, useScroll, useTransform } from "motion/react";
 import { useRef, useState } from "react";
+import { currentMotion } from "@/components/motion/use-motion";
 import { cn } from "@/lib/utils";
 
 // A day with a typical home solar system, driven by scrolling: the sun
@@ -118,7 +119,7 @@ export function SolarDay() {
     if (!el) return;
     const span = el.offsetHeight - window.innerHeight;
     const top = el.getBoundingClientRect().top + window.scrollY + ((hour - 5) / 19) * span;
-    window.scrollTo({ top, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    window.scrollTo({ top, behavior: currentMotion() === "full" ? "smooth" : "auto" });
   };
 
   return (

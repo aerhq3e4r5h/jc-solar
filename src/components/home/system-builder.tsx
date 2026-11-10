@@ -1,12 +1,13 @@
 "use client";
 
 import { BatteryCharging, Check, Home, Loader2, Minus, Plus, ShoppingCart, Sun, Zap } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { AnimatedCount } from "@/components/shop/results-controls";
+import { useMotion } from "@/components/motion/use-motion";
 import { Button } from "@/components/ui/button";
 import { addManyToCart } from "@/lib/cart/actions";
 import { cartChanged } from "@/lib/cart/events";
@@ -547,7 +548,7 @@ function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; va
 
 /** The house: panels tile onto the roof, batteries stack up beside the inverter. */
 function Scene({ n, batteries, kwp }: { n: number; batteries: number; kwp: number }) {
-  const reduce = useReducedMotion();
+  const reduce = useMotion() !== "full";
   const spring = reduce ? { duration: 0 } : { type: "spring" as const, stiffness: 380, damping: 26 };
   return (
     <svg
