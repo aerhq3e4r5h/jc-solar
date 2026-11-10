@@ -28,7 +28,15 @@ export function ContactForm() {
   const field = (k: "name" | "email" | "phone", label: string, type: string, autoComplete: string) => (
     <div className="space-y-1.5">
       <Label htmlFor={`c-${k}`}>{label}</Label>
-      <Input id={`c-${k}`} type={type} autoComplete={autoComplete} value={v[k]} onChange={set(k)} aria-invalid={!!errors[k]} aria-describedby={errors[k] ? `c-${k}-error` : undefined} />
+      <Input
+        id={`c-${k}`}
+        type={type}
+        autoComplete={autoComplete}
+        value={v[k]}
+        onChange={set(k)}
+        aria-invalid={!!errors[k]}
+        aria-describedby={errors[k] ? `c-${k}-error` : undefined}
+      />
       {errors[k] && (
         <p id={`c-${k}-error`} className="text-sm text-destructive">
           {errors[k]}
@@ -61,7 +69,14 @@ export function ContactForm() {
       {field("phone", "Phone (optional)", "tel", "tel")}
       <div className="space-y-1.5">
         <Label htmlFor="c-message">How can we help?</Label>
-        <Textarea id="c-message" rows={6} value={v.message} onChange={set("message")} aria-invalid={!!errors.message} aria-describedby={errors.message ? "c-message-error" : undefined} />
+        <Textarea
+          id="c-message"
+          rows={6}
+          value={v.message}
+          onChange={set("message")}
+          aria-invalid={!!errors.message}
+          aria-describedby={errors.message ? "c-message-error" : undefined}
+        />
         {errors.message && (
           <p id="c-message-error" className="text-sm text-destructive">
             {errors.message}

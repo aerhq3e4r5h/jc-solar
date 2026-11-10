@@ -377,7 +377,7 @@ export default async function HomePage() {
       </section>
 
       {/* What solar saves: an estimate from the visitor's own bill */}
-      <section className="container-page py-16 lg:py-24" aria-labelledby="savings-heading">
+      <section id="savings" className="container-page scroll-mt-24 py-16 lg:py-24" aria-labelledby="savings-heading">
         <div className="mb-8 max-w-2xl">
           <h2 id="savings-heading" data-reveal="words" className="type-wide text-4xl sm:text-5xl">
             <Words text="What could solar save you?" />

@@ -1,3 +1,4 @@
+import { Words } from "@/components/motion/words";
 import { cn } from "@/lib/utils";
 
 /** Readable long-form text (guides, policies) without a typography plugin. */
@@ -24,8 +25,14 @@ export function PageHeader({ eyebrow, title, intro }: { eyebrow?: string; title:
   return (
     <header className="mb-10 max-w-3xl">
       {eyebrow && <p className="eyebrow mb-3">{eyebrow}</p>}
-      <h1 className="type-wide text-4xl sm:text-5xl">{title}</h1>
-      {intro && <p className="mt-4 text-lg text-muted-foreground">{intro}</p>}
+      <h1 data-reveal="words" className="type-wide text-4xl sm:text-5xl">
+        <Words text={title} />
+      </h1>
+      {intro && (
+        <p data-reveal="fade" className="mt-4 text-lg text-muted-foreground">
+          {intro}
+        </p>
+      )}
     </header>
   );
 }
@@ -34,8 +41,8 @@ export function PageHeader({ eyebrow, title, intro }: { eyebrow?: string; title:
 export function DraftNotice({ updated }: { updated: string }) {
   return (
     <p className="mb-10 max-w-3xl rounded-xl border border-warning/40 bg-warning/5 p-4 text-sm">
-      <strong className="font-semibold">Draft for review.</strong> This page is a working draft and has not yet been reviewed by a lawyer.
-      Last updated {updated}.
+      <strong className="font-semibold">Draft for review.</strong> This page is a working draft and has not yet been reviewed by a lawyer. Last
+      updated {updated}.
     </p>
   );
 }

@@ -9,6 +9,7 @@ import { DeliveryEstimate } from "@/components/product/delivery-estimate";
 import { DiscountRibbon } from "@/components/product/discount-ribbon";
 import { Gallery } from "@/components/product/gallery";
 import { CompleteSystem } from "@/components/product/complete-system";
+import { PlainTermsSection } from "@/components/product/plain-terms-section";
 import { artLabel, highlightSpecs, specSections } from "@/components/product/key-specs";
 import { Price } from "@/components/product/price";
 import { ProductArt } from "@/components/product/product-art";
@@ -309,6 +310,8 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
         </div>
 
         <div className="space-y-14 lg:[grid-area:details]">
+          <PlainTermsSection product={product} />
+
           {bundle && (
             <section aria-labelledby="system-heading">
               <h2 id="system-heading" className="text-2xl font-bold">

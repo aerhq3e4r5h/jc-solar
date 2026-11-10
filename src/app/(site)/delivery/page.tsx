@@ -1,3 +1,4 @@
+import { Package, TriangleAlert, Truck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DraftNotice, PageHeader, Prose } from "@/components/content/prose";
@@ -8,15 +9,37 @@ import type { ShippingClass } from "@/lib/shipping/types";
 
 const CLASSES: ShippingClass[] = ["standard", "oversized", "dangerous_goods"];
 
+const TRAVEL = [
+  { icon: Package, title: "Inverters and accessories", body: "Go by standard courier, boxed." },
+  { icon: Truck, title: "Solar panels", body: "Are large (often over 2 m) and travel on a pallet by freight." },
+  {
+    icon: TriangleAlert,
+    title: "Lithium batteries",
+    body: "Are classed as dangerous goods (UN3480, Class 9) and go only with couriers approved to carry them.",
+  },
+];
+
 export const metadata: Metadata = { title: "Delivery", alternates: { canonical: "/delivery" } };
 
 export default async function DeliveryPage() {
   const { carrier, provinces } = await getProvinceRates();
   return (
     <div className="container-page py-12">
-      <PageHeader eyebrow="Help" title="Delivery" intro="We deliver anywhere in South Africa." />
+      <PageHeader eyebrow="Help" title="Delivery" intro="We deliver anywhere in South Africa. You see the exact cost at checkout, before you pay." />
       <DraftNotice updated="22 October 2026" />
-      <Prose>
+      {/* How each kind of item travels, at a glance */}
+      <ul className="mb-12 grid gap-4 md:grid-cols-3">
+        {TRAVEL.map(({ icon: Icon, title, body }) => (
+          <li key={title} data-reveal className="rounded-xl bg-shelf p-6">
+            <span className="grid size-11 place-items-center rounded-full bg-sun text-ink">
+              <Icon className="size-5" aria-hidden="true" />
+            </span>
+            <p className="mt-4 text-lg font-bold">{title}</p>
+            <p className="mt-1.5 text-sm text-muted-foreground">{body}</p>
+          </li>
+        ))}
+      </ul>
+      <Prose className="max-w-4xl">
         <h2>Delivery cost</h2>
         <p>
           You see the exact delivery cost at checkout, after entering your address, before you pay. We deliver with {carrier} from our supplier&apos;s
@@ -68,18 +91,6 @@ export default async function DeliveryPage() {
             <p>Times are working days after payment. Remote areas can take longer.</p>
           </>
         )}
-        <h2>How items travel</h2>
-        <ul>
-          <li>
-            <strong>Solar panels</strong> are large (often over 2 m) and travel on a pallet by freight.
-          </li>
-          <li>
-            <strong>Lithium batteries</strong> are classed as dangerous goods (UN3480, Class 9) and go only with couriers approved to carry them.
-          </li>
-          <li>
-            <strong>Inverters and accessories</strong> go by standard courier.
-          </li>
-        </ul>
         <p>Large orders may arrive in more than one delivery.</p>
         <h2>Tracking</h2>
         <p>When your order ships, we email you the {carrier} tracking number. You can also follow it on your order page.</p>

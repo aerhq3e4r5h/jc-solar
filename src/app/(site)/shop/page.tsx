@@ -100,7 +100,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
                     </span>
                     <CategoryGlyph
                       category={slug}
-                      className="absolute -right-3 -bottom-5 -z-10 size-44 transition-transform duration-500 ease-out group-hover:scale-105 group-hover:-rotate-3"
+                      className="glyph-live absolute -right-3 -bottom-5 -z-10 size-44 transition-transform duration-500 ease-out group-hover:scale-105 group-hover:-rotate-3"
                     />
                     <span className="mt-auto grid size-11 place-items-center rounded-full bg-background transition-colors group-hover:bg-ink group-hover:text-sun">
                       <ArrowRight className="size-5" aria-hidden="true" />

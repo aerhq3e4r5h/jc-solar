@@ -31,7 +31,10 @@ export function NotFoundContent() {
       <ul className="mt-14 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {shopNav.map((n) => (
           <li key={n.href}>
-            <Link href={n.href} className="flex flex-col items-center gap-2 rounded-xl bg-shelf p-4 text-center font-semibold transition-colors hover:bg-sun hover:text-ink">
+            <Link
+              href={n.href}
+              className="flex flex-col items-center gap-2 rounded-xl bg-shelf p-4 text-center font-semibold transition-colors hover:bg-sun hover:text-ink"
+            >
               <CategoryGlyph category={n.href.replace("/shop/", "") as CategorySlug} className="size-20" />
               {n.label}
             </Link>

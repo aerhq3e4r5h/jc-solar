@@ -56,7 +56,7 @@ export function SavingsCalculator({ prices }: { prices: CalculatorPrices }) {
   const [hover, setHover] = useState<"now" | "after" | null>(null);
 
   const bars = [
-    { key: "now" as const, label: "Today", value: bill, fill: "var(--ink)" },
+    { key: "now" as const, label: "Today", value: bill, fill: "var(--foreground)" },
     { key: "after" as const, label: "With solar", value: after, fill: "var(--sun)" },
   ];
   const max = Math.max(1, bill);
