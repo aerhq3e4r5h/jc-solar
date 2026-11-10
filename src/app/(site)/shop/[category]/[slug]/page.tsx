@@ -265,6 +265,8 @@ async function ProductBody({ params }: { params: Promise<Params> }) {
               slug={product.slug}
               category={product.category}
               name={productTitle(product)}
+              shareTitle={productFullTitle(product)}
+              shareUrl={`${siteUrl()}${productUrl(product)}`}
               price={product.priceInclVat}
               canBuy={canPurchase(product)}
               maxQty={product.allowBackorder ? 500 : product.stockQty}

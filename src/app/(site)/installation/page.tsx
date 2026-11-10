@@ -44,7 +44,7 @@ export default function InstallationPage() {
       <div className="container-page py-14">
         <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {steps.map((s, i) => (
-            <li key={s.title} className="rounded-2xl border bg-card p-6">
+            <li key={s.title} data-reveal style={{ "--i": i } as React.CSSProperties} className="rounded-2xl border bg-card p-6">
               <s.icon className="size-6 text-amber-ink" aria-hidden="true" />
               <p className="mt-4 font-mono text-xs text-muted-foreground">Step {i + 1}</p>
               <h2 className="mt-1 text-lg font-semibold">{s.title}</h2>

@@ -44,7 +44,8 @@ export function InverterTypes() {
 
   const node = (on: boolean) =>
     cn("transition-[fill,stroke,opacity] duration-500", on ? "fill-[#f6f5f1] stroke-[#b9b6ab]" : "fill-[#2c2c29] stroke-[#55534d]");
-  const text = (on: boolean) => cn("text-[13px] font-semibold transition-[fill] duration-500", on ? "fill-[#1e1e1c]" : "fill-[#8d8b83]");
+  const text = (on: boolean) => cn("text-[16px] font-semibold transition-[fill] duration-500", on ? "fill-[#1e1e1c]" : "fill-[#8d8b83]");
+  const small = "text-[12.5px] transition-[fill] duration-500";
   const wire = "fill-none stroke-[#55534d]";
 
   return (
@@ -86,108 +87,104 @@ export function InverterTypes() {
         </button>
       </div>
 
+      {/* Drawn large in a small frame, so the labels stay readable on a phone. */}
       <svg
-        viewBox="0 0 640 310"
-        className="block w-full"
+        viewBox="0 0 520 330"
+        className="mx-auto block w-full max-w-2xl"
         role="img"
         aria-label={`${KINDS.find((k) => k.id === kind)!.label} inverter, grid ${gridOn ? "on" : "off"}: the home's lights are ${running ? "on" : "off"}`}
       >
         {/* wires (always drawn, dim) */}
-        <path className={wire} strokeWidth="2" d="M160 70 C 240 70 240 132 262 140" />
-        <path className={wire} strokeWidth="2" strokeDasharray={kind === "offgrid" ? "5 5" : undefined} d="M160 236 C 240 236 240 170 262 160" />
-        <path className={wire} strokeWidth="2" d="M378 150 H482" />
-        {hasBattery && <path className={wire} strokeWidth="2" d="M320 184 V238" />}
+        <path className={wire} strokeWidth="2" d="M146 50 C 190 50 160 142 195 142" />
+        <path className={wire} strokeWidth="2" strokeDasharray={kind === "offgrid" ? "5 5" : undefined} d="M146 270 C 190 270 160 170 195 170" />
+        <path className={wire} strokeWidth="2" d="M325 155 H374" />
+        {hasBattery && <path className={wire} strokeWidth="2" d="M260 190 V250" />}
 
         {/* power on the move */}
-        {solar && <path className="builder-flow fill-none stroke-sun" strokeWidth="3.5" strokeLinecap="round" d="M160 70 C 240 70 240 132 262 140" />}
+        {solar && <path className="builder-flow fill-none stroke-sun" strokeWidth="4" strokeLinecap="round" d="M146 50 C 190 50 160 142 195 142" />}
         {gridIn && (
           <path
             className="builder-flow fill-none stroke-white/60"
-            strokeWidth="3"
+            strokeWidth="3.5"
             strokeLinecap="round"
-            d="M160 236 C 240 236 240 170 262 160"
+            d="M146 270 C 190 270 160 170 195 170"
             opacity={kind === "offgrid" ? 0.5 : 1}
           />
         )}
         {gridOut && (
           <path
             className="builder-flow fill-none stroke-sun"
-            strokeWidth="3"
+            strokeWidth="3.5"
             strokeLinecap="round"
-            d="M262 160 C 240 170 240 236 160 236"
+            d="M195 170 C 160 170 190 270 146 270"
             opacity="0.7"
           />
         )}
         {charging && (
-          <path className="builder-flow fill-none stroke-[oklch(0.75_0.17_150)]" strokeWidth="3.5" strokeLinecap="round" d="M320 184 V238" />
+          <path className="builder-flow fill-none stroke-[oklch(0.75_0.17_150)]" strokeWidth="4" strokeLinecap="round" d="M260 190 V250" />
         )}
         {discharging && (
-          <path className="builder-flow fill-none stroke-[oklch(0.75_0.17_150)]" strokeWidth="3.5" strokeLinecap="round" d="M320 238 V184" />
+          <path className="builder-flow fill-none stroke-[oklch(0.75_0.17_150)]" strokeWidth="4" strokeLinecap="round" d="M260 250 V190" />
         )}
-        {running && <path className="builder-flow fill-none stroke-sun" strokeWidth="3.5" strokeLinecap="round" d="M378 150 H482" />}
+        {running && <path className="builder-flow fill-none stroke-sun" strokeWidth="4" strokeLinecap="round" d="M325 155 H374" />}
 
         {/* panels */}
-        <rect x="40" y="40" width="120" height="60" rx="10" strokeWidth="1.5" className={node(true)} />
-        <text x="100" y="75" textAnchor="middle" className={text(true)}>
+        <rect x="16" y="20" width="130" height="60" rx="10" strokeWidth="1.5" className={node(true)} />
+        <text x="81" y="56" textAnchor="middle" className={text(true)}>
           Solar panels
         </text>
         {/* grid */}
-        <rect x="40" y="206" width="120" height="60" rx="10" strokeWidth="1.5" className={node(gridOn)} />
-        <text x="100" y={kind === "offgrid" ? 233 : 241} textAnchor="middle" className={text(gridOn)}>
+        <rect x="16" y="240" width="130" height="60" rx="10" strokeWidth="1.5" className={node(gridOn)} />
+        <text x="81" y={kind === "offgrid" ? 267 : 276} textAnchor="middle" className={text(gridOn)}>
           {gridOn ? "Grid" : "Grid: off"}
         </text>
         {kind === "offgrid" && (
-          <text
-            x="100"
-            y="250"
-            textAnchor="middle"
-            className={cn("text-[10.5px] transition-[fill] duration-500", gridOn ? "fill-[#55534d]" : "fill-[#77756e]")}
-          >
+          <text x="81" y="286" textAnchor="middle" className={cn(small, gridOn ? "fill-[#55534d]" : "fill-[#77756e]")}>
             optional top-up
           </text>
         )}
         {/* inverter */}
-        <rect x="262" y="116" width="116" height="68" rx="12" strokeWidth="1.5" className={node(running)} />
-        <text x="320" y="147" textAnchor="middle" className={text(running)}>
+        <rect x="195" y="120" width="130" height="70" rx="12" strokeWidth="1.5" className={node(running)} />
+        <text x="260" y="152" textAnchor="middle" className={text(running)}>
           Inverter
         </text>
-        <text
-          x="320"
-          y="165"
-          textAnchor="middle"
-          className={cn("text-[10.5px] transition-[fill] duration-500", running ? "fill-[#55534d]" : "fill-[#8d8b83]")}
-        >
+        <text x="260" y="172" textAnchor="middle" className={cn(small, running ? "fill-[#55534d]" : "fill-[#8d8b83]")}>
           {running ? KINDS.find((k) => k.id === kind)!.label.toLowerCase() : "shut down"}
         </text>
         {/* battery */}
         <rect
-          x="262"
-          y="238"
-          width="116"
-          height="52"
+          x="195"
+          y="250"
+          width="130"
+          height="60"
           rx="10"
           strokeWidth="1.5"
           strokeDasharray={hasBattery ? undefined : "5 5"}
           className={node(hasBattery)}
         />
-        <text x="320" y="269" textAnchor="middle" className={text(hasBattery)}>
-          {hasBattery ? (discharging ? "Battery: in use" : "Battery: charging") : "No battery"}
+        <text x="260" y={hasBattery ? 277 : 286} textAnchor="middle" className={text(hasBattery)}>
+          {hasBattery ? "Battery" : "No battery"}
         </text>
+        {hasBattery && (
+          <text x="260" y="296" textAnchor="middle" className={cn(small, "fill-[#55534d]")}>
+            {discharging ? "in use" : "charging"}
+          </text>
+        )}
         {/* home */}
-        <path d="M472 122 L541 78 L610 122 Z" className={cn("transition-[fill] duration-500", running ? "fill-[#77756e]" : "fill-[#3b3a36]")} />
-        <rect x="482" y="120" width="118" height="70" strokeWidth="1.5" className={node(running)} />
-        {[498, 552].map((x) => (
+        <path d="M364 124 L439 74 L514 124 Z" className={cn("transition-[fill] duration-500", running ? "fill-[#77756e]" : "fill-[#3b3a36]")} />
+        <rect x="374" y="122" width="130" height="78" strokeWidth="1.5" className={node(running)} />
+        {[392, 452].map((x) => (
           <rect
             key={x}
             x={x}
-            y="134"
-            width="32"
-            height="26"
+            y="136"
+            width="34"
+            height="28"
             rx="3"
             className={cn("transition-[fill] duration-500", running ? "fill-sun" : "fill-[#1a1a18]")}
           />
         ))}
-        <text x="541" y="181" textAnchor="middle" className={text(running)}>
+        <text x="439" y="189" textAnchor="middle" className={text(running)}>
           {running ? "Lights on" : "Lights off"}
         </text>
       </svg>

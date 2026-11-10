@@ -6,6 +6,7 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { site } from "@/config/site";
 import { siteUrl } from "@/lib/env";
 import { guide, guides } from "@/lib/guides";
+import { cn } from "@/lib/utils";
 
 /**
  * The frame every guide sits in: a big headline, the article on the left
@@ -117,7 +118,7 @@ export function GuideCard({ slug, big = false }: { slug: string; big?: boolean }
         {g.tool && <span className="rounded-full bg-background px-2 py-0.5 text-foreground">{g.tool}</span>}
       </span>
       <span className={big ? "type-wide mt-4 max-w-md text-3xl leading-[1.02] sm:text-4xl" : "type-wide mt-4 text-xl leading-tight"}>{g.title}</span>
-      <span className="mt-2 max-w-md flex-1 text-sm text-muted-foreground group-hover:text-ink/75">{g.blurb}</span>
+      <span className={cn("mt-2 max-w-md flex-1 text-sm text-muted-foreground group-hover:text-ink/75", !big && "pr-20")}>{g.blurb}</span>
       <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold">
         Read the guide <ArrowRight className="size-4" aria-hidden="true" />
       </span>

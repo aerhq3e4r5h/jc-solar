@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useCompare } from "@/components/compare/compare-store";
+import { ShareButton } from "./share-button";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -24,13 +25,28 @@ type Props = {
   slug: string;
   category: string;
   name: string;
+  /** Brand and name, and the page's full address, for sharing. */
+  shareTitle: string;
+  shareUrl: string;
   price: number;
   canBuy: boolean;
   maxQty: number;
   installationEligible: boolean;
 };
 
-export function PurchasePanel({ image = null, productId, slug, category, name, price, canBuy, maxQty, installationEligible }: Props) {
+export function PurchasePanel({
+  image = null,
+  productId,
+  slug,
+  category,
+  name,
+  shareTitle,
+  shareUrl,
+  price,
+  canBuy,
+  maxQty,
+  installationEligible,
+}: Props) {
   const mainButton = useRef<HTMLDivElement>(null);
   const [showBar, setShowBar] = useState(false);
   const reduce = useMotion() !== "full";
@@ -126,10 +142,13 @@ export function PurchasePanel({ image = null, productId, slug, category, name, p
             {canBuy ? "Add to cart" : "Out of stock"}
           </Button>
         </div>
-        <Button variant="outline" className="w-full" onClick={toggleCompare} aria-pressed={inCompare}>
-          {inCompare ? <Check /> : <GitCompareArrows />}
-          {inCompare ? "Added to compare" : "Compare"}
-        </Button>
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" className="w-full" onClick={toggleCompare} aria-pressed={inCompare}>
+            {inCompare ? <Check /> : <GitCompareArrows />}
+            {inCompare ? "Comparing" : "Compare"}
+          </Button>
+          <ShareButton title={shareTitle} url={shareUrl} />
+        </div>
         {!canBuy && (
           <p className="text-sm text-muted-foreground">
             Need this soon?{" "}
