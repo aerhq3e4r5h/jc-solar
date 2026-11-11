@@ -15,6 +15,7 @@ const toc = [
   { id: "try", label: "From your bill to a number" },
   { id: "use", label: "Start from what you use" },
   { id: "one-panel", label: "What one panel makes" },
+  { id: "seasons", label: "Size for the weakest month" },
   { id: "not-all", label: "Why you rarely cover everything" },
   { id: "roof", label: "Roof space and direction" },
   { id: "limit", label: "Your inverter sets the limit" },
@@ -48,9 +49,34 @@ export default function Guide() {
           What one panel makes
         </h2>
         <p>
-          A panel&apos;s watts are what it makes in full sun. Over a whole day, each kilowatt of panels makes about 4.8 kWh on average in South Africa
-          once real-world losses are counted; less on the coast and in winter, more in the Northern Cape. A 550 W panel therefore makes about 2.6 kWh
-          a day.
+          A panel&apos;s watts are what it makes in full sun. Over a whole day, each kilowatt of panels makes between 4 and 5 kWh on average in South
+          Africa once real-world losses are counted: about 4.0 in Durban, 4.6 in Cape Town, 4.75 in Johannesburg and 4.9 in Bloemfontein and
+          Kimberley. A 550 W panel therefore makes roughly 2.2 to 2.7 kWh a day.
+        </p>
+        <h2 id="seasons" className="scroll-mt-28">
+          Size for the weakest month, not the average
+        </h2>
+        <p>
+          That average hides the seasons. An array sized on it makes too little for part of every year, so we size for the weakest month where you
+          live. How much that changes the answer depends on the province:
+        </p>
+        <ul>
+          <li>
+            <strong>Western and Eastern Cape:</strong> the winter sun is low, and the days are short and often cloudy. In Cape Town a kilowatt of
+            panels makes about 6 kWh a day in December and under 3 in June, so covering June takes more than twice as many panels as covering
+            December.
+          </li>
+          <li>
+            <strong>Gauteng, Limpopo, North West and Mpumalanga:</strong> winters are dry and clear, which makes up for the shorter days on a tilted
+            roof. Output stays within about 13% of the average all year, and the weakest month is April (November in Mpumalanga), not June.
+          </li>
+          <li>
+            <strong>KwaZulu-Natal, Free State and Northern Cape:</strong> in between, with June 10 to 15% below the average.
+          </li>
+        </ul>
+        <p>
+          Extra panels are usually the cheapest part of a system, and it is simpler to fit them at the start than to add them later. The calculators
+          on this page do this sizing for you.
         </p>
       </Prose>
       <div className="my-8">

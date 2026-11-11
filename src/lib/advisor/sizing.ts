@@ -1,6 +1,9 @@
 // Rule-of-thumb system sizing used by the Solar Advisor's estimate_system
 // tool. Deterministic so the advisor's numbers are reproducible; the
 // assumptions are returned with the result so the customer can see them.
+// Solar is sized for the weakest month of the year in the customer's
+// province (see src/lib/solar/seasons.ts), not for the yearly average.
+import { isProvince, solarYear, TYPICAL_YIELD } from "@/lib/solar/seasons";
 
 export const SIZING_ASSUMPTIONS = {
   /** Headroom on top of the load that runs at the same time. */
@@ -9,10 +12,6 @@ export const SIZING_ASSUMPTIONS = {
   inverterSurgeFactor: 2,
   /** Usable share of an LFP battery's rated capacity. */
   batteryDepthOfDischarge: 0.9,
-  /** Average peak sun hours across South Africa. */
-  peakSunHours: 5.5,
-  /** Losses to heat, wiring, dust and conversion. */
-  systemEfficiency: 0.8,
   /** Typical residential tariff when the customer doesn't give theirs (R/kWh incl. VAT). */
   defaultTariff: 3.5,
   /** Share of solar output a home with a battery typically uses itself. */
@@ -36,6 +35,8 @@ export type SizingInput = {
   tariffRandPerKwh?: number;
   /** Share of daily use to cover with solar (0 to 1). Defaults to 0.7. */
   solarOffset?: number;
+  /** The customer's province, to size solar for the weakest month there. */
+  province?: string;
 };
 
 export type SizingResult = {
@@ -64,10 +65,15 @@ export function estimateSystem(input: SizingInput): SizingResult {
   const tariff = input.tariffRandPerKwh ?? a.defaultTariff;
   const daily = input.dailyUsageKwh ?? (input.monthlyBillRand ? input.monthlyBillRand / tariff / 30 : null);
   const offset = Math.min(1, Math.max(0, input.solarOffset ?? 0.7));
-  const kwp = daily === null ? null : (daily * offset) / (a.peakSunHours * a.systemEfficiency);
-  const panels = kwp === null ? null : Math.max(1, Math.ceil((kwp * 1000) / a.typicalPanelW));
+  // kWh a day from each kW of panels: the weakest month sizes the array, the yearly average prices the savings.
+  const year = isProvince(input.province) ? solarYear(input.province) : null;
+  const weakYield = year?.weakest.yield ?? TYPICAL_YIELD.weakest;
+  const averageYield = year?.average ?? TYPICAL_YIELD.average;
+  const kwp = daily === null ? null : (daily * offset) / weakYield;
+  const panels = kwp === null ? null : Math.max(1, Math.ceil((kwp * 1000) / a.typicalPanelW - 1e-9));
   const actualKwp = panels === null ? null : (panels * a.typicalPanelW) / 1000;
-  const savings = actualKwp === null ? null : actualKwp * a.peakSunHours * a.systemEfficiency * 30 * a.selfConsumption * tariff;
+  // An array sized for the weakest month makes more than the home can use in the good ones: don't count the surplus.
+  const savings = actualKwp === null || daily === null ? null : Math.min(actualKwp * averageYield * a.selfConsumption, daily * offset) * 30 * tariff;
 
   const assumptions = [
     `Inverter: ${Math.round((a.inverterHeadroom - 1) * 100)}% headroom over what runs at once, surges up to ${a.inverterSurgeFactor}× its rating.`,
@@ -75,7 +81,9 @@ export function estimateSystem(input: SizingInput): SizingResult {
   ];
   if (daily !== null) {
     assumptions.push(
-      `Solar: ${Math.round(offset * 100)}% of ${round(daily)} kWh a day, ${a.peakSunHours} peak sun hours, ${Math.round((1 - a.systemEfficiency) * 100)}% losses, ${a.typicalPanelW} W panels.`,
+      year
+        ? `Solar: ${Math.round(offset * 100)}% of ${round(daily)} kWh a day, sized for ${year.weakest.name}, the weakest month for sun in ${input.province} (${year.weakest.yield} kWh a day per kW of panels; ${year.best.yield} in ${year.best.name}), ${a.typicalPanelW} W panels on a north-facing roof.`
+        : `Solar: ${Math.round(offset * 100)}% of ${round(daily)} kWh a day, sized for a weak month (${round(weakYield, 2)} kWh a day per kW of panels, typical across provinces; the customer's province gives their own figure), ${a.typicalPanelW} W panels.`,
       `Savings: R${tariff.toFixed(2)}/kWh${input.tariffRandPerKwh ? "" : " (typical tariff; your municipality's may differ)"}, about ${a.selfConsumption * 100}% of solar used at home.`,
     );
   }

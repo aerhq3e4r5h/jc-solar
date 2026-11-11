@@ -37,10 +37,21 @@ describe("estimateSystem", () => {
     expect(r.batteryUsableKwh).toBe(3.2);
     expect(r.batteryNominalKwh).toBe(3.6);
     expect(r.dailyUsageKwh).toBe(20); // R2100 / R3.50 / 30
-    expect(r.panelCount).toBe(6); // 14 kWh / (5.5 × 0.8) = 3.18 kWp → 6 × 550 W
-    expect(r.solarKwp).toBe(3.3);
-    expect(r.estimatedMonthlySavingsRand).toBeGreaterThan(1000);
+    expect(r.panelCount).toBe(7); // no province: 14 kWh / 4.17 (a typical weakest month) = 3.36 kWp → 7 × 550 W
+    expect(r.solarKwp).toBe(3.85);
+    expect(r.estimatedMonthlySavingsRand).toBe(1470); // capped at the 14 kWh a day the home can use: 14 × 30 × R3.50
     expect(r.assumptions.length).toBe(4);
+  });
+  it("sizes solar for the weakest month in the customer's province", () => {
+    const base = { simultaneousLoadW: 2000, backupHours: 4, monthlyBillRand: 2100 };
+    const cape = estimateSystem({ ...base, province: "Western Cape" });
+    const gauteng = estimateSystem({ ...base, province: "Gauteng" });
+    expect(cape.panelCount).toBe(10); // 14 kWh / 2.65 (June in Cape Town) = 5.28 kWp
+    expect(gauteng.panelCount).toBe(6); // 14 kWh / 4.25 (April in Johannesburg) = 3.29 kWp
+    expect(cape.assumptions.join(" ")).toContain("June");
+    expect(gauteng.assumptions.join(" ")).toContain("April");
+    // an unknown province falls back to the typical figure rather than failing
+    expect(estimateSystem({ ...base, province: "Atlantis" }).panelCount).toBe(7);
   });
   it("lets a big surge decide the inverter and skips solar without usage", () => {
     const r = estimateSystem({ simultaneousLoadW: 1000, surgeLoadW: 9000, backupHours: 2 });
@@ -121,7 +132,9 @@ describe("runAdvisor", () => {
   });
 
   it("maps upstream errors to friendly kinds", async () => {
-    await expect(runAdvisor({ ...base, history: [{ role: "user", text: "hi" }], fetchImpl: fakeGemini([429, 429, 429, 429]).fetchImpl })).rejects.toMatchObject({
+    await expect(
+      runAdvisor({ ...base, history: [{ role: "user", text: "hi" }], fetchImpl: fakeGemini([429, 429, 429, 429]).fetchImpl }),
+    ).rejects.toMatchObject({
       kind: "limit",
     });
     const bothMissing = runAdvisor({ ...base, history: [{ role: "user", text: "hi" }], fetchImpl: fakeGemini([404, 404, 404, 404]).fetchImpl });

@@ -1,6 +1,6 @@
 "use client";
 
-import { BatteryCharging, Check, Home, Loader2, Minus, Plus, ShoppingCart, Sun, Zap } from "lucide-react";
+import { BatteryCharging, CalendarDays, Check, Home, Loader2, Minus, Plus, ShoppingCart, Sun, TriangleAlert } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,31 +8,40 @@ import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { AnimatedCount } from "@/components/shop/results-controls";
 import { useMotion } from "@/components/motion/use-motion";
+import { SeasonChart } from "@/components/tools/season-chart";
+import { useProvince } from "@/components/tools/use-province";
 import { Button } from "@/components/ui/button";
 import { addManyToCart } from "@/lib/cart/actions";
+import { PROVINCES } from "@/lib/checkout/schema";
 import { cartChanged } from "@/lib/cart/events";
 import { flyToCart } from "@/lib/cart/fly";
 import { MAX_BATTERIES, type BuilderData, type BuilderInverter } from "@/lib/planner/builder-data";
 import { formatPrice } from "@/lib/pricing/vat";
+import { isProvince, MONTHS, sizeForHome } from "@/lib/solar/seasons";
 import { cn } from "@/lib/utils";
 
 const COLS = 6;
 const ROWS = 5;
 // Rough, labelled estimates for the summary.
-const SUN_HOURS = 4.8; // kWh a day per kW of panels, a South African average
 const ESSENTIALS_KW = 0.5; // lights, Wi-Fi, TV, fridge and a laptop
 const USABLE = 0.9; // share of a lithium battery's capacity you can use
 
+// Quick starts: a typical monthly bill and number of batteries.
 const PRESETS = [
-  { id: "backup", label: "Load-shedding backup", panels: 6, batteries: 1 },
-  { id: "family", label: "Family home", panels: 12, batteries: 2 },
-  { id: "large", label: "Big home, work from home", panels: 20, batteries: 3 },
+  { id: "small", label: "Small home", bill: 1200, batteries: 1 },
+  { id: "family", label: "Family home", bill: 2500, batteries: 2 },
+  { id: "large", label: "Big home, work from home", bill: 5000, batteries: 3 },
 ] as const;
 
+// Formatted by hand: Node and browsers disagree on en-ZA decimals, which breaks hydration.
+const one = (n: number) => String(Math.round(n * 10) / 10);
+
 /**
- * "Build your system": pick panels and how many, an inverter that takes them,
- * and one or more batteries that suit the inverter. The house shows what
- * you've chosen; the summary adds it up and puts it all in the cart.
+ * "Build your system": say where the roof is and what the home uses, and
+ * the builder works out how many panels cover it in the weakest month of
+ * the year there (not just on average). Then pick an inverter that takes
+ * them and one or more batteries that suit it. The house shows what you've
+ * chosen, month by month; the summary adds it up and puts it in the cart.
  */
 export function SystemBuilder({ data }: { data: BuilderData }) {
   const [panelId, setPanelId] = useState(data.panels[0]?.id ?? "");
@@ -40,15 +49,25 @@ export function SystemBuilder({ data }: { data: BuilderData }) {
   // The most panels any inverter in stock can take with this panel (and that we have).
   const inverterMax = useMemo(() => Math.max(1, ...data.inverters.flatMap((i) => i.counts[panel?.id ?? ""] ?? [])), [data.inverters, panel]);
   const maxCount = Math.max(1, Math.min(panel?.stock ?? 1, inverterMax));
-  const [count, setCount] = useState(Math.min(10, maxCount));
-  const n = Math.max(1, Math.min(count, maxCount));
+
+  // The home: where it is and what it uses. Solar is asked to cover most of that with a battery, daytime use without.
+  const [province, setProvince] = useProvince();
+  const [bill, setBill] = useState(2500);
+  const [rate, setRate] = useState(3.5);
+  const [batteryId, setBatteryId] = useState<string | "none" | null>(null);
+  const sizing = sizeForHome({ province, billRand: bill, tariff: rate, panelWatts: panel?.watts ?? 550, battery: batteryId !== "none" });
+  const { year, need } = sizing;
+  // The panel count follows the weakest month's figure until the visitor sets their own.
+  const [manual, setManual] = useState<number | null>(null);
+  const n = Math.max(1, Math.min(manual ?? sizing.panels.weakest, maxCount));
+  const [pickedMonth, setMonth] = useState<number | null>(null);
+  const month = pickedMonth ?? year.weakest.month;
 
   const fitting = data.inverters.filter((i) => i.counts[panel?.id ?? ""]?.includes(n));
   const [inverterId, setInverterId] = useState<string | null>(null);
   const inverter = fitting.find((i) => i.id === inverterId) ?? fitting[0] ?? null;
 
   const batteries = data.batteries.filter((b) => inverter?.batteryIds.includes(b.id));
-  const [batteryId, setBatteryId] = useState<string | "none" | null>(null);
   const battery = batteryId === "none" ? null : (batteries.find((b) => b.id === batteryId) ?? batteries[0] ?? null);
   const maxBatteries = battery ? Math.max(1, Math.min(MAX_BATTERIES, battery.stock)) : 1;
   const [batteryCount, setBatteryCount] = useState(1);
@@ -56,7 +75,9 @@ export function SystemBuilder({ data }: { data: BuilderData }) {
   const qty = battery ? Math.min(batteryCount, maxBatteries) : 0;
 
   const kwp = panel ? (panel.watts * n) / 1000 : 0;
-  const dailyKwh = kwp * SUN_HOURS;
+  const monthly = year.monthly.map((y) => y * kwp);
+  const lowest = monthly[year.weakest.month];
+  const monthsCovered = monthly.filter((v) => v >= need - 1e-6).length;
   const storage = battery ? battery.kwh * qty : 0;
   const backupHours = (storage * USABLE) / ESSENTIALS_KW;
   const lines = [
@@ -71,7 +92,9 @@ export function SystemBuilder({ data }: { data: BuilderData }) {
 
   const applyPreset = (p: (typeof PRESETS)[number]) => {
     setPreset(p.id);
-    setCount(Math.min(p.panels, maxCount));
+    setBill(p.bill);
+    setManual(null);
+    setMonth(null);
     setInverterId(null);
     setBatteryId(null);
     setBatteryCount(p.batteries);
@@ -129,15 +152,15 @@ export function SystemBuilder({ data }: { data: BuilderData }) {
         {/* The house and what it adds up to */}
         <div className="lg:sticky lg:top-24 lg:self-start">
           <div className="dark grain relative isolate overflow-hidden rounded-2xl bg-ink text-ink-foreground ring-1 ring-white/10">
-            <Scene n={n} batteries={qty} kwp={kwp} />
+            <Scene n={n} batteries={qty} kwp={kwp} month={month} strength={year.monthly[month] / year.best.yield} />
             <dl className="grid grid-cols-2 gap-px border-t border-white/10 bg-white/10 sm:grid-cols-4">
               <Stat icon={<Sun className="size-4 text-sun" />} label="Panels" value={`${kwp.toFixed(2)} kW`} />
               <Stat
-                icon={<Zap className="size-4 text-sun" />}
-                label="Makes about"
+                icon={<CalendarDays className="size-4 text-sun" />}
+                label={`In ${MONTHS[month]}`}
                 value={
                   <>
-                    <AnimatedCount value={Math.round(dailyKwh)} /> kWh a day
+                    <AnimatedCount value={Math.round(monthly[month])} /> kWh a day
                   </>
                 }
               />
@@ -162,14 +185,129 @@ export function SystemBuilder({ data }: { data: BuilderData }) {
             </dl>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Estimates: {SUN_HOURS} kWh a day per kW of panels (a South African average), and essentials (lights, Wi-Fi, TV, fridge, a laptop) drawing
-            about {ESSENTIALS_KW * 1000} W from {Math.round(USABLE * 100)}% of the battery.
+            Estimates. Panel output by month is for {year.city}, on a north-facing roof at about 20° (PVGIS, European Commission); other roofs make
+            less. Backup assumes essentials (lights, Wi-Fi, TV, fridge, a laptop) drawing about {ESSENTIALS_KW * 1000} W from{" "}
+            {Math.round(USABLE * 100)}% of the battery.
           </p>
         </div>
 
         {/* The choices */}
         <ol className="space-y-8">
-          <Step n={1} title="Solar panels" done summary={`${n} x ${panel.watts} W`}>
+          <Step n={1} title="Your home" done summary={`about ${Math.round(sizing.dailyUse)} kWh a day`}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="builder-province" className="font-semibold">
+                  Where is the roof?
+                </label>
+                <select
+                  id="builder-province"
+                  value={province}
+                  onChange={(e) => {
+                    if (isProvince(e.target.value)) setProvince(e.target.value);
+                    setMonth(null);
+                  }}
+                  className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3"
+                >
+                  {PROVINCES.map((p) => (
+                    <option key={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="builder-rate" className="font-semibold">
+                  What you pay per kWh
+                </label>
+                <div className="relative mt-2">
+                  <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">R</span>
+                  <input
+                    id="builder-rate"
+                    type="number"
+                    inputMode="decimal"
+                    min={1}
+                    max={10}
+                    step={0.05}
+                    value={rate}
+                    onChange={(e) => setRate(Math.min(10, Math.max(1, Number(e.target.value) || 3.5)))}
+                    className="num h-10 w-full rounded-md border border-input bg-transparent pr-3 pl-7"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="mt-4">
+              <label htmlFor="builder-bill" className="flex items-baseline justify-between gap-3">
+                <span className="font-semibold">Your monthly electricity bill</span>
+                <span className="num type-wide text-2xl">{formatPrice(bill)}</span>
+              </label>
+              <input
+                id="builder-bill"
+                type="range"
+                min={300}
+                max={12000}
+                step={100}
+                value={bill}
+                onChange={(e) => {
+                  setBill(Number(e.target.value));
+                  setPreset(null);
+                }}
+                className="mt-2 w-full accent-[var(--ink)] dark:accent-[var(--sun)]"
+                aria-describedby="builder-bill-hint"
+              />
+              <p id="builder-bill-hint" className="mt-1 text-xs text-muted-foreground">
+                Use a winter bill if yours go up in winter. That is about {Math.round(sizing.dailyUse)} kWh a day
+                {batteryId === "none"
+                  ? `; without a battery, solar can cover what you use while the sun is up, about ${one(need)} kWh.`
+                  : `; with a battery, solar can cover about ${Math.round(sizing.share * 100)}% of it: ${one(need)} kWh.`}
+              </p>
+            </div>
+          </Step>
+
+          <Step n={2} title="Solar panels" done summary={`${n} x ${panel.watts} W`}>
+            {/* The year at a glance, and the size that covers its weakest month */}
+            <div className="mb-5 rounded-xl border bg-shelf p-4 sm:p-5">
+              <p className="font-semibold">
+                {year.weakest.name} is the weakest month for sun in {province}.
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Covering your home then takes <strong className="text-foreground">{sizing.panels.weakest} panels</strong>; in {year.best.name},{" "}
+                {sizing.panels.best} would do.{" "}
+                {sizing.panels.weakest > maxCount
+                  ? `That is more than the ${maxCount} this builder can offer, so it uses ${maxCount}.`
+                  : `We size for ${year.weakest.name}, so you are covered all year.`}
+              </p>
+              <SeasonChart className="mt-5" monthly={monthly} need={need} selected={month} onSelect={setMonth} />
+              <p className="mt-4 flex items-start gap-2 text-sm" aria-live="polite">
+                {lowest >= need - 1e-6 ? (
+                  <>
+                    <Check className="mt-0.5 size-4 shrink-0 text-charge" strokeWidth={3} aria-hidden="true" />
+                    <span>
+                      <strong>{n} panels cover your home in every month.</strong> Even in {year.weakest.name} they make {one(lowest)} kWh a day.
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <TriangleAlert className="mt-0.5 size-4 shrink-0 text-sale" aria-hidden="true" />
+                    <span>
+                      <strong>
+                        {n} panels cover {monthsCovered === 0 ? "no month fully" : `${monthsCovered} of 12 months`}.
+                      </strong>{" "}
+                      In {year.weakest.name} they make {one(lowest)} kWh a day, {one(need - lowest)} short.
+                      {sizing.panels.weakest > maxCount && (
+                        <>
+                          {" "}
+                          Your home would need {sizing.panels.weakest}, more than{" "}
+                          {maxCount < inverterMax ? "we have of this panel" : "one of our inverters takes"}: ask us about a larger system.
+                        </>
+                      )}
+                    </span>
+                  </>
+                )}
+              </p>
+              {manual !== null && n !== Math.min(sizing.panels.weakest, maxCount) && (
+                <Button variant="secondary" size="sm" className="mt-3" onClick={() => setManual(null)}>
+                  Size it for {year.weakest.name}: {Math.min(sizing.panels.weakest, maxCount)} panels
+                </Button>
+              )}
+            </div>
             <Counter
               id="builder-count"
               label="How many panels"
@@ -177,7 +315,7 @@ export function SystemBuilder({ data }: { data: BuilderData }) {
               min={1}
               max={maxCount}
               onChange={(v) => {
-                setCount(v);
+                setManual(v);
                 setPreset(null);
               }}
               hint={
@@ -202,7 +340,7 @@ export function SystemBuilder({ data }: { data: BuilderData }) {
             </div>
           </Step>
 
-          <Step n={2} title="Inverter" done={!!inverter} summary={inverter ? `${inverter.kw} kW` : "None fits"}>
+          <Step n={3} title="Inverter" done={!!inverter} summary={inverter ? `${inverter.kw} kW` : "None fits"}>
             {fitting.length ? (
               <InverterList inverters={fitting} value={inverter?.id ?? ""} onChange={(id) => setInverterId(id)} />
             ) : (
@@ -212,7 +350,7 @@ export function SystemBuilder({ data }: { data: BuilderData }) {
             )}
           </Step>
 
-          <Step n={3} title="Batteries" done={!!battery} summary={battery ? `${qty} x ${battery.kwh} kWh` : "None"}>
+          <Step n={4} title="Batteries" done={!!battery} summary={battery ? `${qty} x ${battery.kwh} kWh` : "None"}>
             {inverter && !batteries.length ? (
               <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
                 No battery in stock suits this inverter yet. You can add one later.
@@ -281,7 +419,7 @@ export function SystemBuilder({ data }: { data: BuilderData }) {
             )}
           </Step>
 
-          <Step n={4} title="Your system" done={!!inverter} last>
+          <Step n={5} title="Your system" done={!!inverter} last>
             <div className="overflow-hidden rounded-xl border">
               <ul className="divide-y">
                 {lines.map((l) => (
@@ -547,7 +685,10 @@ function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; va
 }
 
 /** The house: panels tile onto the roof, batteries stack up beside the inverter. */
-function Scene({ n, batteries, kwp }: { n: number; batteries: number; kwp: number }) {
+function Scene({ n, batteries, kwp, month, strength }: { n: number; batteries: number; kwp: number; month: number; strength: number }) {
+  // Southern hemisphere: the midday sun is highest in late December, lowest in late June.
+  const height = 0.5 + 0.5 * Math.cos((2 * Math.PI * (month + 0.3)) / 12);
+  const sunY = 150 - height * 92;
   const reduce = useMotion() !== "full";
   const spring = reduce ? { duration: 0 } : { type: "spring" as const, stiffness: 380, damping: 26 };
   return (
@@ -575,8 +716,17 @@ function Scene({ n, batteries, kwp }: { n: number; batteries: number; kwp: numbe
       </defs>
 
       {/* Sun */}
-      <circle cx="575" cy="62" r="95" fill="url(#sb-sun)" />
-      <circle cx="575" cy="62" r="26" fill="#ffc414" />
+      <motion.g
+        initial={false}
+        animate={{ y: sunY - 62, opacity: 0.55 + 0.45 * strength }}
+        transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 60, damping: 16 }}
+      >
+        <circle cx="575" cy="62" r="95" fill="url(#sb-sun)" />
+        <circle cx="575" cy="62" r="26" fill="#ffc414" />
+      </motion.g>
+      <text x="575" y="24" textAnchor="middle" fontSize="13" fontWeight="600" fill="#b9b6ab" fontFamily="inherit">
+        {MONTHS[month]}
+      </text>
 
       {/* Ground */}
       <rect y="372" width="640" height="48" fill="#2a2a27" />

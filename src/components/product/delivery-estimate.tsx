@@ -29,6 +29,8 @@ function readSaved(): { province: string; postalCode: string } | null {
 
 function save(province: string, postalCode: string) {
   document.cookie = `${COOKIE}=${encodeURIComponent(JSON.stringify({ province, postalCode }))}; path=/; max-age=31536000; samesite=lax`;
+  // The solar calculators on the page use the same province.
+  window.dispatchEvent(new Event("ga-province"));
 }
 
 type Estimate = { price: number | null; eta: string | null } | { error: string };

@@ -2,6 +2,7 @@
 // stock: it looks them up here, in the same cached catalogue the shop uses,
 // and checks pairs with the same compatibility engine as the cart.
 
+import { PROVINCES } from "@/lib/checkout/schema";
 import { z } from "zod";
 import type { CategorySlug } from "@/lib/catalogue/classify";
 import { SIZE_SPEC } from "@/lib/catalogue/filters";
@@ -63,6 +64,11 @@ export const TOOL_DECLARATIONS = [
         monthly_bill_rand: { type: "number" },
         tariff_rand_per_kwh: { type: "number" },
         solar_offset: { type: "number", description: "Share of daily use to cover with solar, 0 to 1." },
+        province: {
+          type: "string",
+          enum: [...PROVINCES],
+          description: "The customer's province. Solar is sized for the weakest month of the year there, so always pass it when you know it.",
+        },
       },
       required: ["simultaneous_load_w", "backup_hours"],
     },
@@ -95,6 +101,7 @@ const schemas = {
     monthly_bill_rand: num.min(0).max(1_000_000).optional(),
     tariff_rand_per_kwh: num.min(0.5).max(15).optional(),
     solar_offset: num.min(0).max(1).optional(),
+    province: z.enum(PROVINCES).optional(),
   }),
 };
 
@@ -198,6 +205,7 @@ export function runTool(name: string, rawArgs: unknown, ctx: ToolContext): Recor
           monthlyBillRand: a.monthly_bill_rand,
           tariffRandPerKwh: a.tariff_rand_per_kwh,
           solarOffset: a.solar_offset,
+          province: a.province,
         }),
       };
     }

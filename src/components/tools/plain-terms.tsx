@@ -4,8 +4,12 @@ import { BatteryCharging, Gauge, Minus, Plus, Sun } from "lucide-react";
 import { useState } from "react";
 import { AnimatedCount } from "@/components/shop/results-controls";
 import { APPLIANCES, ESSENTIALS, loadOf, type ApplianceId } from "@/lib/planner/appliances";
+import { PROVINCES } from "@/lib/checkout/schema";
 import { formatPrice } from "@/lib/pricing/vat";
+import { isProvince, monthlyOutput, sizeForHome, solarYear, type Province } from "@/lib/solar/seasons";
 import { cn } from "@/lib/utils";
+import { SeasonChart } from "./season-chart";
+import { useProvince } from "./use-province";
 
 // Small calculators that turn a spec into an outcome. On a product page they
 // are fixed to that product's numbers; in the guides the size is a slider.
@@ -14,13 +18,6 @@ import { cn } from "@/lib/utils";
 /** Share of a battery's capacity you can use, and what the inverter loses converting it. */
 const USABLE = { lithium: 0.9, leadAcid: 0.5 };
 const INVERTER_EFFICIENCY = 0.93;
-/** kWh a day per kW of panels: a South African average after system losses. */
-export const SUN = [
-  { id: "low", label: "Less sunny", detail: "coast, shade, winter", hours: 4.2 },
-  { id: "avg", label: "Average", detail: "most of the country", hours: 4.8 },
-  { id: "high", label: "Very sunny", detail: "Northern Cape, Free State", hours: 5.6 },
-] as const;
-
 // Formatted by hand: Node and browsers disagree on en-ZA decimals, which breaks hydration.
 const one = (n: number) => String(Math.round(n * 10) / 10);
 const power = (w: number) => (w < 1000 ? `${Math.round(w)} W` : `${one(w / 1000)} kW`);
@@ -337,38 +334,64 @@ export function Runtime({ kwh: fixedKwh, lithium = true }: { kwh?: number; lithi
   );
 }
 
+function ProvinceSelect({ id, value, onChange }: { id: string; value: Province; onChange: (p: Province) => void }) {
+  return (
+    <div>
+      <label htmlFor={id} className="font-semibold">
+        Where is the roof?
+      </label>
+      <select
+        id={id}
+        value={value}
+        onChange={(e) => isProvince(e.target.value) && onChange(e.target.value)}
+        className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3"
+      >
+        {PROVINCES.map((p) => (
+          <option key={p}>{p}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 /**
- * Panels: what they make in a day and what that's worth. `watts` fixes the
- * panel (a product page); without it the panel size is a slider.
+ * Panels: what they make in a day, month by month, and what that's worth.
+ * `watts` fixes the panel (a product page); without it the panel size is a
+ * slider. The sun figures are the visitor's own province's.
  */
 export function PanelYield({ watts: fixedWatts }: { watts?: number }) {
   const [count, setCount] = useState(8);
   const [size, setSize] = useState(550);
-  const [sun, setSun] = useState<(typeof SUN)[number]["id"]>("avg");
+  const [province, setProvince] = useProvince();
   const [rate, setRate] = useState(3.5);
   const watts = fixedWatts ?? size;
   const kwp = (count * watts) / 1000;
-  const hours = SUN.find((s) => s.id === sun)!.hours;
-  const day = kwp * hours;
+  const year = solarYear(province);
+  const day = kwp * year.average;
   const month = day * 30.4;
 
   return (
     <Tool
       icon={<Sun aria-hidden="true" />}
       title="What will it make?"
-      hint="A panel's watts are what it makes in full sun. Over a day that depends on how much sun your roof gets."
+      hint="A panel's watts are what it makes in full sun. Over a day that depends on where the roof is and the time of year."
       result={
         <>
           <p className="text-sm font-semibold text-muted-foreground">
-            {count} x {watts} W = {one(kwp)} kW of panels
+            {count} x {watts} W = {one(kwp)} kW of panels, {province}
           </p>
           <p className="num type-wide mt-1 text-4xl">
             about <AnimatedCount value={Math.round(day * 10)} format={(n) => one(n / 10)} />{" "}
             <span className="text-lg font-semibold text-muted-foreground">kWh a day</span>
           </p>
+          <p className="mt-1 text-sm">
+            on average: from <strong>{one(kwp * year.weakest.yield)}</strong> in {year.weakest.name} to <strong>{one(kwp * year.best.yield)}</strong>{" "}
+            in {year.best.name}.
+          </p>
+          <SeasonChart className="mt-4" monthly={monthlyOutput(province, kwp)} />
           <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
             <div className="rounded-lg bg-background p-3">
-              <dt className="text-muted-foreground">In a month</dt>
+              <dt className="text-muted-foreground">In an average month</dt>
               <dd className="num mt-0.5 text-lg font-bold">
                 <AnimatedCount value={Math.round(month)} /> kWh
               </dd>
@@ -381,8 +404,8 @@ export function PanelYield({ watts: fixedWatts }: { watts?: number }) {
             </div>
           </dl>
           <p className="mt-3 text-xs text-muted-foreground">
-            That&apos;s its value if you use every unit. Without a battery, power you don&apos;t use as it&apos;s made is lost, so real savings are
-            lower.
+            For {year.city}, on a north-facing roof at about 20° (PVGIS). That&apos;s its value if you use every unit: without a battery, power you
+            don&apos;t use as it&apos;s made is lost.
           </p>
         </>
       }
@@ -392,24 +415,7 @@ export function PanelYield({ watts: fixedWatts }: { watts?: number }) {
         {fixedWatts === undefined && (
           <Range id="tool-panel-size" label="Panel size" display={`${size} W`} value={size} min={100} max={700} step={5} onChange={setSize} />
         )}
-        <fieldset>
-          <legend className="font-semibold">Sun where you live</legend>
-          <div className="mt-2 grid grid-cols-3 gap-2">
-            {SUN.map((s) => (
-              <label
-                key={s.id}
-                className={cn(
-                  "cursor-pointer rounded-lg border p-2.5 text-center text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-                  sun === s.id ? "border-ink bg-ink text-ink-foreground dark:border-sun dark:bg-sun dark:text-ink" : "hover:border-foreground/40",
-                )}
-              >
-                <input type="radio" name="tool-sun" className="sr-only" checked={sun === s.id} onChange={() => setSun(s.id)} />
-                <span className="block font-semibold">{s.label}</span>
-                <span className="block text-[11px] opacity-75">{s.detail}</span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
+        <ProvinceSelect id="tool-yield-province" value={province} onChange={setProvince} />
         <Range
           id="tool-rate"
           label="What you pay per kWh"
@@ -425,30 +431,39 @@ export function PanelYield({ watts: fixedWatts }: { watts?: number }) {
   );
 }
 
-/** The guide's question the other way round: from a bill to a number of panels. */
+/**
+ * The guide's question the other way round: from a bill to a number of
+ * panels. Sized for the weakest month of the year where the roof is, with
+ * the best month and the yearly average shown beside it.
+ */
 export function PanelsNeeded() {
   const [bill, setBill] = useState(2500);
   const [rate, setRate] = useState(3.5);
   const [size, setSize] = useState(550);
-  const [battery, setBattery] = useState(false);
-  // Solar replaces what you use while the sun is up; a battery stretches that into the evening.
-  const share = battery ? 0.85 : 0.45;
-  const used = bill / rate;
-  const kw = (used * share) / (4.8 * 30.4);
-  const panels = Math.max(1, Math.ceil((kw * 1000) / size));
+  const [battery, setBattery] = useState(true);
+  const [province, setProvince] = useProvince();
+  const s = sizeForHome({ province, billRand: bill, tariff: rate, panelWatts: size, battery });
+  const panels = s.panels.weakest;
   const area = panels * (size >= 500 ? 2.6 : size >= 400 ? 2.0 : 1.7);
 
   return (
     <Tool
       icon={<Sun aria-hidden="true" />}
       title="How many panels for my bill?"
-      hint="From your monthly bill to a number of panels, at the South African average of 4.8 kWh a day per kW of panels."
+      hint="From your monthly bill to a number of panels that still covers you in the weakest month of the year where you live."
       result={
         <>
-          <p className="text-sm font-semibold text-muted-foreground">To cover {Math.round(share * 100)}% of your use</p>
+          <p className="text-sm font-semibold text-muted-foreground">
+            To cover {Math.round(s.share * 100)}% of your use, even in {s.year.weakest.name}
+          </p>
           <p className="num type-wide mt-1 text-4xl">
             about <AnimatedCount value={panels} /> <span className="text-lg font-semibold text-muted-foreground">panels</span>
           </p>
+          <p className="mt-1 text-sm">
+            In {s.year.best.name}, <strong>{s.panels.best}</strong> would do; on the yearly average, <strong>{s.panels.average}</strong>. Sizing for{" "}
+            {s.year.weakest.name} means you&apos;re covered all year.
+          </p>
+          <SeasonChart className="mt-5" monthly={monthlyOutput(province, (panels * size) / 1000)} need={s.need} />
           <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
             <div className="rounded-lg bg-background p-3">
               <dt className="text-muted-foreground">Panel power</dt>
@@ -460,14 +475,16 @@ export function PanelsNeeded() {
             </div>
           </dl>
           <p className="mt-3 text-xs text-muted-foreground">
-            You use about {Math.round(used)} kWh a month.{" "}
-            {battery ? "With a battery, solar can cover most of it." : "Without a battery, solar covers what you use while the sun is up."} Shade,
-            roof direction and your inverter&apos;s limits change the answer: our technician confirms the design.
+            You use about {Math.round(s.dailyUse * 30.4)} kWh a month.{" "}
+            {battery ? "With a battery, solar can cover most of it." : "Without a battery, solar covers what you use while the sun is up."} Sun
+            figures are for {s.year.city}, on a north-facing roof at about 20° (PVGIS). Shade, roof direction and your inverter&apos;s limits change
+            the answer: our technician confirms the design.
           </p>
         </>
       }
     >
       <div className="space-y-5">
+        <ProvinceSelect id="tool-bill-province" value={province} onChange={setProvince} />
         <Range
           id="tool-bill"
           label="Your monthly electricity bill"
@@ -497,7 +514,7 @@ export function PanelsNeeded() {
             className="mt-0.5 size-4 accent-[var(--ink)] dark:accent-[var(--sun)]"
           />
           <span>
-            <span className="block font-semibold">I&apos;ll add a battery</span>
+            <span className="block font-semibold">With a battery</span>
             <span className="block text-muted-foreground">Stores daytime sun for the evening, so solar covers more of your use.</span>
           </span>
         </label>

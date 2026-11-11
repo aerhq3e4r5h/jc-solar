@@ -8,7 +8,8 @@ import { builderData } from "@/lib/planner/builder-data";
 
 export const metadata: Metadata = {
   title: "Build your solar system",
-  description: "Choose how many panels, then an inverter and battery that work with them. Live prices from stock, all including VAT.",
+  description:
+    "Size a solar system for your home's weakest month for sun, then choose an inverter and batteries that work with the panels. Live prices from stock, including VAT.",
   alternates: { canonical: "/build" },
 };
 
@@ -24,7 +25,8 @@ export default function BuildPage() {
         <div className="mb-10 max-w-2xl">
           <h1 className="type-wide text-4xl sm:text-6xl">Build your system</h1>
           <p className="mt-4 text-lg text-muted-foreground">
-            Pick how many panels fit your roof, then an inverter and battery from stock that work with them. The price updates as you go.
+            Tell us where your roof is and what you pay for electricity. We work out how many panels cover your home in its weakest month for sun,
+            then you pick an inverter and batteries from stock that work with them.
           </p>
         </div>
         <Suspense fallback={<Skeleton className="h-[36rem] w-full rounded-xl" />}>

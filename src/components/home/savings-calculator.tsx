@@ -1,16 +1,21 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useId, useState } from "react";
+import { SeasonChart } from "@/components/tools/season-chart";
+import { useProvince } from "@/components/tools/use-province";
+import { PROVINCES } from "@/lib/checkout/schema";
 import { formatPrice } from "@/lib/pricing/vat";
+import { isProvince, monthlyOutput, SOLAR_SHARE, solarYear, usefulPerYear } from "@/lib/solar/seasons";
 import { cn } from "@/lib/utils";
 
 // Rough, clearly labelled estimates. Shown to the visitor as the assumptions.
-const SUN_HOURS = 4.8; // kWh a day per kW of panels, a South African average (about 4.2 to 5.6 by region and roof)
+// What panels make comes month by month for the visitor's province
+// (src/lib/solar/seasons.ts), and the suggested size covers the weakest month.
 const DAYS = 30.4;
 // How much of a home's electricity solar can replace: only what's used while the sun is up,
 // unless a battery stores the rest for the evening.
-const SHARE_NO_BATTERY = 0.45;
-const SHARE_WITH_BATTERY = 0.85;
+const SHARE_NO_BATTERY = SOLAR_SHARE.withoutBattery;
+const SHARE_WITH_BATTERY = SOLAR_SHARE.withBattery;
 
 export type CalculatorPrices = {
   /** Cheapest in-stock mainstream panel, per watt, incl. VAT. */
@@ -37,18 +42,19 @@ export function SavingsCalculator({ prices }: { prices: CalculatorPrices }) {
   const [rate, setRate] = useState(3.5);
   const [withBattery, setWithBattery] = useState(false);
   const [install, setInstall] = useState("");
+  const [province, setProvince] = useProvince();
+  const year = solarYear(province);
   const share = withBattery && prices.battery ? SHARE_WITH_BATTERY : SHARE_NO_BATTERY;
   const usedKwh = bill / rate;
-  const suggested = useMemo(
-    () => Math.min(20, Math.max(1, Math.round(((usedKwh * share) / (SUN_HOURS * DAYS)) * 2) / 2)),
-    [usedKwh, share],
-  );
+  // What solar is asked to supply each day, and the size (to the next half kW) that still does it in the weakest month.
+  const need = (usedKwh / DAYS) * share;
+  const suggested = Math.min(20, Math.max(1, Math.ceil((need / year.weakest.yield) * 2 - 1e-9) / 2));
   const [kw, setKw] = useState<number | null>(null);
   const size = kw ?? suggested;
 
-  const madeKwh = size * SUN_HOURS * DAYS;
-  // Solar only replaces what you'd use while it's working (or, with a battery, most of the evening too).
-  const saving = Math.min(madeKwh, usedKwh * share) * rate;
+  // Solar only replaces what you'd use while it's working (or, with a battery, most of the evening too):
+  // month by month, a surplus isn't counted and a shortfall is.
+  const saving = (usefulPerYear(province, size, need) / 12) * rate;
   const after = Math.max(0, bill - saving);
   const equipment = equipmentPrice(size, prices) + (withBattery && prices.battery ? prices.battery.price : 0);
   const installation = Number(install.replace(/[^\d.]/g, "")) || 0;
@@ -64,6 +70,21 @@ export function SavingsCalculator({ prices }: { prices: CalculatorPrices }) {
   return (
     <div className="grid gap-8 rounded-xl border bg-card p-5 sm:p-8 lg:grid-cols-[1fr_1.2fr] lg:gap-12">
       <div className="space-y-6">
+        <div>
+          <label htmlFor={`${id}-province`} className="font-semibold">
+            Where is the roof?
+          </label>
+          <select
+            id={`${id}-province`}
+            value={province}
+            onChange={(e) => isProvince(e.target.value) && setProvince(e.target.value)}
+            className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3"
+          >
+            {PROVINCES.map((p) => (
+              <option key={p}>{p}</option>
+            ))}
+          </select>
+        </div>
         <Slider
           id={`${id}-bill`}
           label="Your monthly electricity bill"
@@ -88,7 +109,11 @@ export function SavingsCalculator({ prices }: { prices: CalculatorPrices }) {
         <Slider
           id={`${id}-kw`}
           label="Solar panels"
-          hint={kw === null ? "Sized to your bill. Drag to try another size." : undefined}
+          hint={
+            kw === null
+              ? `Sized for ${year.weakest.name}, the weakest month for sun in ${province}, so it covers you all year. Drag to try another size.`
+              : undefined
+          }
           value={size}
           min={1}
           max={20}
@@ -98,7 +123,12 @@ export function SavingsCalculator({ prices }: { prices: CalculatorPrices }) {
         />
         {prices.battery && (
           <label className="flex cursor-pointer items-start gap-3 rounded-lg border p-3">
-            <input type="checkbox" checked={withBattery} onChange={(e) => setWithBattery(e.target.checked)} className="mt-1 size-4 accent-[var(--ink)]" />
+            <input
+              type="checkbox"
+              checked={withBattery}
+              onChange={(e) => setWithBattery(e.target.checked)}
+              className="mt-1 size-4 accent-[var(--ink)]"
+            />
             <span>
               <span className="block font-semibold">Add a {prices.battery.kwh} kWh battery</span>
               <span className="block text-sm text-muted-foreground">
@@ -126,7 +156,7 @@ export function SavingsCalculator({ prices }: { prices: CalculatorPrices }) {
         </div>
         {kw !== null && kw !== suggested && (
           <button type="button" onClick={() => setKw(null)} className="-mt-3 text-sm font-semibold underline underline-offset-4">
-            Use the size for my bill ({suggested} kW)
+            Size it for {year.weakest.name} ({suggested} kW)
           </button>
         )}
       </div>
@@ -143,9 +173,7 @@ export function SavingsCalculator({ prices }: { prices: CalculatorPrices }) {
           </div>
           <div className="rounded-lg bg-shelf p-4">
             <dt className="text-sm font-semibold">{installation ? "The system pays for itself in" : "The equipment pays for itself in"}</dt>
-            <dd className="num type-wide mt-1 text-3xl">
-              {payback === null ? "–" : payback > 25 ? "25+ years" : `${payback.toFixed(1)} years`}
-            </dd>
+            <dd className="num type-wide mt-1 text-3xl">{payback === null ? "–" : payback > 25 ? "25+ years" : `${payback.toFixed(1)} years`}</dd>
           </div>
         </dl>
 
@@ -174,7 +202,10 @@ export function SavingsCalculator({ prices }: { prices: CalculatorPrices }) {
                     <span className="num shrink-0 text-sm font-bold">{formatPrice(Math.round(b.value))}</span>
                   </span>
                   {hover === b.key && (
-                    <span role="tooltip" className="absolute -top-9 left-28 z-10 rounded-md bg-ink px-2.5 py-1.5 text-xs whitespace-nowrap text-ink-foreground shadow-md">
+                    <span
+                      role="tooltip"
+                      className="absolute -top-9 left-28 z-10 rounded-md bg-ink px-2.5 py-1.5 text-xs whitespace-nowrap text-ink-foreground shadow-md"
+                    >
                       <strong className="num">{formatPrice(Math.round(b.value))}</strong> a month, {b.label.toLowerCase()}
                       {b.key === "after" && bill > 0 && <> ({Math.round((saving / bill) * 100)}% less)</>}
                     </span>
@@ -199,19 +230,31 @@ export function SavingsCalculator({ prices }: { prices: CalculatorPrices }) {
           </table>
         </figure>
 
+        {/* The year: what this size makes each month against what solar is asked to supply */}
+        <figure>
+          <figcaption className="mb-3 text-sm font-semibold">
+            What {size} kW of panels make through the year in {province}
+          </figcaption>
+          <SeasonChart monthly={monthlyOutput(province, size)} need={need} />
+        </figure>
+
         <details className="text-sm text-muted-foreground">
           <summary className="cursor-pointer font-semibold text-foreground">How we worked this out</summary>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>
-              Each kW of panels makes about {SUN_HOURS} kWh a day, a South African average. Your roof, region and shading change this.
+              What panels make is worked out month by month for {year.city}: each kW makes about {year.weakest.yield} kWh a day in {year.weakest.name}
+              , the weakest month, and {year.best.yield} in {year.best.name}, on a north-facing roof at about 20° (PVGIS). The suggested size covers
+              the weakest month; shade and roof direction change this.
             </li>
             <li>
-              Without a battery, solar replaces only the electricity you use while the sun is up: we assume {Math.round(SHARE_NO_BATTERY * 100)}% of your use. With a
-              battery we assume {Math.round(SHARE_WITH_BATTERY * 100)}%. Power you don&apos;t use is lost, since most municipalities don&apos;t pay for power sent back.
+              Without a battery, solar replaces only the electricity you use while the sun is up: we assume {Math.round(SHARE_NO_BATTERY * 100)}% of
+              your use. With a battery we assume {Math.round(SHARE_WITH_BATTERY * 100)}%. Power you don&apos;t use is lost, since most municipalities
+              don&apos;t pay for power sent back.
             </li>
             <li>
-              Equipment: {size} kW of panels and a suitable hybrid inverter{withBattery && prices.battery ? ` and a ${prices.battery.kwh} kWh battery` : ""} from our
-              current stock ({formatPrice(Math.round(equipment))}). Mounting, cabling, installation and delivery are extra.
+              Equipment: {size} kW of panels and a suitable hybrid inverter
+              {withBattery && prices.battery ? ` and a ${prices.battery.kwh} kWh battery` : ""} from our current stock (
+              {formatPrice(Math.round(equipment))}). Mounting, cabling, installation and delivery are extra.
             </li>
             <li>Tariffs rise every year, which makes the real payback shorter; fixed monthly charges on your bill don&apos;t change.</li>
           </ul>
