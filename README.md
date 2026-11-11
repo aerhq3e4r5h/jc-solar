@@ -269,6 +269,7 @@ Status of each item. Legal text on the site is a starting point, not legal advic
 
 - **Product photos** (`public/products/<slug>/<n>.webp`, indexed by SKU in `src/data/product-images.json`) are Solar Europe's, used with their permission. A product uses them until an admin uploads its own images to Supabase Storage.
 - **Background photos** (`src/assets/backgrounds/`) are from Pexels under its free commercial licence; sources are in `src/assets/backgrounds/CREDITS.md`.
+- **The house on the Build page** (`public/build/scene/`) is a computer-generated picture (made with Higgsfield on the owner's account), with a night version and a loop of clouds derived from it. The panels are drawn onto its roof by the page. How the files were made, and how to rebuild them, is in `scripts/scene/README.md`.
 
 ## Motion
 
@@ -292,4 +293,5 @@ Panels are sized for the weakest month of the year where the roof is, not for th
 
 - `src/lib/solar/seasons.ts` holds what 1 kW of panels makes each month in each province's main city (PVGIS, a north-facing roof at 20°), the sizing functions (`sizeForHome`, `panelsFor`), and the sun's path: how high it stands at midday (`noonSunHeight`) and when it rises and sets (`daylight`). The weakest month is June in the Cape provinces, the Free State and KwaZulu-Natal, April on the Highveld and November in Mpumalanga; a test checks the table against PVGIS's yearly figures.
 - The builder (`/build`), the calculators, the savings calculator and the Solar Advisor all size with it. The province is remembered with the delivery estimate (`useProvince`).
+- The builder's house (`src/components/home/builder-scene.tsx`) shows the chosen panels on its roof, dims a little in the weaker months, and has a dial for the height of the midday sun that month. "Play the year" steps through the months; "Night, grid off" shows what the batteries keep running, and for how long.
 - **24 hours on solar** (home page, `src/components/home/solar-day.tsx`) tells one day for the province's best and weakest months and for two sizes of array: enough for the best month, or sized for the weakest. The sums are a small energy balance in `src/lib/solar/day.ts` (solar to the house first, then the battery; a 20% reserve while the grid is on; load shedding from 18:00 to 20:30). The day's solar total is the real monthly average; the house's habits and the shape of the day are an illustration, and the page says so.

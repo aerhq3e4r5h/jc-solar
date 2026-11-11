@@ -6,8 +6,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { BuilderScene } from "@/components/home/builder-scene";
 import { AnimatedCount } from "@/components/shop/results-controls";
-import { useMotion } from "@/components/motion/use-motion";
 import { SeasonChart } from "@/components/tools/season-chart";
 import { useProvince } from "@/components/tools/use-province";
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,6 @@ import { formatPrice } from "@/lib/pricing/vat";
 import { isProvince, MONTHS, sizeForHome } from "@/lib/solar/seasons";
 import { cn } from "@/lib/utils";
 
-const COLS = 6;
-const ROWS = 5;
 // Rough, labelled estimates for the summary.
 const ESSENTIALS_KW = 0.5; // lights, Wi-Fi, TV, fridge and a laptop
 const USABLE = 0.9; // share of a lithium battery's capacity you can use
@@ -152,7 +150,18 @@ export function SystemBuilder({ data }: { data: BuilderData }) {
         {/* The house and what it adds up to */}
         <div className="lg:sticky lg:top-24 lg:self-start">
           <div className="dark grain relative isolate overflow-hidden rounded-2xl bg-ink text-ink-foreground ring-1 ring-white/10">
-            <Scene n={n} batteries={qty} kwp={kwp} month={month} strength={year.monthly[month] / year.best.yield} />
+            <BuilderScene
+              n={n}
+              kwp={kwp}
+              batteries={qty}
+              backupHours={backupHours}
+              province={province}
+              month={month}
+              weakest={year.weakest.month}
+              best={year.best.month}
+              strength={year.monthly[month] / year.best.yield}
+              onMonth={setMonth}
+            />
             <dl className="grid grid-cols-2 gap-px border-t border-white/10 bg-white/10 sm:grid-cols-4">
               <Stat icon={<Sun className="size-4 text-sun" />} label="Panels" value={`${kwp.toFixed(2)} kW`} />
               <Stat
@@ -187,7 +196,7 @@ export function SystemBuilder({ data }: { data: BuilderData }) {
           <p className="mt-3 text-xs text-muted-foreground">
             Estimates. Panel output by month is for {year.city}, on a north-facing roof at about 20° (PVGIS, European Commission); other roofs make
             less. Backup assumes essentials (lights, Wi-Fi, TV, fridge, a laptop) drawing about {ESSENTIALS_KW * 1000} W from{" "}
-            {Math.round(USABLE * 100)}% of the battery.
+            {Math.round(USABLE * 100)}% of the battery. The house is a computer-generated illustration, not one of our installations.
           </p>
         </div>
 
@@ -681,166 +690,5 @@ function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; va
       </dt>
       <dd className="num mt-1 text-base font-bold text-white sm:text-lg">{value}</dd>
     </div>
-  );
-}
-
-/** The house: panels tile onto the roof, batteries stack up beside the inverter. */
-function Scene({ n, batteries, kwp, month, strength }: { n: number; batteries: number; kwp: number; month: number; strength: number }) {
-  // Southern hemisphere: the midday sun is highest in late December, lowest in late June.
-  const height = 0.5 + 0.5 * Math.cos((2 * Math.PI * (month + 0.3)) / 12);
-  const sunY = 150 - height * 92;
-  const reduce = useMotion() !== "full";
-  const spring = reduce ? { duration: 0 } : { type: "spring" as const, stiffness: 380, damping: 26 };
-  return (
-    <svg
-      viewBox="0 0 640 420"
-      className="block w-full"
-      data-roof
-      role="img"
-      aria-label={`${n} solar panels on a roof, ${kwp.toFixed(2)} kW, and ${batteries} batteries`}
-    >
-      <defs>
-        <radialGradient id="sb-sun" cx="0.5" cy="0.5" r="0.5">
-          <stop offset="0" stopColor="#ffc414" stopOpacity="0.55" />
-          <stop offset="1" stopColor="#ffc414" stopOpacity="0" />
-        </radialGradient>
-        <linearGradient id="sb-panel" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#3a3c3f" />
-          <stop offset="0.45" stopColor="#1d1e20" />
-          <stop offset="1" stopColor="#141516" />
-        </linearGradient>
-        <linearGradient id="sb-roof" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#45433e" />
-          <stop offset="1" stopColor="#36352f" />
-        </linearGradient>
-      </defs>
-
-      {/* Sun */}
-      <motion.g
-        initial={false}
-        animate={{ y: sunY - 62, opacity: 0.55 + 0.45 * strength }}
-        transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 60, damping: 16 }}
-      >
-        <circle cx="575" cy="62" r="95" fill="url(#sb-sun)" />
-        <circle cx="575" cy="62" r="26" fill="#ffc414" />
-      </motion.g>
-      <text x="575" y="24" textAnchor="middle" fontSize="13" fontWeight="600" fill="#b9b6ab" fontFamily="inherit">
-        {MONTHS[month]}
-      </text>
-
-      {/* Ground */}
-      <rect y="372" width="640" height="48" fill="#2a2a27" />
-      <rect y="372" width="640" height="3" fill="#3a3934" />
-
-      {/* House */}
-      <rect x="62" y="248" width="356" height="124" fill="#e8e6de" />
-      {[96, 196, 326].map((x) => (
-        <rect key={x} x={x} y="272" width="52" height="42" rx="3" fill="#c9c7bd" />
-      ))}
-      <rect x="258" y="290" width="40" height="82" rx="3" fill="#6b4e3d" />
-      <path d="M30 254 L120 44 L360 44 L450 254 Z" fill="url(#sb-roof)" />
-      <path d="M30 254 L450 254" stroke="#2b2a26" strokeWidth="6" />
-
-      {/* Panel slots, filled up to the chosen count */}
-      {Array.from({ length: COLS * ROWS }).map((_, i) => {
-        const row = Math.floor(i / COLS);
-        const col = i % COLS;
-        // Bottom row first; each row stays inside the roof's sloping edges (30,254)-(120,44).
-        const y = 214 - row * 38;
-        const inset = ((254 - y) * 90) / 210 + 14;
-        const left = 30 + inset;
-        const rowWidth = 420 - inset * 2;
-        const w = rowWidth / COLS - 5;
-        const x = left + col * (rowWidth / COLS);
-        const on = i < n;
-        return (
-          <motion.g
-            key={i}
-            initial={false}
-            animate={{ opacity: on ? 1 : 0.18, scale: on ? 1 : 0.9 }}
-            transition={reduce ? { duration: 0 } : { ...spring, delay: on ? col * 0.015 : 0 }}
-            style={{ transformOrigin: `${x + w / 2}px ${y + 15}px`, transformBox: "view-box" }}
-          >
-            <rect
-              x={x}
-              y={y}
-              width={w}
-              height={31}
-              rx={2}
-              fill={on ? "url(#sb-panel)" : "none"}
-              stroke={on ? "#9a988f" : "#77756e"}
-              strokeWidth={on ? 1.2 : 1}
-              strokeDasharray={on ? undefined : "3 3"}
-            />
-            {on && (
-              <path
-                d={`M${x + w / 3} ${y + 1}V${y + 30}M${x + (2 * w) / 3} ${y + 1}V${y + 30}M${x + 1} ${y + 15.5}H${x + w - 1}`}
-                stroke="#4a4c50"
-                strokeWidth="0.8"
-              />
-            )}
-          </motion.g>
-        );
-      })}
-
-      {/* Garage wall with the inverter and the battery stack */}
-      <rect x="418" y="268" width="196" height="104" fill="#d9d6cc" />
-      <rect x="412" y="262" width="208" height="8" rx="2" fill="#3b3a36" />
-      {/* inverter */}
-      <rect x="432" y="282" width="46" height="62" rx="5" fill="#f6f5f1" stroke="#b9b6ab" />
-      <rect x="440" y="292" width="30" height="13" rx="2" fill="#1d1e20" />
-      <motion.rect
-        x="443"
-        y="295"
-        width="10"
-        height="7"
-        rx="1"
-        fill="#ffc414"
-        animate={reduce ? undefined : { opacity: [1, 0.35, 1] }}
-        transition={{ duration: 1.8, repeat: Infinity }}
-      />
-      {/* batteries: two columns of four, filled bottom-up */}
-      {Array.from({ length: MAX_BATTERIES }).map((_, i) => {
-        const col = Math.floor(i / 4);
-        const row = i % 4;
-        const x = 494 + col * 56;
-        const y = 348 - row * 24;
-        return (
-          <AnimatePresence key={i}>
-            {i < batteries && (
-              <motion.g
-                initial={reduce ? false : { opacity: 0, y: -14 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduce ? undefined : { opacity: 0, y: -10 }}
-                transition={spring}
-              >
-                <rect x={x} y={y} width="50" height="21" rx="3" fill="#f6f5f1" stroke="#b9b6ab" />
-                <rect x={x + 6} y={y + 7} width="18" height="7" rx="1.5" fill="#3b3a36" />
-                <rect x={x + 7} y={y + 8} width="13" height="5" rx="1" fill="oklch(0.7 0.17 150)" />
-              </motion.g>
-            )}
-          </AnimatePresence>
-        );
-      })}
-      {batteries === 0 && (
-        <text x="550" y="330" textAnchor="middle" fontSize="11" fill="#77756e" fontFamily="inherit">
-          No battery yet
-        </text>
-      )}
-
-      {/* Power flow: roof to inverter (and on to the batteries) */}
-      <path
-        d="M380 150 C470 150 470 230 455 282"
-        fill="none"
-        stroke="#ffc414"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        className="builder-flow"
-        opacity="0.9"
-      />
-      {batteries > 0 && (
-        <path d="M478 318 H494" fill="none" stroke="oklch(0.75 0.17 150)" strokeWidth="2.5" strokeLinecap="round" className="builder-flow" />
-      )}
-    </svg>
   );
 }

@@ -967,3 +967,28 @@ main#main > * {
     stroke-dashoffset: -22;
   }
 }
+
+/* Build-a-system: the sun catching the panels now and then */
+.builder-glint {
+  transform-box: view-box;
+  transform: translateX(0) skewX(-20deg);
+  opacity: 0;
+}
+:root[data-motion="full"] .builder-glint {
+  animation: jc-builder-glint 8s ease-in-out infinite;
+}
+@keyframes jc-builder-glint {
+  0%,
+  58% {
+    transform: translateX(0) skewX(-20deg);
+    opacity: 0;
+  }
+  64%,
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(2400px) skewX(-20deg);
+    opacity: 0;
+  }
+}
