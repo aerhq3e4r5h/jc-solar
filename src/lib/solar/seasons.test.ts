@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PROVINCES } from "@/lib/checkout/schema";
-import { MONTHS, monthlyOutput, panelsFor, sizeForHome, SOLAR_YIELD, solarYear } from "./seasons";
+import { daylight, MONTHS, monthlyOutput, noonSunHeight, panelsFor, sizeForHome, SOLAR_YIELD, solarYear, sunLevel } from "./seasons";
 
 // The yearly figure PVGIS reports for each city (kWh a day per kW). If a
 // monthly value were mistyped, the day-weighted mean would drift from it.
@@ -77,5 +77,42 @@ describe("sizing for the weakest month", () => {
       const average = monthlyOutput(p, (s.panels.average * 600) / 1000);
       if (s.panels.average < s.panels.weakest) expect(Math.min(...average)).toBeLessThan(s.need);
     }
+  });
+});
+
+describe("where the sun is", () => {
+  const JUNE = 5;
+  const DECEMBER = 11;
+
+  it("stands about 40 degrees high at midday in a Johannesburg June, and nearly overhead in December", () => {
+    expect(noonSunHeight("Gauteng", JUNE)).toBeCloseTo(40.5, 0);
+    expect(noonSunHeight("Gauteng", DECEMBER)).toBeGreaterThan(86);
+    expect(noonSunHeight("Gauteng", DECEMBER)).toBeLessThan(88);
+    // further south the winter sun is lower still
+    expect(noonSunHeight("Western Cape", JUNE)).toBeCloseTo(32.8, 0);
+    for (const p of PROVINCES) for (let m = 0; m < 12; m++) expect(noonSunHeight(p, m)).toBeLessThan(90);
+  });
+
+  it("gives Cape Town long summer days and short winter ones, by the clock", () => {
+    const summer = daylight("Western Cape", DECEMBER);
+    const winter = daylight("Western Cape", JUNE);
+    expect(summer.hours).toBeCloseTo(14.4, 0);
+    expect(winter.hours).toBeCloseTo(9.9, 0);
+    // published times for mid-June are about 07:50 and 17:45
+    expect(winter.rise).toBeGreaterThan(7.6);
+    expect(winter.rise).toBeLessThan(8.1);
+    expect(winter.set).toBeGreaterThan(17.5);
+    expect(winter.set).toBeLessThan(18);
+    // Johannesburg in June: about 06:55 to 17:25
+    const joburg = daylight("Gauteng", JUNE);
+    expect(joburg.rise).toBeCloseTo(6.95, 0);
+    expect(joburg.set).toBeCloseTo(17.3, 0);
+  });
+
+  it("places each month between the lowest midday sun (June) and the highest (December)", () => {
+    expect(sunLevel(JUNE)).toBeLessThan(0.02);
+    expect(sunLevel(DECEMBER)).toBeGreaterThan(0.98);
+    for (let m = 0; m < JUNE; m++) expect(sunLevel(m)).toBeGreaterThan(sunLevel(m + 1));
+    for (let m = JUNE; m < DECEMBER; m++) expect(sunLevel(m)).toBeLessThan(sunLevel(m + 1));
   });
 });

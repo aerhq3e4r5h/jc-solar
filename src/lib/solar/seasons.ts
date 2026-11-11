@@ -140,3 +140,61 @@ export function usefulPerYear(province: Province, kw: number, needKwh: number): 
 
 /** What an array of `kw` makes each day, month by month, in a province (kWh). */
 export const monthlyOutput = (province: Province, kw: number) => SOLAR_YIELD[province].monthly.map((y) => y * kw);
+
+// How high the midday sun stands, month by month. This is geometry, not
+// weather: it explains why winter days are weaker (a lower sun, a shorter
+// day), while SOLAR_YIELD above says by how much once cloud is counted.
+
+/** Degrees south of the equator, for each province's main city. */
+const LATITUDE: Record<Province, number> = {
+  "Eastern Cape": 33.96,
+  "Free State": 29.12,
+  Gauteng: 26.2,
+  "KwaZulu-Natal": 29.86,
+  Limpopo: 23.9,
+  Mpumalanga: 25.47,
+  "North West": 25.67,
+  "Northern Cape": 28.74,
+  "Western Cape": 33.92,
+};
+/** Degrees east, for the same cities. South African time is set for 30° east, so the sun is at its highest a little after twelve further west. */
+const LONGITUDE: Record<Province, number> = {
+  "Eastern Cape": 25.6,
+  "Free State": 26.21,
+  Gauteng: 28.05,
+  "KwaZulu-Natal": 31.03,
+  Limpopo: 29.45,
+  Mpumalanga: 30.97,
+  "North West": 27.24,
+  "Northern Cape": 24.77,
+  "Western Cape": 18.42,
+};
+const TILT = 23.44; // the earth's axis, degrees
+const RAD = Math.PI / 180;
+
+/** The sun's declination in the middle of a month: degrees north (+) or south (-) of the equator. */
+function declination(month: number): number {
+  const day = DAYS.slice(0, month).reduce((sum, d) => sum + d, 0) + DAYS[month] / 2;
+  return -TILT * Math.cos((2 * Math.PI * (day + 10)) / 365);
+}
+
+/** Degrees above the northern horizon of the midday sun, in the middle of a month. Every city here lies south of the tropic, so the sun is always to the north. */
+export function noonSunHeight(province: Province, month: number): number {
+  return 90 - LATITUDE[province] - declination(month);
+}
+
+/**
+ * Sunrise, sunset and the sun's highest point, as hours on the clock, for
+ * the middle of a month. Good to about a quarter of an hour: it leaves out
+ * the few minutes the sun runs fast or slow through the year.
+ */
+export function daylight(province: Province, month: number): { rise: number; set: number; noon: number; hours: number } {
+  const half = Math.acos(Math.tan(LATITUDE[province] * RAD) * Math.tan(declination(month) * RAD)) / RAD / 15;
+  const noon = 12 + (30 - LONGITUDE[province]) / 15;
+  return { rise: noon - half, set: noon + half, noon, hours: half * 2 };
+}
+
+/** Where a month sits between the year's lowest midday sun (0, late June) and its highest (1, late December). The same for every province. */
+export function sunLevel(month: number): number {
+  return (TILT - declination(month)) / (2 * TILT);
+}

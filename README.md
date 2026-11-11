@@ -284,4 +284,12 @@ The site always runs with full animation, for every visitor, whatever their devi
 - Guides live in `src/app/(site)/learn/`, listed in `src/lib/guides.ts`, and share one layout (`src/components/content/guide-shell.tsx`). To add one: add it to the list, create its page with `<GuideShell slug="...">`, and add its URL to `src/app/sitemap.ts`.
 - The calculators are in `src/components/tools/`: `LoadCheck` (what an inverter runs at once), `Runtime` (how long a battery lasts), `PanelYield` and `PanelsNeeded` (panels), and `InverterTypes` (the switchable diagram). Give them a fixed value (`kw`, `kwh`, `watts`) and they describe one product; leave it out and the size becomes a slider.
 - Product pages pick the right calculator from the product's category and specs (`src/components/product/plain-terms-section.tsx`). Appliance wattages are shared with the home page planner (`src/lib/planner/appliances.ts`).
-- Every figure is an estimate and says so on the page. The assumptions (90% usable lithium capacity, 93% inverter efficiency, 4.8 kWh a day per kW of panels) are constants at the top of `src/components/tools/plain-terms.tsx`.
+- Every figure is an estimate and says so on the page. The battery assumptions (90% usable lithium capacity, 93% inverter efficiency) are constants at the top of `src/components/tools/plain-terms.tsx`.
+
+## Solar through the year
+
+Panels are sized for the weakest month of the year where the roof is, not for the average. Everything that says how much panels make reads the same table.
+
+- `src/lib/solar/seasons.ts` holds what 1 kW of panels makes each month in each province's main city (PVGIS, a north-facing roof at 20°), the sizing functions (`sizeForHome`, `panelsFor`), and the sun's path: how high it stands at midday (`noonSunHeight`) and when it rises and sets (`daylight`). The weakest month is June in the Cape provinces, the Free State and KwaZulu-Natal, April on the Highveld and November in Mpumalanga; a test checks the table against PVGIS's yearly figures.
+- The builder (`/build`), the calculators, the savings calculator and the Solar Advisor all size with it. The province is remembered with the delivery estimate (`useProvince`).
+- **24 hours on solar** (home page, `src/components/home/solar-day.tsx`) tells one day for the province's best and weakest months and for two sizes of array: enough for the best month, or sized for the weakest. The sums are a small energy balance in `src/lib/solar/day.ts` (solar to the house first, then the battery; a 20% reserve while the grid is on; load shedding from 18:00 to 20:30). The day's solar total is the real monthly average; the house's habits and the shape of the day are an illustration, and the page says so.
