@@ -15,8 +15,10 @@ import { StockBadge } from "./stock-badge";
 const TILE_SIZES = "(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, (min-width: 640px) 33vw, 50vw";
 
 /**
- * Shop-shelf product tile: the photo on a grey tile, then brand, name, key
- * specs and price. No card chrome, so a grid of products reads like a shelf.
+ * Shop-shelf product tile: the photo on a light grey tile, then brand, name,
+ * key specs and price. No card chrome, so a grid of products reads like a
+ * shelf. The photos have white backgrounds; "multiply" lets the tile show
+ * through them.
  */
 /**
  * `morph`: the photo morphs into the product page's gallery on navigation.
@@ -31,7 +33,7 @@ export function ProductCard({ product, priority = false, morph = true }: { produ
   return (
     <article className="group relative flex h-full flex-col">
       <MaybeShared on={morph} name={vtName("product", product.id)}>
-        <div className="relative aspect-square overflow-hidden rounded-lg border bg-white transition-[border-color,box-shadow,translate] duration-300 ease-out group-hover:border-foreground/30 group-hover:shadow-[0_18px_40px_-18px_rgb(0_0_0/0.35)] motion-full:group-hover:-translate-y-1">
+        <div className="relative aspect-square overflow-hidden rounded-xl bg-tile transition-[box-shadow,translate] duration-300 ease-out group-hover:shadow-[0_18px_40px_-18px_rgb(0_0_0/0.35)] motion-full:group-hover:-translate-y-1">
           {image ? (
             <>
               <Image
@@ -40,7 +42,7 @@ export function ProductCard({ product, priority = false, morph = true }: { produ
                 fill
                 sizes={TILE_SIZES}
                 className={cn(
-                  "object-contain transition-[transform,opacity] duration-500 ease-out group-hover:scale-[1.04]",
+                  "object-contain p-2 mix-blend-multiply transition-[transform,opacity] duration-500 ease-out group-hover:scale-[1.04] sm:p-3",
                   second && "group-hover:opacity-0",
                 )}
                 priority={priority}
@@ -52,7 +54,7 @@ export function ProductCard({ product, priority = false, morph = true }: { produ
                   alt=""
                   fill
                   sizes={TILE_SIZES}
-                  className="object-contain opacity-0 transition-[transform,opacity] duration-500 ease-out group-hover:scale-[1.04] group-hover:opacity-100"
+                  className="object-contain p-2 opacity-0 mix-blend-multiply transition-[transform,opacity] duration-500 ease-out group-hover:scale-[1.04] group-hover:opacity-100 sm:p-3"
                 />
               )}
             </>

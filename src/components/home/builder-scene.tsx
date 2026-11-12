@@ -191,7 +191,7 @@ export function BuilderScene({
               : "at night with the grid off: the house is dark, because there is no battery"
             : `in ${MONTHS[month]}, when the midday sun stands ${Math.round(sun)} degrees high`
         }`}
-        className="relative aspect-[4/3] overflow-hidden bg-[#2a3d57]"
+        className="relative aspect-[4/3] overflow-hidden bg-[#0f0f11]"
       >
         {/* Day: the picture, with living clouds in its sky. The light dims a little in the weaker months. */}
         <div
@@ -220,14 +220,14 @@ export function BuilderScene({
         {nightReady && (
           <>
             <Image
-              src="/build/scene/night-off.webp"
+              src="/build/scene/night-dark.webp"
               alt=""
               fill
               sizes="(min-width: 1024px) 52vw, 100vw"
               className={cn("object-cover transition-opacity duration-1000 ease-out", night ? "opacity-100" : "opacity-0")}
             />
             <Image
-              src="/build/scene/night-on.webp"
+              src="/build/scene/night-lit.webp"
               alt=""
               fill
               sizes="(min-width: 1024px) 52vw, 100vw"
@@ -240,7 +240,7 @@ export function BuilderScene({
         <svg
           viewBox={`0 0 ${VIEW.w} ${VIEW.h}`}
           className="absolute inset-0 h-full w-full transition-[filter] duration-1000"
-          style={{ filter: night ? "brightness(0.34) saturate(0.7)" : undefined }}
+          style={{ filter: night ? "brightness(0.36) saturate(0.2)" : undefined }}
           aria-hidden="true"
         >
           <defs>

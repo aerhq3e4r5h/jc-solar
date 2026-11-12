@@ -6,7 +6,7 @@ import { Suspense, ViewTransition } from "react";
 import type { StaticImageData } from "next/image";
 import closeupImage from "@/assets/backgrounds/panel-closeup.webp";
 import heroImage from "@/assets/backgrounds/hero-array.webp";
-import homeImage from "@/assets/backgrounds/home-roof.webp";
+import homeImage from "@/assets/home/house-day.webp";
 import installerImage from "@/assets/backgrounds/installer-commercial.webp";
 import { PhotoBanner } from "@/components/layout/photo-banner";
 import { PageTransition, vtName } from "@/components/motion/page-transition";

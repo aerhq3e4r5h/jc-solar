@@ -44,6 +44,8 @@
   --color-ink-foreground: var(--ink-foreground);
   --color-sun: var(--sun);
   --color-shelf: var(--shelf);
+  --color-tile: var(--tile);
+  --color-tile-foreground: var(--tile-foreground);
   --color-charge: var(--charge);
   --color-sale: var(--sale);
   --radius-sm: calc(var(--radius) * 0.5);
@@ -65,6 +67,9 @@
   --ink-foreground: oklch(0.985 0.002 95);
   /* Light neutral grey behind product photos and quiet bands. */
   --shelf: oklch(0.962 0.003 95);
+  /* The tile a product photo stands on. The photos have white backgrounds and are laid on it with "multiply", so it stays this light in dark mode too. */
+  --tile: oklch(0.957 0.003 95);
+  --tile-foreground: oklch(0.235 0.004 95);
   /* Battery-charge green: in stock, power flowing. */
   --charge: oklch(0.55 0.15 150);
   /* Sale ribbons, sale prices and discount badges. */
@@ -510,9 +515,9 @@
 /*
  * Home entrance, once per visit (a tiny inline script sets data-intro on
  * <html> for the first home page view of the session, for about 3 seconds).
- * The photo starts dim. The headline rises in word by word, "on" lights up
- * and the photo brightens with it, then "off." flickers out like a failing
- * bulb. The price sticker stamps in and the rest follows. On "calm" the same
+ * The house starts dark. The headline rises in word by word, "on" lights up
+ * and the house's lights come on with it, then "off." flickers out like a
+ * failing bulb. The price sticker stamps in and the rest follows. On "calm" the same
  * story is told with fades. Afterwards, and on every later view, the
  * headline simply sits in its final state: "on" lit, "off." dim.
  */
@@ -565,9 +570,20 @@
     opacity: 1;
   }
 }
-@keyframes ga-power-on {
-  from {
-    filter: brightness(0.34) saturate(0.5);
+/* The hero's house: its lights come on like a room being switched on, a blink and then steady. */
+@keyframes ga-lights-on {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  20% {
+    opacity: 0.15;
+  }
+  36%,
+  100% {
+    opacity: 1;
   }
 }
 @keyframes jc-stamp {
@@ -594,8 +610,8 @@
     transform: none;
   }
 }
-:root:is([data-motion="full"], [data-motion="calm"])[data-intro] .hero-photo {
-  animation: ga-power-on 1300ms ease-out 880ms backwards;
+:root:is([data-motion="full"], [data-motion="calm"])[data-intro] .hero-lit {
+  animation: ga-lights-on 900ms linear 880ms backwards;
 }
 :root[data-motion="full"][data-intro] .hero-title .hw {
   animation: ga-word 720ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;

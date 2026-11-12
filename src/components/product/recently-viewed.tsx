@@ -64,8 +64,8 @@ export function RecentlyViewed({ excludeId, className }: { excludeId?: string; c
         {items.map((v) => (
           <li key={v.id} className="w-40 shrink-0 snap-start sm:w-48">
             <Link href={v.url} className="group block">
-              <span className="relative block aspect-square overflow-hidden rounded-lg border bg-white transition-colors group-hover:border-foreground/30">
-                {v.image && <Image src={v.image} alt="" fill sizes="192px" className="object-contain" />}
+              <span className="relative block aspect-square overflow-hidden rounded-xl bg-tile">
+                {v.image && <Image src={v.image} alt="" fill sizes="192px" className="object-contain p-2 mix-blend-multiply transition-transform duration-500 ease-out group-hover:scale-[1.04]" />}
               </span>
               {v.brand && <span className="mt-2 block text-xs font-semibold text-muted-foreground">{v.brand}</span>}
               {/* No price here: a stored price could be out of date. The product page shows the current one. */}

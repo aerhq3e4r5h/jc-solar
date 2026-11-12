@@ -1,8 +1,9 @@
 import { ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
-import heroImage from "@/assets/backgrounds/home-roof.webp";
+import heroImage from "@/assets/home/house-day.webp";
 import { PhotoBanner } from "@/components/layout/photo-banner";
 import { PageTransition, Shared, vtName } from "@/components/motion/page-transition";
 import { CategoryGlyph } from "@/components/product/product-art";
@@ -87,22 +88,25 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
                   <Link
                     href={`/shop/${slug}`}
                     transitionTypes={["nav-forward"]}
-                    className="group relative isolate flex h-full min-h-60 flex-col overflow-hidden rounded-xl bg-shelf p-6 transition-colors duration-300 hover:bg-sun hover:text-ink sm:p-7"
+                    className="group relative isolate flex h-full min-h-60 flex-col overflow-hidden rounded-xl bg-tile p-6 text-tile-foreground transition-[box-shadow,translate] duration-300 ease-out hover:shadow-[0_22px_44px_-22px_rgb(0_0_0/0.4)] motion-full:hover:-translate-y-1 sm:p-7"
                   >
-                    <span className="type-wide max-w-[70%] text-2xl leading-none sm:text-[1.75rem]">{CATEGORIES[slug].name}</span>
-                    <span className="mt-2 max-w-[60%] text-sm text-muted-foreground group-hover:text-ink/75">
+                    <span className="type-wide max-w-[62%] text-2xl leading-none sm:text-[1.75rem]">{CATEGORIES[slug].name}</span>
+                    <span className="mt-2 max-w-[55%] text-sm text-tile-foreground/70">
                       {items.length} products, {inStock} in stock
                       {from !== null && (
                         <>
-                          , from <span className="num font-semibold text-foreground group-hover:text-ink">{formatPrice(from)}</span>
+                          , from <span className="num font-semibold text-tile-foreground">{formatPrice(from)}</span>
                         </>
                       )}
                     </span>
-                    <CategoryGlyph
-                      category={slug}
-                      className="glyph-live absolute -right-3 -bottom-5 -z-10 size-44 transition-transform duration-500 ease-out group-hover:scale-105 group-hover:-rotate-3"
-                    />
-                    <span className="mt-auto grid size-11 place-items-center rounded-full bg-background transition-colors group-hover:bg-ink group-hover:text-sun">
+                    {image ? (
+                      <span className="absolute right-2 bottom-2 -z-10 size-44 mix-blend-multiply transition-transform duration-500 ease-out group-hover:scale-105 sm:size-48">
+                        <Image src={image.url} alt="" fill sizes="12rem" className="object-contain" />
+                      </span>
+                    ) : (
+                      <CategoryGlyph category={slug} className="glyph-live absolute -right-3 -bottom-5 -z-10 size-44" />
+                    )}
+                    <span className="mt-auto grid size-11 place-items-center rounded-full bg-white transition-[rotate,background-color] duration-300 group-hover:-rotate-45 group-hover:bg-sun">
                       <ArrowRight className="size-5" aria-hidden="true" />
                     </span>
                   </Link>

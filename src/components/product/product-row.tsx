@@ -12,9 +12,9 @@ export function ProductRow({ product, columns }: { product: Product; columns: { 
   const image = product.images[0];
   return (
     <article className="group relative grid grid-cols-[5rem_minmax(0,1fr)] gap-4 rounded-lg border p-3 transition-colors hover:border-foreground/30 sm:grid-cols-[6rem_minmax(0,1fr)_auto] sm:items-center">
-      <div className="relative aspect-square overflow-hidden rounded-md border bg-white">
+      <div className="relative aspect-square overflow-hidden rounded-md bg-tile">
         {image ? (
-          <Image src={image.url} alt={image.alt} fill sizes="96px" className="object-contain" />
+          <Image src={image.url} alt={image.alt} fill sizes="96px" className="object-contain p-1 mix-blend-multiply" />
         ) : (
           <ProductArt category={product.category} className="rounded-none" />
         )}

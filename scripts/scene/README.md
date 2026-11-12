@@ -1,6 +1,9 @@
-# The house on the "Build your system" page
+# The house
 
-The pictures in `public/build/scene/` are one generated house, shown by day and by night, with a loop of clouds for its sky. The panels are not in the pictures: the page draws the chosen number onto the roof (`src/components/home/builder-scene.tsx`).
+One generated house is the site's own picture. It opens the home page (dark at night, then lit), stands on the "Build your system" page with the visitor's panels on its roof, and appears on the shop banners, the sign-in pages and the not-found page.
+
+- `public/build/scene/`: the house by day and by night with a loop of clouds for its sky. No panels in these: the Build page draws the chosen number onto the roof (`src/components/home/builder-scene.tsx`).
+- `src/assets/home/`: the same house with twelve panels on its roof, for everywhere else: by day, and at night with the lights off and on, both as the house alone and on a wide canvas with sky and dark veld to its left (the home page's opening picture on large screens).
 
 ## Where the pictures came from
 
@@ -17,16 +20,18 @@ The originals are not in this repository (16 MB); they can be downloaded again f
 ## Rebuilding the files
 
 ```
-python3 scripts/scene/make_scene.py house.png lit.mp4 clouds.mp4 public/build/scene
+python3 scripts/scene/make_scene.py house.png lit.mp4 clouds.mp4 public/build/scene src/assets/home
 ```
 
-Needs `numpy`, `opencv-python-headless` and `ffmpeg`. It writes:
+Needs `numpy`, `opencv-python-headless` and `ffmpeg`. Into the first folder it writes:
 
 - `day.webp`: the house by day.
 - `sky-mask.png`: where the sky is, as transparency. The cloud loop is only shown through it, so the roof and trees stay as sharp as the still.
 - `clouds.mp4`, `clouds.webm`: the sky of the cloud clip, lined up with the still (the clip is framed 0.7% tighter), colour-matched and slowed three times to a 12 second loop.
-- `night-off.webp`: the still graded to night under a starry sky: the house in a power cut with no battery.
-- `night-on.webp`: the same with the lit windows from `lit.mp4` (one frame, matched onto the still because that clip's camera drifts), their glow, and the light they throw on the path and the lawn.
+- `night-dark.webp`: the still graded to night under a starry sky: the house in a power cut with no battery. The night is graphite, the site's own dark, with no blue in it.
+- `night-lit.webp`: the same with the lit windows from `lit.mp4` (one frame, matched onto the still because that clip's camera drifts), their glow, and the light they throw on the path and the lawn.
+
+Into the second folder (when given) it writes `house-day.webp`, `house-night-off.webp` and `house-night-on.webp` (the house with twelve panels drawn on, using the same roof measurements as the page) and `hero-night-off.webp` and `hero-night-on.webp` (the night house low on the right of a wide canvas; the sky and stars are carried on above and to the left, and the ground to the left is drawn: dark veld under a low line of trees).
 
 ## The roof
 

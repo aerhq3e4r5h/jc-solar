@@ -269,7 +269,8 @@ Status of each item. Legal text on the site is a starting point, not legal advic
 
 - **Product photos** (`public/products/<slug>/<n>.webp`, indexed by SKU in `src/data/product-images.json`) are Solar Europe's, used with their permission. A product uses them until an admin uploads its own images to Supabase Storage.
 - **Background photos** (`src/assets/backgrounds/`) are from Pexels under its free commercial licence; sources are in `src/assets/backgrounds/CREDITS.md`.
-- **The house on the Build page** (`public/build/scene/`) is a computer-generated picture (made with Higgsfield on the owner's account), with a night version and a loop of clouds derived from it. The panels are drawn onto its roof by the page. How the files were made, and how to rebuild them, is in `scripts/scene/README.md`.
+- **The house** (`public/build/scene/` and `src/assets/home/`) is a computer-generated picture (made with Higgsfield on the owner's account), with night versions and a loop of clouds derived from it. It opens the home page, carries the visitor's panels on the Build page, and appears on the shop banners, the sign-in pages and the not-found page. How the files were made, and how to rebuild them, is in `scripts/scene/README.md`.
+- **Product photos on tiles:** the photos have white backgrounds and are laid on a light grey tile (`bg-tile`) with `mix-blend-multiply`, so the tile shows through. Put the blend on the element that moves or is layered (see the category tiles), and keep the tile light in dark mode.
 
 ## Motion
 

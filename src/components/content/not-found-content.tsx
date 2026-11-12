@@ -1,4 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
+import houseDark from "@/assets/home/house-night-off.webp";
 import { CategoryGlyph } from "@/components/product/product-art";
 import { Button } from "@/components/ui/button";
 import { shopNav } from "@/config/site";
@@ -26,7 +28,10 @@ export function NotFoundContent() {
             </Button>
           </div>
         </div>
-        <CategoryGlyph category="inverters" className="hidden size-64 lg:block" />
+        {/* Nobody home: the house from the home page, with its lights off. */}
+        <div className="relative hidden aspect-[4/3] w-[30rem] overflow-hidden rounded-2xl bg-[#0f0f11] lg:block" aria-hidden="true">
+          <Image src={houseDark} alt="" fill sizes="30rem" placeholder="blur" className="object-cover" />
+        </div>
       </div>
       <ul className="mt-14 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {shopNav.map((n) => (

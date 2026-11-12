@@ -3,7 +3,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { Fragment } from "react";
 import installersImage from "@/assets/backgrounds/installers-roof.webp";
-import homeImage from "@/assets/backgrounds/home-roof.webp";
+import heroDark from "@/assets/home/hero-night-off.webp";
+import heroLit from "@/assets/home/hero-night-on.webp";
+import houseDark from "@/assets/home/house-night-off.webp";
+import houseLit from "@/assets/home/house-night-on.webp";
 import { LazyPlanner, LazySolarDay } from "@/components/home/lazy-sections";
 import { PowerOn } from "@/components/home/power-on";
 import { BrandWall } from "@/components/home/brand-wall";
@@ -94,6 +97,8 @@ export default async function HomePage() {
       ...item,
       count: items.length,
       from: items.length ? Math.min(...items.map((p) => p.priceInclVat)) : null,
+      // A real product stands for its department.
+      image: topInStock(products, slug, 1)[0]?.images[0] ?? null,
       slug,
     };
   });
@@ -168,20 +173,32 @@ export default async function HomePage() {
         {/* Plays the entrance on the first home page view of a visit only. */}
         <script dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} />
         <div className="grid gap-3 lg:h-[min(76svh,46rem)] lg:grid-cols-3 lg:grid-rows-2">
-          <div className="relative isolate flex min-h-[32rem] flex-col justify-end overflow-hidden rounded-xl bg-ink text-white lg:col-span-2 lg:row-span-2 lg:min-h-0">
-            <div className="parallax-hero absolute inset-0 -z-20">
-              <Image src={homeImage} alt="" fill priority placeholder="blur" sizes="(min-width: 1024px) 66vw, 100vw" className="hero-photo object-cover" />
+          {/*
+            Our own house, at night with the grid off. It is dark until the headline says "on", then its lights
+            come up (see .hero-lit in globals.css). Large screens get a wide view with the house low on the right
+            and sky for the words; phones get the house itself under them.
+          */}
+          <div className="relative isolate flex min-h-[41rem] flex-col overflow-hidden rounded-xl bg-[#0f0f11] text-white sm:min-h-[34rem] lg:col-span-2 lg:row-span-2 lg:min-h-0 lg:[container-type:size]">
+            <div className="absolute inset-x-0 bottom-0 -z-20 hidden aspect-[3/2] [mask-image:linear-gradient(to_bottom,transparent,black_20%)] sm:block" aria-hidden="true">
+              <Image src={heroDark} alt="" fill priority sizes="(min-width: 1024px) 66vw, 100vw" className="object-cover" />
+              <Image src={heroLit} alt="" fill priority sizes="(min-width: 1024px) 66vw, 100vw" className="hero-lit object-cover" />
             </div>
-            <div className="photo-wash-bottom absolute inset-0 -z-10 lg:hidden" aria-hidden="true" />
-            <div className="photo-wash absolute inset-0 -z-10 hidden lg:block" aria-hidden="true" />
+            <div className="absolute inset-x-0 bottom-0 -z-20 aspect-[4/3] [mask-image:linear-gradient(to_bottom,transparent,black_26%)] sm:hidden" aria-hidden="true">
+              <Image src={houseDark} alt="" fill priority sizes="100vw" className="object-cover" />
+              <Image src={houseLit} alt="" fill priority sizes="100vw" className="hero-lit object-cover" />
+            </div>
+            <div className="absolute inset-0 -z-10 hidden bg-[linear-gradient(90deg,rgb(15_15_17/0.8)_0%,rgb(15_15_17/0.45)_38%,transparent_62%)] sm:block" aria-hidden="true" />
             <div className="drift-up p-6 sm:p-10 lg:p-14">
               {kitsFrom !== null && (
-                <p className="intro-stamp mb-6 inline-flex -rotate-2 items-baseline gap-2 rounded-sm bg-sun px-3 py-1.5 text-ink shadow-lg">
+                <p className="intro-stamp mb-6 inline-flex -rotate-2 items-baseline gap-2 rounded-sm bg-sun px-3 py-1.5 text-ink shadow-lg lg:mb-5">
                   <span className="text-sm font-semibold">Backup kits from</span>
                   <span className="num type-wide text-xl">{formatPrice(kitsFrom)}</span>
                 </p>
               )}
-              <h1 id="hero-heading" className="hero-title type-wide max-w-3xl text-[2.35rem] leading-[0.95] sm:text-6xl xl:text-7xl">
+              <h1
+                id="hero-heading"
+                className="hero-title type-wide max-w-3xl text-[2.35rem] leading-[0.95] sm:text-[clamp(2.75rem,7vw,3.75rem)] lg:text-[clamp(2.6rem,min(4.6vw,8.8svh),4.5rem)]"
+              >
                 {HEADLINE.map((w, i) => (
                   <Fragment key={i}>
                     <span className={w === "on" ? "hw hero-on" : w === "off." ? "hw hero-off" : "hw"} style={{ "--w": i } as React.CSSProperties}>
@@ -191,10 +208,13 @@ export default async function HomePage() {
                   </Fragment>
                 ))}
               </h1>
-              <p className="intro-rise mt-5 max-w-xl text-lg leading-relaxed text-white/80" style={{ "--i": 3 } as React.CSSProperties}>
+              <p
+                className="intro-rise mt-5 max-w-xl text-lg leading-relaxed text-white/80 lg:mt-4 [@container(min-aspect-ratio:138/100)]:hidden"
+                style={{ "--i": 3 } as React.CSSProperties}
+              >
                 Inverters, lithium batteries and solar panels for South African homes and businesses. Every price includes VAT.
               </p>
-              <div className="intro-rise mt-8 flex flex-col gap-3 sm:flex-row" style={{ "--i": 4 } as React.CSSProperties}>
+              <div className="intro-rise mt-8 flex flex-col gap-3 sm:flex-row lg:mt-6" style={{ "--i": 4 } as React.CSSProperties}>
                 <Button asChild size="lg" className="h-13 px-7 text-base">
                   <Link href="/shop/kits">Shop backup kits</Link>
                 </Button>
@@ -310,21 +330,21 @@ export default async function HomePage() {
               <Link
                 href={c.href}
                 transitionTypes={["nav-forward"]}
-                className="group relative isolate flex h-[26rem] flex-col overflow-hidden rounded-xl bg-shelf p-7 transition-colors duration-300 hover:bg-sun hover:text-ink"
+                className="group relative isolate flex h-[26rem] flex-col overflow-hidden rounded-xl bg-tile p-7 text-tile-foreground transition-[box-shadow,translate] duration-300 ease-out hover:shadow-[0_22px_44px_-22px_rgb(0_0_0/0.4)] motion-full:hover:-translate-y-1"
               >
                 <span className="flex items-start justify-between gap-4">
                   <span className="type-wide text-[1.75rem] leading-none">{c.label}</span>
-                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-background text-foreground transition-transform duration-300 group-hover:-rotate-45 group-hover:bg-ink group-hover:text-sun">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-tile-foreground transition-[rotate,background-color] duration-300 group-hover:-rotate-45 group-hover:bg-sun">
                     <ArrowRight className="size-5" aria-hidden="true" />
                   </span>
                 </span>
-                <span className="mt-2 text-sm text-muted-foreground group-hover:text-ink/75">
+                <span className="mt-2 text-sm text-tile-foreground/70">
                   {c.count > 0 ? (
                     <>
-                      <span className="num font-semibold text-foreground group-hover:text-ink">{c.count}</span> products
+                      <span className="num font-semibold text-tile-foreground">{c.count}</span> products
                       {c.from !== null && (
                         <>
-                          , from <span className="num font-semibold text-foreground group-hover:text-ink">{formatPrice(c.from)}</span>
+                          , from <span className="num font-semibold text-tile-foreground">{formatPrice(c.from)}</span>
                         </>
                       )}
                     </>
@@ -332,10 +352,14 @@ export default async function HomePage() {
                     "Coming soon"
                   )}
                 </span>
-                <CategoryGlyph
-                  category={c.slug}
-                  className="glyph-live mx-auto mt-auto size-56 transition-transform duration-500 ease-out group-hover:scale-105 group-hover:-rotate-3"
-                />
+                {c.image ? (
+                  /* "multiply" sits on the element that moves, or the photo's white would show while it does */
+                  <span className="relative mt-auto block h-60 w-full mix-blend-multiply transition-transform duration-500 ease-out group-hover:scale-105">
+                    <Image src={c.image.url} alt="" fill sizes="(min-width: 640px) 22rem, 70vw" className="object-contain" />
+                  </span>
+                ) : (
+                  <CategoryGlyph category={c.slug} className="glyph-live mx-auto mt-auto size-56" />
+                )}
               </Link>
             </Shared>
           </div>

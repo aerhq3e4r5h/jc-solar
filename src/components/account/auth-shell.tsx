@@ -1,5 +1,6 @@
 import { FileText, PackageCheck, ShieldCheck } from "lucide-react";
-import { LogoMark } from "@/components/brand/logo";
+import Image from "next/image";
+import houseLit from "@/assets/home/house-night-on.webp";
 
 const PERKS = [
   { icon: PackageCheck, text: "Every order and its status in one place" },
@@ -16,8 +17,11 @@ export function AuthShell({ title, intro, children }: { title: string; intro: st
         <p className="mt-2 mb-8 text-muted-foreground">{intro}</p>
         {children}
       </div>
-      <aside className="dark grain relative isolate hidden overflow-hidden rounded-2xl bg-ink p-10 text-ink-foreground lg:block">
-        <LogoMark tile={false} className="pointer-events-none absolute -right-20 -bottom-24 -z-10 size-[26rem] text-white/[0.05]" />
+      <aside className="dark relative isolate hidden min-h-[38rem] overflow-hidden rounded-2xl bg-[#0f0f11] p-10 text-ink-foreground lg:block">
+        {/* The house from the home page, lights on. */}
+        <div className="absolute inset-x-0 bottom-0 -z-10 aspect-[4/3] [mask-image:linear-gradient(to_bottom,transparent,black_30%)]" aria-hidden="true">
+          <Image src={houseLit} alt="" fill sizes="(min-width: 1024px) 45vw, 0px" placeholder="blur" className="object-cover" />
+        </div>
         <p className="type-wide text-3xl leading-tight">
           Your power,
           <br />
