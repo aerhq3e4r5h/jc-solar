@@ -45,7 +45,7 @@ export default function Guide() {
           <tbody>
             <tr>
               <td>Usable capacity</td>
-              <td>About 80–90% of rated kWh</td>
+              <td>70% of rated kWh in daily use: we stop it at 30% so that it lasts</td>
               <td>About 50% for a long life</td>
             </tr>
             <tr>

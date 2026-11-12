@@ -212,12 +212,18 @@ export function AdvisorChat({ enabled }: { enabled: boolean }) {
     setProgress(0);
     setLoading(true);
     try {
-      const res = await fetch("/api/advisor", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ messages: next.map(({ role, text }) => ({ role, text })) }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { reply?: string; products?: RecommendationCard[]; error?: string; code?: string };
+      const ask = async () => {
+        const res = await fetch("/api/advisor", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ messages: next.map(({ role, text }) => ({ role, text })) }),
+        });
+        const data = (await res.json().catch(() => ({}))) as { reply?: string; products?: RecommendationCard[]; error?: string; code?: string };
+        return { res, data };
+      };
+      let { res, data } = await ask();
+      // The model behind the advisor is sometimes overloaded for a moment: one quiet second try before saying so.
+      if (res.status === 502 || res.status === 504) ({ res, data } = await ask());
       if (!res.ok || !data.reply) {
         const message = data.error ?? "The advisor didn't respond. Please try again.";
         throw new Error(data.code ? `${message} (${data.code})` : message);

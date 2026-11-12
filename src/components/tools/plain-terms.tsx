@@ -3,6 +3,7 @@
 import { BatteryCharging, Gauge, Minus, Plus, Sun } from "lucide-react";
 import { useState } from "react";
 import { AnimatedCount } from "@/components/shop/results-controls";
+import { BATTERY, BATTERY_FLOOR_PCT } from "@/lib/battery";
 import { APPLIANCES, ESSENTIALS, loadOf, type ApplianceId } from "@/lib/planner/appliances";
 import { PROVINCES } from "@/lib/checkout/schema";
 import { formatPrice } from "@/lib/pricing/vat";
@@ -15,8 +16,8 @@ import { useProvince } from "./use-province";
 // are fixed to that product's numbers; in the guides the size is a slider.
 // Every figure is an estimate and says so.
 
-/** Share of a battery's capacity you can use, and what the inverter loses converting it. */
-const USABLE = { lithium: 0.9, leadAcid: 0.5 };
+/** Share of a battery's capacity that is used (lithium is only run down to 30%, see lib/battery.ts), and what the inverter loses converting it. */
+const USABLE = { lithium: BATTERY.usable, leadAcid: BATTERY.leadAcidUsable };
 const INVERTER_EFFICIENCY = 0.93;
 // Formatted by hand: Node and browsers disagree on en-ZA decimals, which breaks hydration.
 const one = (n: number) => String(Math.round(n * 10) / 10);
@@ -307,8 +308,11 @@ export function Runtime({ kwh: fixedKwh, lithium = true }: { kwh?: number; lithi
                   : "That drains it quickly. Heavy appliances like kettles, pumps and aircons are better left for when the power is back."}
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
-            {one(total)} kWh, of which about {one(usable)} kWh is usable ({Math.round(share * 100)}% depth of discharge, less inverter losses), at an
-            average of {power(average)}.
+            {one(total)} kWh, of which about {one(usable)} kWh reaches your appliances:{" "}
+            {lithium
+              ? `the battery is only run down to ${BATTERY_FLOOR_PCT}%, which is what makes it last, and the inverter loses a little.`
+              : "a lead-acid battery should only be run down to half, and the inverter loses a little."}{" "}
+            Average draw {power(average)}.
           </p>
         </>
       }

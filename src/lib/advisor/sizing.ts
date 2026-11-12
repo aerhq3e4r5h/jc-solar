@@ -3,6 +3,7 @@
 // assumptions are returned with the result so the customer can see them.
 // Solar is sized for the weakest month of the year in the customer's
 // province (see src/lib/solar/seasons.ts), not for the yearly average.
+import { BATTERY, BATTERY_FLOOR_PCT, BATTERY_USABLE_PCT } from "@/lib/battery";
 import { isProvince, solarYear, TYPICAL_YIELD } from "@/lib/solar/seasons";
 
 export const SIZING_ASSUMPTIONS = {
@@ -10,8 +11,8 @@ export const SIZING_ASSUMPTIONS = {
   inverterHeadroom: 1.25,
   /** Most hybrid inverters handle about twice their rating for a few seconds. */
   inverterSurgeFactor: 2,
-  /** Usable share of an LFP battery's rated capacity. */
-  batteryDepthOfDischarge: 0.9,
+  /** Share of a lithium battery's rated capacity that is used: it is only run down to 30%, to protect its cycle life (see lib/battery.ts). */
+  batteryDepthOfDischarge: BATTERY.usable,
   /** Typical residential tariff when the customer doesn't give theirs (R/kWh incl. VAT). */
   defaultTariff: 3.5,
   /** Share of solar output a home with a battery typically uses itself. */
@@ -77,7 +78,7 @@ export function estimateSystem(input: SizingInput): SizingResult {
 
   const assumptions = [
     `Inverter: ${Math.round((a.inverterHeadroom - 1) * 100)}% headroom over what runs at once, surges up to ${a.inverterSurgeFactor}× its rating.`,
-    `Battery: average outage load of ${Math.round(average)} W for ${input.backupHours} h, ${a.batteryDepthOfDischarge * 100}% usable (lithium LFP).`,
+    `Battery: average outage load of ${Math.round(average)} W for ${input.backupHours} h. A lithium battery is only run down to ${BATTERY_FLOOR_PCT}% to protect its cycle life, so ${BATTERY_USABLE_PCT}% of its rated capacity is counted.`,
   ];
   if (daily !== null) {
     assumptions.push(

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PROVINCES } from "@/lib/checkout/schema";
+import { BATTERY, batteriesFor } from "@/lib/battery";
+import { SOLAR_SHARE } from "./seasons";
 import { clock, dayStory, gridOff, HOUSE_KWH, houseKw, simulateDay, STORY } from "./day";
 
 describe("the example home", () => {
@@ -7,6 +9,21 @@ describe("the example home", () => {
     expect(HOUSE_KWH).toBeCloseTo(20, 1);
     expect(houseKw(19)).toBeGreaterThan(houseKw(3));
     expect(houseKw(24)).toBeCloseTo(houseKw(0), 5);
+  });
+
+  it("has the batteries the 30% rule asks for, and never runs them below 30%", () => {
+    // what the home takes from storage after sunset, in 5 kWh batteries that stop at 30%
+    const fromStorage = HOUSE_KWH * (SOLAR_SHARE.withBattery - SOLAR_SHARE.withoutBattery);
+    expect(STORY.batteryKwh).toBe(batteriesFor(fromStorage, 5) * 5);
+    expect(STORY.floor).toBe(BATTERY.floor);
+    // something is kept above that line for a power cut
+    expect(STORY.reserve).toBeGreaterThan(STORY.floor);
+    for (const p of PROVINCES) {
+      const { days } = dayStory(p);
+      for (const month of ["best", "weakest"] as const)
+        for (const size of ["best", "weakest"] as const)
+          for (let h = 0; h <= 24; h += 0.25) expect(days[month][size].at(h).charge).toBeGreaterThanOrEqual(0.3 - 1e-6);
+    }
   });
 
   it("has load shedding from 18:00 to 20:30", () => {
@@ -78,8 +95,9 @@ describe("why the array is sized for the weakest month", () => {
       expect(sizedForIt.darkAt).toBeNull();
       expect(tooSmall.peak.charge).toBeLessThan(0.9);
       expect(tooSmall.totals.grid + tooSmall.totals.short).toBeGreaterThan(sizedForIt.totals.grid + 1);
-      // and the array sized for the best month is enough in that month
-      expect(days.best.best.peak.charge).toBeGreaterThan(0.985);
+      // and the array sized for the best month all but fills it in that month
+      expect(days.best.best.peak.charge).toBeGreaterThan(0.9);
+      expect(days.best.best.darkAt).toBeNull();
       // the bigger array has power to spare in the best month
       expect(days.best.weakest.totals.spare).toBeGreaterThan(days.weakest.weakest.totals.spare);
     }

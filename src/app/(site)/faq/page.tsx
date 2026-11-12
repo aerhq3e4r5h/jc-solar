@@ -19,13 +19,13 @@ const faqs: Faq[] = [
   {
     topic: "Sizing",
     q: "How long will a 5 kWh battery last?",
-    a: "Running lights, Wi-Fi, a TV, a fridge and phone chargers, a 5 kWh lithium battery lasts about 12 hours. Add heavy appliances and it drops quickly. Every battery page has a calculator for the appliances you pick.",
+    a: "Running lights, Wi-Fi, a TV, a fridge and phone chargers, a 5 kWh lithium battery lasts about 9 hours. That counts 70% of it: a battery is only run down to 30%, which is what makes it last. Add heavy appliances and it drops quickly. Every battery page has a calculator for the appliances you pick.",
     link: { href: "/learn/battery-runtime", label: "How long will a battery last?" },
   },
   {
     topic: "Sizing",
     q: "Will this battery work with my inverter?",
-    a: "Product pages and the cart check battery and inverter voltage for you and warn about mismatches. We also confirm battery communication (CAN/RS485) before dispatch.",
+    a: "Product pages and the cart check battery and inverter voltage for you and warn about mismatches. Your installer sets up battery communication (CAN/RS485) when it goes in.",
   },
   {
     topic: "Sizing",

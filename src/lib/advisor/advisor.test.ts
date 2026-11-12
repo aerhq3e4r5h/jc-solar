@@ -35,7 +35,7 @@ describe("estimateSystem", () => {
     const r = estimateSystem({ simultaneousLoadW: 2000, surgeLoadW: 3000, averageBackupLoadW: 800, backupHours: 4, monthlyBillRand: 2100 });
     expect(r.inverterKw).toBe(3); // 2.5 kW with headroom → next standard size
     expect(r.batteryUsableKwh).toBe(3.2);
-    expect(r.batteryNominalKwh).toBe(3.6);
+    expect(r.batteryNominalKwh).toBe(4.6); // only run down to 30%: 3.2 kWh of use takes 3.2 / 0.7 of battery
     expect(r.dailyUsageKwh).toBe(20); // R2100 / R3.50 / 30
     expect(r.panelCount).toBe(7); // no province: 14 kWh / 4.17 (a typical weakest month) = 3.36 kWp → 7 × 550 W
     expect(r.solarKwp).toBe(3.85);
@@ -227,18 +227,54 @@ describe("runAdvisor", () => {
     expect(thinkingFor("gemini-2.5-flash-lite")).toBeNull();
   });
 
-  it("leaves a slow model for the next one instead of waiting out the whole time", async () => {
+  it("starts the next model alongside a slow one, and takes the first answer", async () => {
     const urls: string[] = [];
+    let stopped = false;
     const fetchImpl = ((url: string, init: RequestInit) => {
       urls.push(url.split("/models/")[1]);
-      if (urls.length === 1) return new Promise((_, reject) => init.signal?.addEventListener("abort", () => reject(init.signal?.reason)));
+      if (urls.length === 1)
+        return new Promise((_, reject) => init.signal?.addEventListener("abort", () => ((stopped = true), reject(init.signal?.reason))));
       return Promise.resolve(Response.json({ candidates: [{ content: { parts: [{ text: "Quick answer." }] } }] }));
     }) as typeof fetch;
     const started = Date.now();
-    const r = await runAdvisor({ ...base, model: DEFAULT_MODEL, history: [{ role: "user", text: "hi" }], fetchImpl, budgetMs: 23_000, callMs: 300 });
-    expect(r).toMatchObject({ text: "Quick answer.", model: FALLBACK_MODELS[0], tried: [`${DEFAULT_MODEL}: timeout`] });
-    // cut off after the per-call limit, well inside the whole budget
+    const r = await runAdvisor({ ...base, model: DEFAULT_MODEL, history: [{ role: "user", text: "hi" }], fetchImpl, budgetMs: 23_000, stallMs: 300 });
+    expect(r).toMatchObject({ text: "Quick answer.", model: FALLBACK_MODELS[0], tried: [`${DEFAULT_MODEL}: slow`] });
+    // not kept waiting for the slow one, which is stopped once there is an answer
     expect(Date.now() - started).toBeLessThan(3_000);
+    expect(stopped).toBe(true);
+  });
+
+  it("takes the slow model's answer if it comes first after all", async () => {
+    const fetchImpl = ((url: string, init: RequestInit) => {
+      const slowOne = url.includes(`/${DEFAULT_MODEL}:`);
+      return new Promise((resolve, reject) => {
+        init.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+        // the first model answers after 500 ms; the one started alongside it never does
+        if (slowOne) setTimeout(() => resolve(Response.json({ candidates: [{ content: { parts: [{ text: "Worth the wait." }] } }] })), 500);
+      });
+    }) as typeof fetch;
+    const r = await runAdvisor({ ...base, model: DEFAULT_MODEL, history: [{ role: "user", text: "hi" }], fetchImpl, stallMs: 200 });
+    expect(r).toMatchObject({ text: "Worth the wait.", model: DEFAULT_MODEL });
+  });
+
+  it("gives an overloaded model a second go once the others have had theirs", async () => {
+    const urls: string[] = [];
+    const { fetchImpl } = fakeGemini([503, 503, 503, 503, { candidates: [{ content: { parts: [{ text: "Back again." }] } }] }]);
+    const spy = ((url: string, init: RequestInit) => (urls.push(url.split("/models/")[1].split(":")[0]), fetchImpl(url, init))) as typeof fetch;
+    const r = await runAdvisor({ ...base, model: DEFAULT_MODEL, history: [{ role: "user", text: "hi" }], fetchImpl: spy, pauseMs: 0 });
+    expect(urls).toEqual([DEFAULT_MODEL, ...FALLBACK_MODELS, DEFAULT_MODEL]);
+    expect(r).toMatchObject({ text: "Back again.", model: DEFAULT_MODEL });
+    expect(r.tried).toHaveLength(4);
+  });
+
+  it("doesn't ask again a model that is missing or over its limit", async () => {
+    const urls: string[] = [];
+    const { fetchImpl } = fakeGemini([404, 429, 404, 429]);
+    const spy = ((url: string, init: RequestInit) => (urls.push(url), fetchImpl(url, init))) as typeof fetch;
+    await expect(runAdvisor({ ...base, model: DEFAULT_MODEL, history: [{ role: "user", text: "hi" }], fetchImpl: spy, pauseMs: 0 })).rejects.toMatchObject({
+      code: "rate_limited",
+    });
+    expect(urls).toHaveLength(4);
   });
 
   it("tries a model that just failed last, for a few minutes", async () => {

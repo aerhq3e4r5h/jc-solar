@@ -7,6 +7,7 @@ import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { estimateSystem } from "@/lib/advisor/sizing";
+import { BATTERY_FLOOR_PCT } from "@/lib/battery";
 import { addManyToCart } from "@/lib/cart/actions";
 import { cartChanged } from "@/lib/cart/events";
 import { APPLIANCES, ESSENTIALS, type ApplianceId } from "@/lib/planner/appliances";
@@ -185,7 +186,9 @@ export function BackupPlanner({ stock }: { stock: PlannerStock }) {
               >
                 <Sparkles className="size-4 text-amber-ink" aria-hidden="true" /> Refine this with the Solar Advisor
               </Link>
-              <span className="text-xs text-muted-foreground">Estimate: our technician confirms the design.</span>
+              <span className="text-xs text-muted-foreground">
+                Estimate: the battery is sized to stop at {BATTERY_FLOOR_PCT}%, which is what makes it last. Our technician confirms the design.
+              </span>
             </div>
           </div>
         )}

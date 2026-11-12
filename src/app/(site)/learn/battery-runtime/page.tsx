@@ -41,8 +41,8 @@ export default function Guide() {
           The sum
         </h2>
         <p>
-          <strong>Hours = usable energy (kWh) ÷ average draw (kW).</strong> A battery with 4.3 kWh you can actually use, feeding appliances that
-          average 0.36 kW, lasts about 12 hours.
+          <strong>Hours = usable energy (kWh) ÷ average draw (kW).</strong> A battery with 3.3 kWh you can actually use, feeding appliances that
+          average 0.36 kW, lasts about 9 hours.
         </p>
         <h2 id="usable" className="scroll-mt-28">
           Usable is less than the label
@@ -50,14 +50,19 @@ export default function Guide() {
         <p>Two things come off the number printed on the battery:</p>
         <ul>
           <li>
-            <strong>Depth of discharge.</strong> A lithium (LFP) battery is happy using about 90% of its capacity. A lead-acid battery should only use
-            about half, or it wears out quickly.
+            <strong>How far it is run down.</strong> We set lithium batteries to stop at 30% charge. They can go lower, but keeping the last 30% in
+            the battery is what gives it its long life, so we count 70% of the capacity. A lead-acid battery should only use about half, or it wears
+            out quickly.
           </li>
           <li>
             <strong>Inverter losses.</strong> Turning battery power into 230 V costs roughly 5 to 10%.
           </li>
         </ul>
-        <p>So a 5.12 kWh lithium battery gives you about 4.3 kWh at the plug. The calculator above already takes both off.</p>
+        <p>So a 5.12 kWh lithium battery gives you about 3.3 kWh at the plug. The calculator above already takes both off.</p>
+        <p>
+          It works the other way round when you are choosing a size: <strong>battery to buy = energy you need ÷ 0.7</strong>, and a little more for the
+          inverter. To take 7 kWh out of storage every evening, you need about 10.5 kWh of batteries, not 7.
+        </p>
         <h2 id="average" className="scroll-mt-28">
           Average draw is what counts
         </h2>
@@ -77,18 +82,18 @@ export default function Guide() {
           <tbody>
             <tr>
               <td>5 kWh</td>
-              <td>about 12 hours</td>
-              <td>about 7 hours</td>
+              <td>about 9 hours</td>
+              <td>about 5 hours</td>
             </tr>
             <tr>
               <td>10 kWh</td>
-              <td>about 24 hours</td>
-              <td>about 14 hours</td>
+              <td>about 18 hours</td>
+              <td>about 11 hours</td>
             </tr>
             <tr>
               <td>15 kWh</td>
-              <td>about 35 hours</td>
-              <td>about 21 hours</td>
+              <td>about 27 hours</td>
+              <td>about 16 hours</td>
             </tr>
           </tbody>
         </table>

@@ -43,10 +43,16 @@ const API = "https://generativelanguage.googleapis.com/v1beta/models";
 const MAX_TOOL_ROUNDS = 4;
 /** Whole answer, all retries included; hosting functions are stopped at about 26 s. */
 const DEADLINE_MS = 23_000;
-/** The longest one call to a model may take while another model is still untried: a slow model is left for a faster one. */
-const CALL_MS = 9_000;
+/** A call that has taken this long is slow: the next model is started alongside it, and the first answer wins. */
+const STALL_MS = 6_000;
+/** No single call is waited on for longer than this. */
+const CALL_MS = 15_000;
+/** Not worth starting another model with less time than this left. */
+const MIN_START_MS = 5_000;
 /** A model that just failed is tried last for this long. */
 const REST_MS = 3 * 60_000;
+/** A model that was merely slow is tried last for this long. */
+const SLOW_REST_MS = 60_000;
 /** Errors worth trying another model for. */
 const SWITCH_CODES = new Set([
   "model_not_found",
@@ -62,6 +68,8 @@ const SWITCH_CODES = new Set([
   "too_many_steps",
   "empty_answer",
 ]);
+/** Failures that are often over a moment later (overloaded, slow): such a model gets one more go after the others. */
+const PASSING_CODES = new Set(["timeout", "gemini_500", "gemini_502", "gemini_503", "gemini_504", "empty_answer"]);
 
 /**
  * What Google says about a refused (429) request: which limit was reached
@@ -119,32 +127,91 @@ type RunOptions = {
   fetchImpl?: typeof fetch;
   /** Milliseconds available for the whole answer. */
   budgetMs?: number;
-  /** Milliseconds one call may take while another model is still untried. */
-  callMs?: number;
+  /** Milliseconds a call may take before the next model is started alongside it. */
+  stallMs?: number;
+  /** Milliseconds to wait before asking an overloaded model a second time. */
+  pauseMs?: number;
 };
 
-/** Runs the conversation, moving to the next model when one is unavailable, overloaded or slow. */
-export async function runAdvisor(opts: RunOptions): Promise<{ text: string; toolsUsed: string[]; model: string; tried?: string[] }> {
+type Answer = { text: string; toolsUsed: string[] };
+type Event = { model: string; slow: true } | { model: string; answer: Answer } | { model: string; error: unknown };
+
+/**
+ * Runs the conversation. Models are tried in order; one that is
+ * unavailable or overloaded hands over to the next, one that is slow gets
+ * the next started alongside it (the first answer wins), and one that
+ * failed for a passing reason gets a second go after the others.
+ */
+export async function runAdvisor(opts: RunOptions): Promise<Answer & { model: string; tried?: string[] }> {
   const start = Date.now();
   const deadline = start + (opts.budgetMs ?? DEADLINE_MS);
   const listed = [opts.model, ...FALLBACK_MODELS.filter((m) => m !== opts.model)];
   // Models that failed a moment ago go to the back of the queue.
-  const models = [...listed.filter((m) => (resting.get(m) ?? 0) <= start), ...listed.filter((m) => (resting.get(m) ?? 0) > start)];
-  let last: unknown;
+  const queue = [...listed.filter((m) => (resting.get(m) ?? 0) <= start), ...listed.filter((m) => (resting.get(m) ?? 0) > start)];
+  const secondGo = new Set<string>();
   const attempts: string[] = [];
-  for (const [i, model] of models.entries()) {
-    // Not worth starting a model with too little time left for an answer.
-    if (i > 0 && deadline - Date.now() < 5_000) break;
-    try {
-      const answer = await runWithModel({ ...opts, model }, deadline, i < models.length - 1);
-      resting.delete(model);
-      return { ...answer, model, ...(attempts.length ? { tried: attempts } : {}) };
-    } catch (e) {
-      last = e;
-      if (!(e instanceof AdvisorError) || !SWITCH_CODES.has(e.code)) throw e;
-      resting.set(model, Date.now() + (e.restMs ?? REST_MS));
-      console.warn(`[advisor] ${model}: ${e.message}`);
-      attempts.push(`${model}: ${e.code}${e.detail ? ` (${e.detail})` : ""}`);
+  const running = new Map<string, AbortController>();
+  let last: unknown;
+
+  // What the running models report, in the order it happens.
+  const events: Event[] = [];
+  let wake: (() => void) | null = null;
+  const report = (e: Event) => {
+    events.push(e);
+    wake?.();
+  };
+  const nextEvent = async () => {
+    while (!events.length) await new Promise<void>((resolve) => (wake = resolve));
+    return events.shift()!;
+  };
+
+  const launch = () => {
+    const model = queue.shift();
+    if (!model) return;
+    const controller = new AbortController();
+    running.set(model, controller);
+    runWithModel({ ...opts, model }, deadline, controller.signal, () => report({ model, slow: true })).then(
+      (answer) => report({ model, answer }),
+      (error) => report({ model, error }),
+    );
+  };
+  const timeFor = () => deadline - Date.now() >= MIN_START_MS;
+
+  launch();
+  while (running.size) {
+    const e = await nextEvent();
+    if (!running.has(e.model)) continue;
+    if ("slow" in e) {
+      // One call is taking long: give the next model a start alongside it rather than waiting it out.
+      if (running.size < 2 && queue.length && timeFor()) {
+        attempts.push(`${e.model}: slow`);
+        resting.set(e.model, Date.now() + SLOW_REST_MS);
+        launch();
+      }
+      continue;
+    }
+    running.delete(e.model);
+    if ("answer" in e) {
+      for (const other of running.values()) other.abort();
+      if (!attempts.includes(`${e.model}: slow`)) resting.delete(e.model);
+      return { ...e.answer, model: e.model, ...(attempts.length ? { tried: attempts } : {}) };
+    }
+    last = e.error;
+    if (!(e.error instanceof AdvisorError) || !SWITCH_CODES.has(e.error.code)) {
+      for (const other of running.values()) other.abort();
+      throw e.error;
+    }
+    resting.set(e.model, Date.now() + (e.error.restMs ?? REST_MS));
+    console.warn(`[advisor] ${e.model}: ${e.error.message}`);
+    attempts.push(`${e.model}: ${e.error.code}${e.error.detail ? ` (${e.error.detail})` : ""}`);
+    if (PASSING_CODES.has(e.error.code) && !secondGo.has(e.model)) {
+      secondGo.add(e.model);
+      queue.push(e.model);
+    }
+    if (running.size < 2 && queue.length && timeFor()) {
+      // Every model has had its first go: a short breath before asking an overloaded one again.
+      if (secondGo.has(queue[0]) && !running.size) await new Promise((resolve) => setTimeout(resolve, opts.pauseMs ?? 700));
+      launch();
     }
   }
   if (last instanceof AdvisorError && attempts.length) last.detail = attempts.join("; ");
@@ -152,10 +219,13 @@ export async function runAdvisor(opts: RunOptions): Promise<{ text: string; tool
 }
 
 async function runWithModel(
-  { apiKey, model, system, history, ctx, fetchImpl = fetch, callMs = CALL_MS }: RunOptions,
+  { apiKey, model, system, history, ctx, fetchImpl = fetch, stallMs = STALL_MS }: RunOptions,
   deadline: number,
-  othersWaiting: boolean,
-) {
+  /** Stops this model when another one has answered. */
+  stop: AbortSignal,
+  /** Called when a call to the model has taken long enough to be worth starting another model. */
+  onSlow: () => void,
+): Promise<Answer> {
   const contents: Content[] = history.map((t) => ({ role: t.role === "assistant" ? "model" : "user", parts: [{ text: t.text }] }));
   const toolsUsed: string[] = [];
   // Results already given in this answer, so a model that asks the same thing twice is told so instead of being fed it again.
@@ -165,6 +235,7 @@ async function runWithModel(
     const remaining = deadline - Date.now();
     if (remaining < 1_000) throw new AdvisorError(`${model} ran out of time.`, "upstream", "timeout");
     const thinking = noThinkingConfig.has(model) ? null : thinkingFor(model);
+    const slow = setTimeout(onSlow, stallMs);
     try {
       const res = await fetchImpl(`${API}/${encodeURIComponent(model)}:generateContent`, {
         method: "POST",
@@ -181,9 +252,9 @@ async function runWithModel(
             ...(thinking ? { thinkingConfig: thinking } : {}),
           },
         }),
-        // While another model is still untried, a slow call is cut short so that model gets its turn.
-        signal: AbortSignal.timeout(othersWaiting ? Math.min(remaining, callMs) : remaining),
+        signal: AbortSignal.any([stop, AbortSignal.timeout(Math.min(remaining, CALL_MS))]),
       });
+      clearTimeout(slow);
       // A model that does not know the thinking setting answers with a generic
       // "invalid argument", so any 400 gets one retry without it.
       if (thinking && res.status === 400 && !/API key/i.test(await res.clone().text())) {
@@ -196,6 +267,8 @@ async function runWithModel(
         throw new AdvisorError(`${model} took too long to answer.`, "upstream", "timeout");
       }
       throw e;
+    } finally {
+      clearTimeout(slow);
     }
   };
 

@@ -1,3 +1,4 @@
+import { BATTERY } from "@/lib/battery";
 import { daylight, MONTHS, noonSunHeight, panelsFor, SOLAR_SHARE, solarYear, type Province } from "./seasons";
 
 // One day of a home on solar, hour by hour: what the panels make, what the
@@ -13,9 +14,14 @@ import { daylight, MONTHS, noonSunHeight, panelsFor, SOLAR_SHARE, solarYear, typ
 /** The example home. */
 export const STORY = {
   /** Watts of one panel. */ panelWatts: 550,
-  /** The battery's size, kWh. */ batteryKwh: 10,
-  /** Kept back for a power cut while the grid is on: share of the battery. */ reserve: 0.2,
-  /** The lowest the battery is run, in a power cut: share of the battery. */ floor: 0.1,
+  /**
+   * The batteries' rated size, kWh: three of 5 kWh. The home takes about
+   * 8 kWh from storage after sunset, and a battery is only run down to 30%
+   * (lib/battery.ts), so that is what it takes.
+   */
+  batteryKwh: 15,
+  /** Kept back for a power cut while the grid is on: share of the battery. */ reserve: 0.4,
+  /** The lowest the battery is ever run, power cut or not: share of the battery. */ floor: BATTERY.floor,
   /** Load shedding in the story: from and to, hours on the clock. */ shedding: [18, 20.5] as const,
 } as const;
 

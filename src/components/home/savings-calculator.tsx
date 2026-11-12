@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 import { SeasonChart } from "@/components/tools/season-chart";
 import { useProvince } from "@/components/tools/use-province";
+import { BATTERY_FLOOR_PCT, batteriesFor } from "@/lib/battery";
 import { PROVINCES } from "@/lib/checkout/schema";
 import { formatPrice } from "@/lib/pricing/vat";
 import { isProvince, monthlyOutput, SOLAR_SHARE, solarYear, usefulPerYear } from "@/lib/solar/seasons";
@@ -16,6 +17,10 @@ const DAYS = 30.4;
 // unless a battery stores the rest for the evening.
 const SHARE_NO_BATTERY = SOLAR_SHARE.withoutBattery;
 const SHARE_WITH_BATTERY = SOLAR_SHARE.withBattery;
+/** The most batteries the estimate adds; a bigger home is a conversation with our technician. */
+const MAX_BATTERIES = 8;
+// Formatted by hand: Node and browsers disagree on en-ZA decimals, which breaks hydration.
+const one = (n: number) => String(Math.round(n * 10) / 10);
 
 export type CalculatorPrices = {
   /** Cheapest in-stock mainstream panel, per watt, incl. VAT. */
@@ -48,6 +53,10 @@ export function SavingsCalculator({ prices }: { prices: CalculatorPrices }) {
   const usedKwh = bill / rate;
   // What solar is asked to supply each day, and the size (to the next half kW) that still does it in the weakest month.
   const need = (usedKwh / DAYS) * share;
+  // The evening and night share has to come out of storage, and a battery is only run down to 30%: that sets how many it takes.
+  const nightNeed = (usedKwh / DAYS) * (SHARE_WITH_BATTERY - SHARE_NO_BATTERY);
+  const batteries = prices.battery ? Math.min(MAX_BATTERIES, batteriesFor(nightNeed, prices.battery.kwh)) : 0;
+  const batteryCost = prices.battery ? prices.battery.price * batteries : 0;
   const suggested = Math.min(20, Math.max(1, Math.ceil((need / year.weakest.yield) * 2 - 1e-9) / 2));
   const [kw, setKw] = useState<number | null>(null);
   const size = kw ?? suggested;
@@ -56,7 +65,7 @@ export function SavingsCalculator({ prices }: { prices: CalculatorPrices }) {
   // month by month, a surplus isn't counted and a shortfall is.
   const saving = (usefulPerYear(province, size, need) / 12) * rate;
   const after = Math.max(0, bill - saving);
-  const equipment = equipmentPrice(size, prices) + (withBattery && prices.battery ? prices.battery.price : 0);
+  const equipment = equipmentPrice(size, prices) + (withBattery ? batteryCost : 0);
   const installation = Number(install.replace(/[^\d.]/g, "")) || 0;
   const payback = saving > 0 ? (equipment + installation) / (saving * 12) : null;
   const [hover, setHover] = useState<"now" | "after" | null>(null);
@@ -130,9 +139,12 @@ export function SavingsCalculator({ prices }: { prices: CalculatorPrices }) {
               className="mt-1 size-4 accent-[var(--ink)]"
             />
             <span>
-              <span className="block font-semibold">Add a {prices.battery.kwh} kWh battery</span>
+              <span className="block font-semibold">
+                Add {batteries === 1 ? `a ${prices.battery.kwh} kWh battery` : `${batteries} x ${prices.battery.kwh} kWh batteries`}
+              </span>
               <span className="block text-sm text-muted-foreground">
-                Stores daytime sun for the evening and keeps you going in load shedding. Adds {formatPrice(prices.battery.price)}.
+                Stores daytime sun for the evening and keeps you going in load shedding. Your evenings use about {one(nightNeed)} kWh, and a battery is
+                only run down to {BATTERY_FLOOR_PCT}% so that it lasts. Adds {formatPrice(batteryCost)}.
               </span>
             </span>
           </label>
@@ -252,8 +264,12 @@ export function SavingsCalculator({ prices }: { prices: CalculatorPrices }) {
               don&apos;t pay for power sent back.
             </li>
             <li>
+              Batteries are sized for the evening and night part of your use, and are only run down to {BATTERY_FLOOR_PCT}% of their capacity: keeping
+              that much in them is what gives a lithium battery its long life.
+            </li>
+            <li>
               Equipment: {size} kW of panels and a suitable hybrid inverter
-              {withBattery && prices.battery ? ` and a ${prices.battery.kwh} kWh battery` : ""} from our current stock (
+              {withBattery && prices.battery ? ` and ${batteries} x ${prices.battery.kwh} kWh of batteries` : ""} from our current stock (
               {formatPrice(Math.round(equipment))}). Mounting, cabling, installation and delivery are extra.
             </li>
             <li>Tariffs rise every year, which makes the real payback shorter; fixed monthly charges on your bill don&apos;t change.</li>

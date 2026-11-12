@@ -67,7 +67,7 @@ export default function AdvisorPage() {
             </li>
             <li>
               <strong>Battery capacity (kWh):</strong> how much energy you need during an outage. Multiply what you run by the hours it must last.
-              Lithium (LFP) batteries can use about 80–90% of their rated capacity.
+              A lithium battery is only run down to 30%, which is what makes it last, so divide the energy you need by 0.7 to get the size to buy.
             </li>
             <li>
               <strong>Panels (kWp):</strong> enough to run your daytime load and recharge the battery. Most of South Africa gets about 5 to 6 peak sun

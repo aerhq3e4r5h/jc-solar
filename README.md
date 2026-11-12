@@ -287,7 +287,7 @@ The site always runs with full animation, for every visitor, whatever their devi
 - Guides live in `src/app/(site)/learn/`, listed in `src/lib/guides.ts`, and share one layout (`src/components/content/guide-shell.tsx`). To add one: add it to the list, create its page with `<GuideShell slug="...">`, and add its URL to `src/app/sitemap.ts`.
 - The calculators are in `src/components/tools/`: `LoadCheck` (what an inverter runs at once), `Runtime` (how long a battery lasts), `PanelYield` and `PanelsNeeded` (panels), and `InverterTypes` (the switchable diagram). Give them a fixed value (`kw`, `kwh`, `watts`) and they describe one product; leave it out and the size becomes a slider.
 - Product pages pick the right calculator from the product's category and specs (`src/components/product/plain-terms-section.tsx`). Appliance wattages are shared with the home page planner (`src/lib/planner/appliances.ts`).
-- Every figure is an estimate and says so on the page. The battery assumptions (90% usable lithium capacity, 93% inverter efficiency) are constants at the top of `src/components/tools/plain-terms.tsx`.
+- Every figure is an estimate and says so on the page. Batteries are only run down to 30% of their capacity to protect their cycle life, so every battery size and runtime on the site counts 70% of the rated kWh. That rule is one constant in `src/lib/battery.ts` (`BATTERY.floor`); change it there and the builder, the planners, the calculators, the 24-hour story and the Solar Advisor all follow. The inverter efficiency (93%) is at the top of `src/components/tools/plain-terms.tsx`.
 
 ## Solar through the year
 

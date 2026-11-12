@@ -11,24 +11,25 @@ import { AnimatedCount } from "@/components/shop/results-controls";
 import { SeasonChart } from "@/components/tools/season-chart";
 import { useProvince } from "@/components/tools/use-province";
 import { Button } from "@/components/ui/button";
+import { BATTERY, BATTERY_FLOOR_PCT, BATTERY_USABLE_PCT, batteriesFor, ratedKwhFor } from "@/lib/battery";
 import { addManyToCart } from "@/lib/cart/actions";
 import { PROVINCES } from "@/lib/checkout/schema";
 import { cartChanged } from "@/lib/cart/events";
 import { flyToCart } from "@/lib/cart/fly";
 import { MAX_BATTERIES, type BuilderData, type BuilderInverter } from "@/lib/planner/builder-data";
 import { formatPrice } from "@/lib/pricing/vat";
-import { isProvince, MONTHS, sizeForHome } from "@/lib/solar/seasons";
+import { isProvince, MONTHS, sizeForHome, SOLAR_SHARE } from "@/lib/solar/seasons";
 import { cn } from "@/lib/utils";
 
 // Rough, labelled estimates for the summary.
 const ESSENTIALS_KW = 0.5; // lights, Wi-Fi, TV, fridge and a laptop
-const USABLE = 0.9; // share of a lithium battery's capacity you can use
+const USABLE = BATTERY.usable; // a lithium battery is only run down to 30%, to protect its cycle life
 
-// Quick starts: a typical monthly bill and number of batteries.
+// Quick starts: a typical monthly bill. Panels and batteries follow from it.
 const PRESETS = [
-  { id: "small", label: "Small home", bill: 1200, batteries: 1 },
-  { id: "family", label: "Family home", bill: 2500, batteries: 2 },
-  { id: "large", label: "Big home, work from home", bill: 5000, batteries: 3 },
+  { id: "small", label: "Small home", bill: 1200 },
+  { id: "family", label: "Family home", bill: 2500 },
+  { id: "large", label: "Big home, work from home", bill: 5000 },
 ] as const;
 
 // Formatted by hand: Node and browsers disagree on en-ZA decimals, which breaks hydration.
@@ -68,9 +69,13 @@ export function SystemBuilder({ data }: { data: BuilderData }) {
   const batteries = data.batteries.filter((b) => inverter?.batteryIds.includes(b.id));
   const battery = batteryId === "none" ? null : (batteries.find((b) => b.id === batteryId) ?? batteries[0] ?? null);
   const maxBatteries = battery ? Math.max(1, Math.min(MAX_BATTERIES, battery.stock)) : 1;
-  const [batteryCount, setBatteryCount] = useState(1);
+  // What the battery has to carry: the evening and night share of the day that solar can only cover from storage.
+  const nightNeed = sizing.dailyUse * (SOLAR_SHARE.withBattery - SOLAR_SHARE.withoutBattery);
+  const batteriesNeeded = battery ? batteriesFor(nightNeed, battery.kwh) : 0;
+  // The number of batteries follows that figure until the visitor sets their own.
+  const [batteryCount, setBatteryCount] = useState<number | null>(null);
   const [allBatteries, setAllBatteries] = useState(false);
-  const qty = battery ? Math.min(batteryCount, maxBatteries) : 0;
+  const qty = battery ? Math.max(1, Math.min(batteryCount ?? batteriesNeeded, maxBatteries)) : 0;
 
   const kwp = panel ? (panel.watts * n) / 1000 : 0;
   const monthly = year.monthly.map((y) => y * kwp);
@@ -95,7 +100,7 @@ export function SystemBuilder({ data }: { data: BuilderData }) {
     setMonth(null);
     setInverterId(null);
     setBatteryId(null);
-    setBatteryCount(p.batteries);
+    setBatteryCount(null);
   };
 
   const addAll = (e: React.MouseEvent) => {
@@ -195,8 +200,9 @@ export function SystemBuilder({ data }: { data: BuilderData }) {
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
             Estimates. Panel output by month is for {year.city}, on a north-facing roof at about 20° (PVGIS, European Commission); other roofs make
-            less. Backup assumes essentials (lights, Wi-Fi, TV, fridge, a laptop) drawing about {ESSENTIALS_KW * 1000} W from{" "}
-            {Math.round(USABLE * 100)}% of the battery. The house is a computer-generated illustration, not one of our installations.
+            less. Backup assumes essentials (lights, Wi-Fi, TV, fridge, a laptop) drawing about {ESSENTIALS_KW * 1000} W. A battery is only run
+            down to {BATTERY_FLOOR_PCT}% to protect its life, so {BATTERY_USABLE_PCT}% of its capacity is counted. The house is a computer-generated
+            illustration, not one of our installations.
           </p>
         </div>
 
@@ -415,11 +421,39 @@ export function SystemBuilder({ data }: { data: BuilderData }) {
                             setBatteryCount(v);
                             setPreset(null);
                           }}
-                          hint={`${qty} x ${battery.kwh} kWh = ${storage.toFixed(storage % 1 ? 2 : 0)} kWh of storage. More batteries run longer through load shedding and the night.${
+                          hint={`${qty} x ${battery.kwh} kWh = ${storage.toFixed(storage % 1 ? 2 : 0)} kWh of storage, of which ${one(storage * USABLE)} kWh is used.${
                             battery.stock < MAX_BATTERIES ? ` We have ${battery.stock} of this battery in stock.` : ""
                           }`}
                         />
                         <BatteryDots count={qty} max={maxBatteries} />
+                        <div data-battery-advice className="mt-4 border-t pt-3 text-sm">
+                          <p className="flex items-start gap-2 font-semibold">
+                            {qty >= batteriesNeeded ? (
+                              <Check className="mt-0.5 size-4 shrink-0 text-[oklch(0.55_0.15_150)]" />
+                            ) : (
+                              <TriangleAlert className="mt-0.5 size-4 shrink-0 text-sale" />
+                            )}
+                            <span>
+                              {qty >= batteriesNeeded
+                                ? `${qty} ${qty === 1 ? "battery carries" : "batteries carry"} your evenings and nights.`
+                                : batteriesNeeded > maxBatteries
+                                  ? `Your evenings and nights need ${batteriesNeeded} of these. Choose a bigger battery above.`
+                                  : `Your evenings and nights need ${batteriesNeeded} of these. With ${qty}, the grid covers the rest.`}
+                            </span>
+                          </p>
+                          <p className="mt-1.5 text-muted-foreground">
+                            After sunset your home uses about {one(nightNeed)} kWh from storage. A battery is only run down to {BATTERY_FLOOR_PCT}%, which
+                            is what makes it last, so that takes {one(ratedKwhFor(nightNeed))} kWh of batteries.
+                            {batteryCount !== null && batteryCount !== batteriesNeeded && batteriesNeeded <= maxBatteries && (
+                              <>
+                                {" "}
+                                <button type="button" onClick={() => setBatteryCount(null)} className="font-semibold text-foreground underline underline-offset-4">
+                                  Use {batteriesNeeded}
+                                </button>
+                              </>
+                            )}
+                          </p>
+                        </div>
                       </div>
                     </motion.div>
                   )}

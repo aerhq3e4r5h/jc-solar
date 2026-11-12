@@ -47,7 +47,7 @@ function phases(day: DaySim) {
       title: "Load shedding at 18:00",
       body:
         day.darkAt !== null
-          ? `The grid drops, and the battery was never filled. It runs flat at ${clock(day.darkAt)} and the house goes dark until the power is back.`
+          ? `The grid drops, and the battery was never filled. By ${clock(day.darkAt)} it is down to the ${pct(STORY.floor)} it never goes below, and the house goes dark until the power is back.`
           : "The grid drops. The inverter switches to the battery in an instant, and the TV doesn't even flicker.",
     },
     { from: 20.75, title: "Night", body: night },
@@ -66,7 +66,7 @@ function verdict(story: DayStory, month: Which, sized: Which): { ok: boolean; le
       lead: `${weakest.panels} panels are sized for ${weakest.name}, ${story.province}'s weakest month for sun, so the battery still fills.`,
       more:
         small.darkAt !== null
-          ? `The ${best.panels} that are enough in ${best.name} would run flat in the evening power cut.`
+          ? `The ${best.panels} that are enough in ${best.name} would leave the battery too low to last the evening power cut.`
           : `The ${best.panels} that are enough in ${best.name} would stop at ${pct(small.peak.charge)} in ${weakest.name}.`,
     };
   if (month === "weakest")
@@ -74,7 +74,7 @@ function verdict(story: DayStory, month: Which, sized: Which): { ok: boolean; le
       ok: false,
       lead:
         day.darkAt !== null
-          ? `${best.panels} panels fall short in ${weakest.name}: the battery runs flat at ${clock(day.darkAt)}, in the middle of the power cut.`
+          ? `${best.panels} panels fall short in ${weakest.name}: the battery is down to its last ${pct(STORY.floor)} at ${clock(day.darkAt)} and switches off, in the middle of the power cut.`
           : `${best.panels} panels fall short in ${weakest.name}: the battery only reaches ${pct(day.peak.charge)}.`,
       more: `The grid has to supply ${pct(1 - day.ownShare)} of the day. This is why we size for ${weakest.name}, not for ${best.name}.`,
     };
@@ -257,7 +257,8 @@ export function SolarDay() {
               24 hours on solar
             </h2>
             <p className="mt-2 hidden text-white/60 sm:block">
-              Scroll through a day in {story.months[month].name}: {panels} panels and a {STORY.batteryKwh} kWh battery.
+              Scroll through a day in {story.months[month].name}: {panels} panels and {STORY.batteryKwh} kWh of batteries, never run below{" "}
+              {pct(STORY.floor)}.
             </p>
             {/* Phones: what this day shows, in a line. The choices sit on the picture. */}
             <p className="mt-1.5 flex min-h-8 items-start gap-1.5 text-xs leading-4 text-white/85 sm:hidden" aria-live="polite">
@@ -477,6 +478,13 @@ export function SolarDay() {
                       fill={flat ? "#e5484d" : "#3fbf7f"}
                       style={{ transform: `scaleY(${now.charge})`, transformOrigin: "485px 320px", transformBox: "view-box" }}
                     />
+                    {/* The line it never goes below: the last 30% stays in the battery, which is what makes it last */}
+                    <g data-battery-floor>
+                      <line x1="464" x2="506" y1={320 - 58 * STORY.floor} y2={320 - 58 * STORY.floor} stroke="#1c1b1e" strokeWidth="1.6" strokeDasharray="3 2.5" />
+                      <text x="485" y="343" textAnchor="middle" fontSize="8.5" fontWeight="600" fill="#ffffff" fillOpacity="0.72">
+                        stops at {pct(STORY.floor)}
+                      </text>
+                    </g>
 
                     {/* Power flowing: into the battery while there is sun to spare, out of it when the house needs it */}
                     <g fill="none" strokeWidth="3" strokeLinecap="round" strokeDasharray="4 10" className="[animation:jc-flow_1s_linear_infinite]">
@@ -540,7 +548,7 @@ export function SolarDay() {
                 <dt className={cn("flex items-center gap-1.5", flat ? "text-white" : "text-white/60")}>
                   <BatteryMedium className={cn("size-3.5", flat ? "text-white" : "text-charge")} /> Battery
                 </dt>
-                <dd className="num mt-0.5 font-display text-base font-bold sm:mt-1 sm:text-xl">{flat ? "Flat" : pct(now.charge)}</dd>
+                <dd className="num mt-0.5 font-display text-base font-bold sm:mt-1 sm:text-xl">{flat ? `Off at ${pct(STORY.floor)}` : pct(now.charge)}</dd>
               </div>
               <div className={cn("rounded-lg px-2.5 py-2 transition-colors sm:p-3", off ? "bg-sale" : "bg-white/[0.06]")}>
                 <dt className={cn("flex items-center gap-1.5", off ? "text-white" : "text-white/60")}>
