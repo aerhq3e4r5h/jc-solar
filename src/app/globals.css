@@ -191,6 +191,11 @@
   }
 }
 
+/* The home page states the shop's promises under its hero; the footer doesn't repeat them there. */
+body:has([data-home]) [data-footer-promises] {
+  display: none;
+}
+
 @layer components {
   .container-page {
     @apply mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-10;
@@ -868,81 +873,6 @@ main#main > * {
   opacity: 0.09;
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-/*
- * "Power on" statement: words light up and the mark draws itself as the
- * section scrolls through. The finished state is the default; the
- * animation only runs where scroll-driven animations are supported and
- * motion is welcome.
- */
-.statement-word {
-  color: white;
-}
-.statement-word[data-accent] {
-  color: var(--sun);
-}
-@keyframes jc-word-on {
-  from {
-    color: oklch(1 0 0 / 0.16);
-  }
-}
-@keyframes jc-draw {
-  from {
-    stroke-dashoffset: 1;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-@keyframes jc-rays-on {
-  from {
-    opacity: 0;
-    transform: scale(0.7);
-  }
-}
-@keyframes jc-glow-on {
-  from {
-    opacity: 0;
-    transform: scale(0.6);
-  }
-}
-@supports (animation-timeline: view()) {
-  :root:is([data-motion="full"], [data-motion="calm"]) .statement {
-    view-timeline-name: --statement;
-  }
-  :root:is([data-motion="full"], [data-motion="calm"]) .statement-word {
-    animation: jc-word-on linear both;
-    animation-timeline: --statement;
-    animation-range: cover calc(18% + var(--i) * 2.2%) cover calc(22% + var(--i) * 2.2%);
-  }
-  :root:is([data-motion="full"], [data-motion="calm"]) .statement-word[data-accent] {
-    animation-name: jc-word-on;
-  }
-  :root:is([data-motion="full"], [data-motion="calm"]) .statement-ring,
-  :root:is([data-motion="full"], [data-motion="calm"]) .statement-stroke {
-    stroke-dasharray: 1;
-    animation: jc-draw linear both;
-    animation-timeline: --statement;
-  }
-  :root:is([data-motion="full"], [data-motion="calm"]) .statement-ring {
-    animation-range: cover 22% cover 46%;
-  }
-  :root:is([data-motion="full"], [data-motion="calm"]) .statement-stroke {
-    animation-range: cover 44% cover 52%;
-  }
-  :root:is([data-motion="full"], [data-motion="calm"]) .statement-rays {
-    transform-origin: 50px 30px;
-    transform-box: view-box;
-    animation: jc-rays-on cubic-bezier(0.2, 1.4, 0.4, 1) both;
-    animation-timeline: --statement;
-    animation-range: cover 50% cover 56%;
-  }
-  :root:is([data-motion="full"], [data-motion="calm"]) .statement-glow {
-    animation: jc-glow-on ease-out both;
-    animation-timeline: --statement;
-    animation-range: cover 50% cover 60%;
-  }
 }
 
 /* The logo's anchor swings from its ring, like it's hanging, when the logo is hovered. */

@@ -1,4 +1,4 @@
-import { ArrowRight, BadgePercent, BadgeCheck, Sun } from "lucide-react";
+import { ArrowRight, BadgeCheck, MessagesSquare, PlugZap, ReceiptText, Truck, Wrench } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Fragment } from "react";
@@ -7,16 +7,11 @@ import heroDark from "@/assets/home/hero-night-off.webp";
 import heroLit from "@/assets/home/hero-night-on.webp";
 import houseDark from "@/assets/home/house-night-off.webp";
 import houseLit from "@/assets/home/house-night-on.webp";
+import { MARK } from "@/components/brand/logo";
 import { LazyPlanner, LazySolarDay } from "@/components/home/lazy-sections";
-import { PowerOn } from "@/components/home/power-on";
-import { BrandWall } from "@/components/home/brand-wall";
 import { SavingsCalculator } from "@/components/home/savings-calculator";
+import { ToolsTabs } from "@/components/home/tools-tabs";
 import { Carousel } from "@/components/motion/carousel";
-import { CountUp } from "@/components/motion/count-up";
-import { HorizontalScroll } from "@/components/motion/horizontal-scroll";
-import { Marquee } from "@/components/motion/marquee";
-import { Words } from "@/components/motion/words";
-import { Spotlight } from "@/components/motion/spotlight";
 import { PageTransition, Shared, vtName } from "@/components/motion/page-transition";
 import { CategoryGlyph } from "@/components/product/product-art";
 import { ProductCard } from "@/components/product/product-card";
@@ -28,12 +23,26 @@ import { shopNav, site } from "@/config/site";
 import { siteUrl } from "@/lib/env";
 import type { CategorySlug } from "@/lib/catalogue/classify";
 import { sortProducts } from "@/lib/catalogue/filters";
+import { slugify } from "@/lib/catalogue/normalise";
 import { getCatalogue } from "@/lib/catalogue/queries";
 import { availability, canPurchase, productFullTitle, productUrl, specNum, specText, type Product } from "@/lib/catalogue/types";
 import { batteryBus, inverterBus } from "@/lib/compatibility/engine";
 import { calculatorPrices } from "@/lib/planner/calculator-prices";
 import type { PlannerStock } from "@/lib/planner/match";
 import { formatPrice } from "@/lib/pricing/vat";
+
+// The home page, in the order a shopper needs it: what we sell, what's on
+// offer, help choosing, why a system is sized the way it is, how buying
+// works. One section pattern throughout (SectionHead, the same spacing),
+// and two moments of motion only: the house's lights coming on in the hero,
+// and the 24-hour story.
+
+const promises = [
+  { icon: Truck, title: "Delivered to all 9 provinces", body: "The courier cost is shown before you pay." },
+  { icon: ReceiptText, title: "Every price includes VAT", body: "The price you see is the price of the goods." },
+  { icon: PlugZap, title: "Checked to work together", body: "Your cart matches inverter, battery and panels." },
+  { icon: Wrench, title: "Installed by a registered technician", body: "Optional, with a Certificate of Compliance." },
+];
 
 const steps = [
   {
@@ -53,7 +62,7 @@ const steps = [
 const faqs = [
   {
     q: "What size system do I need for load shedding?",
-    a: "It depends on what you want to keep running and for how long. Lights, Wi-Fi, TV and the fridge usually need a 3 to 5 kW inverter and 5 to 10 kWh of battery. The Solar Advisor sizes it from your bill and appliances, and our technician confirms it at a site assessment.",
+    a: "It depends on what you want to keep running and for how long. Lights, Wi-Fi, TV and the fridge usually need a 3 to 5 kW inverter and 5 to 10 kWh of battery. A battery is only run down to 30%, which is what makes it last, so we size it on the 70% that is used. The Solar Advisor works it out from your bill and appliances, and our technician confirms it at a site assessment.",
   },
   {
     q: "Can I buy without installation?",
@@ -105,7 +114,7 @@ export default async function HomePage() {
   const onSale = products
     .filter((p) => canPurchase(p) && discountPercent(p.priceInclVat, p.compareAtPriceInclVat))
     .sort((a, b) => (discountPercent(b.priceInclVat, b.compareAtPriceInclVat) ?? 0) - (discountPercent(a.priceInclVat, a.compareAtPriceInclVat) ?? 0))
-    .slice(0, 8);
+    .slice(0, 4);
   // Not the sale items again: a product shown twice on one page can't morph into its own page.
   const saleIds = new Set(onSale.map((p) => p.id));
   const featured = (["inverters", "batteries", "solar-panels", "kits"] as const).flatMap((c) =>
@@ -151,232 +160,141 @@ export default async function HomePage() {
       })),
   };
 
-  const ticker = [
-    "Delivered anywhere in South Africa",
-    "Every price includes VAT",
-    "Inverter and battery matched before you pay",
-    "Installation by a registered technician",
-    "Certificate of Compliance on installed systems",
-    "Manufacturer warranties",
-    "Secure payment with PayFast or EFT",
-    `${brands.size || 25} trusted brands`,
-  ];
   const kitsFrom = categories.find((c) => c.slug === "kits")?.from ?? null;
   const topDiscount = onSale.length ? discountPercent(onSale[0].priceInclVat, onSale[0].compareAtPriceInclVat) : null;
-  const saleImage = onSale.find((p) => p.images.length > 0)?.images[0] ?? null;
-  const aircons = categories.find((c) => c.slug === "air-conditioners");
+  const saleCount = products.filter((p) => canPurchase(p) && discountPercent(p.priceInclVat, p.compareAtPriceInclVat)).length;
 
   return (
     <PageTransition>
-      {/* Hero: a shop window, not a slogan. Big promo with a real price, plus two smaller offers. */}
-      <section aria-labelledby="hero-heading" className="container-page pt-4 sm:pt-6">
+      {/* Hero: our own house at night with the grid off. Its lights come up as the headline says "on" (see .hero-lit in globals.css). */}
+      <section aria-labelledby="hero-heading" className="container-page pt-4 sm:pt-6" data-home>
         {/* Plays the entrance on the first home page view of a visit only. */}
         <script dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} />
-        <div className="grid gap-3 lg:h-[min(76svh,46rem)] lg:grid-cols-3 lg:grid-rows-2">
-          {/*
-            Our own house, at night with the grid off. It is dark until the headline says "on", then its lights
-            come up (see .hero-lit in globals.css). Large screens get a wide view with the house low on the right
-            and sky for the words; phones get the house itself under them.
-          */}
-          <div className="relative isolate flex min-h-[41rem] flex-col overflow-hidden rounded-xl bg-[#0f0f11] text-white sm:min-h-[34rem] lg:col-span-2 lg:row-span-2 lg:min-h-0 lg:[container-type:size]">
-            <div className="absolute inset-x-0 bottom-0 -z-20 hidden aspect-[3/2] [mask-image:linear-gradient(to_bottom,transparent,black_20%)] sm:block" aria-hidden="true">
-              <Image src={heroDark} alt="" fill priority sizes="(min-width: 1024px) 66vw, 100vw" className="object-cover" />
-              <Image src={heroLit} alt="" fill priority sizes="(min-width: 1024px) 66vw, 100vw" className="hero-lit object-cover" />
-            </div>
-            <div className="absolute inset-x-0 bottom-0 -z-20 aspect-[4/3] [mask-image:linear-gradient(to_bottom,transparent,black_26%)] sm:hidden" aria-hidden="true">
-              <Image src={houseDark} alt="" fill priority sizes="100vw" className="object-cover" />
-              <Image src={houseLit} alt="" fill priority sizes="100vw" className="hero-lit object-cover" />
-            </div>
-            <div className="absolute inset-0 -z-10 hidden bg-[linear-gradient(90deg,rgb(15_15_17/0.8)_0%,rgb(15_15_17/0.45)_38%,transparent_62%)] sm:block" aria-hidden="true" />
-            <div className="drift-up p-6 sm:p-10 lg:p-14">
-              {kitsFrom !== null && (
-                <p className="intro-stamp mb-6 inline-flex -rotate-2 items-baseline gap-2 rounded-sm bg-sun px-3 py-1.5 text-ink shadow-lg lg:mb-5">
-                  <span className="text-sm font-semibold">Backup kits from</span>
-                  <span className="num type-wide text-xl">{formatPrice(kitsFrom)}</span>
-                </p>
-              )}
-              <h1
-                id="hero-heading"
-                className="hero-title type-wide max-w-3xl text-[2.35rem] leading-[0.95] sm:text-[clamp(2.75rem,7vw,3.75rem)] lg:text-[clamp(2.6rem,min(4.6vw,8.8svh),4.5rem)]"
-              >
-                {HEADLINE.map((w, i) => (
-                  <Fragment key={i}>
-                    <span className={w === "on" ? "hw hero-on" : w === "off." ? "hw hero-off" : "hw"} style={{ "--w": i } as React.CSSProperties}>
-                      {w}
-                    </span>
-                    {i < HEADLINE.length - 1 ? " " : ""}
-                  </Fragment>
-                ))}
-              </h1>
-              <p
-                className="intro-rise mt-5 max-w-xl text-lg leading-relaxed text-white/80 lg:mt-4 [@container(min-aspect-ratio:138/100)]:hidden"
-                style={{ "--i": 3 } as React.CSSProperties}
-              >
-                Inverters, lithium batteries and solar panels for South African homes and businesses. Every price includes VAT.
-              </p>
-              <div className="intro-rise mt-8 flex flex-col gap-3 sm:flex-row lg:mt-6" style={{ "--i": 4 } as React.CSSProperties}>
-                <Button asChild size="lg" className="h-13 px-7 text-base">
-                  <Link href="/shop/kits">Shop backup kits</Link>
-                </Button>
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="h-13 border-white/40 bg-transparent px-7 text-base text-white hover:border-white hover:bg-white hover:text-ink"
-                >
-                  <Link href="#planner">Plan my system</Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {onSale.length > 0 && topDiscount ? (
-            <Link
-              href="/shop?sale=1"
-              className="intro-rise group relative isolate flex min-h-60 flex-col justify-between overflow-hidden rounded-xl bg-sun p-6 text-ink sm:p-8"
-            >
-              <span className="inline-flex items-center gap-2 text-sm font-semibold">
-                <BadgePercent className="size-4" aria-hidden="true" /> On sale now
-              </span>
-              <span>
-                <span className="type-wide block text-5xl leading-[0.95] sm:text-6xl">
-                  Up to
-                  <br />
-                  <span className="num">{topDiscount}%</span> off
-                </span>
-                <span className="mt-3 inline-flex items-center gap-2 font-semibold underline-offset-4 group-hover:underline">
-                  Shop {onSale.length} markdowns <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
-                </span>
-              </span>
-              {saleImage && (
-                <span className="absolute top-5 right-5 size-20 rotate-6 overflow-hidden rounded-lg shadow-xl transition-transform duration-500 group-hover:rotate-2 min-[390px]:size-24 sm:size-32">
-                  <Image src={saleImage.url} alt="" fill sizes="128px" className="object-cover" />
-                </span>
-              )}
-            </Link>
-          ) : (
-            <Link
-              href={aircons?.href ?? "/shop"}
-              className="intro-rise group relative isolate flex min-h-60 flex-col justify-between overflow-hidden rounded-xl bg-sun p-6 text-ink sm:p-8"
-            >
-              <span className="text-sm font-semibold">New in the shop</span>
-              <span>
-                <span className="type-wide block text-4xl leading-none sm:text-5xl">Inverter aircons</span>
-                <span className="mt-3 inline-flex items-center gap-2 font-semibold underline-offset-4 group-hover:underline">
-                  {aircons?.from ? <>From {formatPrice(aircons.from)}</> : "Shop aircons"}
-                  <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
-                </span>
-              </span>
-              <CategoryGlyph category="air-conditioners" className="absolute -right-4 -bottom-6 -z-10 size-44 opacity-90" />
-            </Link>
-          )}
-
-          <Link
-            href="/installation"
-            style={{ "--i": 1 } as React.CSSProperties}
-            className="intro-rise group relative isolate flex min-h-60 flex-col justify-between overflow-hidden rounded-xl bg-ink p-6 text-white sm:p-8"
+        <div className="relative isolate flex min-h-[41rem] flex-col overflow-hidden rounded-2xl bg-[#0f0f11] text-white sm:min-h-[43rem] lg:h-[min(72svh,41rem)] lg:min-h-[31rem] lg:justify-center">
+          {/* Wide screens: the house stands on the right, at the height of the panel, and the sky fades out towards the words. */}
+          <div
+            className="absolute inset-x-0 bottom-0 -z-20 hidden aspect-[3/2] [mask-image:linear-gradient(to_bottom,transparent,black_20%)] sm:block lg:inset-x-auto lg:inset-y-0 lg:right-0 lg:[mask-image:linear-gradient(to_right,transparent,black_34%)]"
+            aria-hidden="true"
           >
-            <Image
-              src={installersImage}
-              alt=""
-              fill
-              placeholder="blur"
-              sizes="(min-width: 1024px) 33vw, 100vw"
-              className="-z-20 object-cover opacity-50 transition-transform duration-700 group-hover:scale-105"
-            />
-            <div className="photo-wash-bottom absolute inset-0 -z-10" aria-hidden="true" />
-            <span className="inline-flex items-center gap-2 text-sm font-semibold text-white/80">
-              <BadgeCheck className="size-4 text-sun" aria-hidden="true" /> Certificate of Compliance included
-            </span>
-            <span>
-              <span className="type-wide block text-3xl leading-none sm:text-4xl">Installed by a registered technician</span>
-              <span className="mt-3 inline-flex items-center gap-2 font-semibold underline-offset-4 group-hover:underline">
-                How installation works <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
-              </span>
-            </span>
-          </Link>
+            <Image src={heroDark} alt="" fill priority sizes="(min-width: 1024px) 66vw, 100vw" className="object-cover" />
+            <Image src={heroLit} alt="" fill priority sizes="(min-width: 1024px) 66vw, 100vw" className="hero-lit object-cover" />
+          </div>
+          {/* Phones: the house itself, under the words. */}
+          <div className="absolute inset-x-0 bottom-0 -z-20 aspect-[4/3] [mask-image:linear-gradient(to_bottom,transparent,black_26%)] sm:hidden" aria-hidden="true">
+            <Image src={houseDark} alt="" fill priority sizes="100vw" className="object-cover" />
+            <Image src={houseLit} alt="" fill priority sizes="100vw" className="hero-lit object-cover" />
+          </div>
+          <div
+            className="absolute inset-0 -z-10 hidden bg-[linear-gradient(90deg,rgb(15_15_17/0.85)_0%,rgb(15_15_17/0.5)_36%,transparent_60%)] sm:block"
+            aria-hidden="true"
+          />
+          <div className="drift-up p-6 sm:p-10 lg:max-w-[46rem] lg:p-14">
+            <h1
+              id="hero-heading"
+              className="hero-title type-wide max-w-[13ch] text-[2.35rem] leading-[0.95] sm:text-[clamp(2.75rem,7vw,3.75rem)] lg:text-[clamp(2.75rem,min(4.4vw,8.6svh),4.25rem)]"
+            >
+              {HEADLINE.map((w, i) => (
+                <Fragment key={i}>
+                  <span className={w === "on" ? "hw hero-on" : w === "off." ? "hw hero-off" : "hw"} style={{ "--w": i } as React.CSSProperties}>
+                    {w}
+                  </span>
+                  {i < HEADLINE.length - 1 ? " " : ""}
+                </Fragment>
+              ))}
+            </h1>
+            <p className="intro-rise mt-5 max-w-md text-lg leading-relaxed text-white/80" style={{ "--i": 3 } as React.CSSProperties}>
+              Inverters, lithium batteries and solar panels for South African homes and businesses, delivered anywhere in the country.
+            </p>
+            <div className="intro-rise mt-7 flex flex-col gap-3 sm:flex-row" style={{ "--i": 4 } as React.CSSProperties}>
+              <Button asChild size="lg" className="h-13 px-7 text-base">
+                <Link href="/shop/kits">Shop backup kits</Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="h-13 border-white/40 bg-transparent px-7 text-base text-white hover:border-white hover:bg-white hover:text-ink"
+              >
+                <Link href="#planner">Plan my system</Link>
+              </Button>
+            </div>
+            {kitsFrom !== null && (
+              <p className="intro-rise mt-5 text-sm text-white/65" style={{ "--i": 5 } as React.CSSProperties}>
+                Backup kits from <span className="num font-semibold text-white">{formatPrice(kitsFrom)}</span>, VAT included.
+              </p>
+            )}
+          </div>
         </div>
-      </section>
 
-      {/* Ticker of what you get */}
-      <div className="mt-3 bg-ink text-ink-foreground">
-        <Marquee label="Why buy from GridAnchor" seconds={50} className="py-3.5">
-          {ticker.map((t) => (
-            <li key={t} className="flex items-center gap-6 pr-6 text-base font-semibold whitespace-nowrap sm:text-lg">
-              {t}
-              <Sun className="size-5 shrink-0 text-sun" aria-hidden="true" />
+        {/* What you can count on, said once and standing still. */}
+        <ul className="grid grid-cols-2 gap-x-5 gap-y-4 border-b py-6 sm:gap-x-8 sm:gap-y-5 sm:py-7 lg:grid-cols-4 lg:py-8">
+          {promises.map(({ icon: Icon, title, body }) => (
+            <li key={title} className="flex gap-2.5 sm:gap-3.5">
+              <Icon className="mt-0.5 size-4.5 shrink-0 text-amber-ink sm:size-5" aria-hidden="true" />
+              <span>
+                <span className="block text-sm font-semibold leading-snug sm:text-base">{title}</span>
+                <span className="mt-0.5 hidden text-sm text-muted-foreground sm:block">{body}</span>
+              </span>
             </li>
           ))}
-        </Marquee>
-      </div>
+        </ul>
+      </section>
 
-      {/* Departments: slide sideways as you scroll */}
-      <HorizontalScroll
-        className="py-16 lg:py-0"
-        header={
-          <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
-            <h2 id="categories-heading" className="type-wide max-w-3xl text-4xl leading-[0.98] sm:text-6xl">
-              <CountUp to={products.length || 218} /> products from <CountUp to={brands.size || 25} /> brands
-            </h2>
-            <Link href="/shop" className="inline-flex items-center gap-1.5 font-semibold underline-offset-4 hover:underline">
-              Shop everything <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
-          </div>
-        }
-      >
-        {categories.map((c) => (
-          <div key={c.href} className="w-[78vw] shrink-0 snap-start sm:w-[22rem] lg:w-[25rem]">
-            <Shared name={vtName("category", c.slug)}>
-              <Link
-                href={c.href}
-                transitionTypes={["nav-forward"]}
-                className="group relative isolate flex h-[26rem] flex-col overflow-hidden rounded-xl bg-tile p-7 text-tile-foreground transition-[box-shadow,translate] duration-300 ease-out hover:shadow-[0_22px_44px_-22px_rgb(0_0_0/0.4)] motion-full:hover:-translate-y-1"
-              >
-                <span className="flex items-start justify-between gap-4">
-                  <span className="type-wide text-[1.75rem] leading-none">{c.label}</span>
-                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-tile-foreground transition-[rotate,background-color] duration-300 group-hover:-rotate-45 group-hover:bg-sun">
-                    <ArrowRight className="size-5" aria-hidden="true" />
+      {/* Departments */}
+      <section className="container-page py-14 lg:py-20" aria-labelledby="categories-heading">
+        <SectionHead id="categories-heading" title="Shop by category" link={{ href: "/shop", label: `All ${products.length} products` }} />
+        <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+          {categories.map((c) => (
+            <li key={c.href} data-reveal>
+              <Shared name={vtName("category", c.slug)}>
+                <Link
+                  href={c.href}
+                  transitionTypes={["nav-forward"]}
+                  className="group relative isolate flex h-48 flex-col overflow-hidden rounded-xl bg-tile p-4 text-tile-foreground sm:h-60 sm:p-6 lg:h-64"
+                >
+                  <span className="type-wide text-lg leading-none sm:text-2xl">{c.label}</span>
+                  <span className="mt-1.5 text-xs text-tile-foreground/70 sm:text-sm">
+                    {c.count > 0 ? (
+                      <>
+                        <span className="num">{c.count}</span> products
+                        {c.from !== null && (
+                          <span className="hidden min-[420px]:inline">
+                            , from <span className="num font-semibold text-tile-foreground">{formatPrice(c.from)}</span>
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      "Coming soon"
+                    )}
                   </span>
-                </span>
-                <span className="mt-2 text-sm text-tile-foreground/70">
-                  {c.count > 0 ? (
-                    <>
-                      <span className="num font-semibold text-tile-foreground">{c.count}</span> products
-                      {c.from !== null && (
-                        <>
-                          , from <span className="num font-semibold text-tile-foreground">{formatPrice(c.from)}</span>
-                        </>
-                      )}
-                    </>
+                  <span className="mt-auto hidden items-center gap-1.5 text-sm font-semibold underline-offset-4 group-hover:underline sm:inline-flex">
+                    Shop {c.label.toLowerCase()}
+                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                  </span>
+                  {c.image ? (
+                    /* "multiply" sits on the element that moves, or the photo's white would show while it does */
+                    <span className="absolute right-2 bottom-2 -z-10 block h-[62%] w-[74%] mix-blend-multiply transition-transform duration-500 ease-out group-hover:scale-[1.04] sm:right-4 sm:bottom-4 sm:h-[78%] sm:w-[52%]">
+                      <Image src={c.image.url} alt="" fill sizes="(min-width: 1024px) 16rem, (min-width: 640px) 26vw, 36vw" className="object-contain object-right-bottom" />
+                    </span>
                   ) : (
-                    "Coming soon"
+                    <CategoryGlyph category={c.slug} className="absolute right-2 bottom-2 -z-10 size-28 sm:size-44" />
                   )}
-                </span>
-                {c.image ? (
-                  /* "multiply" sits on the element that moves, or the photo's white would show while it does */
-                  <span className="relative mt-auto block h-60 w-full mix-blend-multiply transition-transform duration-500 ease-out group-hover:scale-105">
-                    <Image src={c.image.url} alt="" fill sizes="(min-width: 640px) 22rem, 70vw" className="object-contain" />
-                  </span>
-                ) : (
-                  <CategoryGlyph category={c.slug} className="glyph-live mx-auto mt-auto size-56" />
-                )}
-              </Link>
-            </Shared>
-          </div>
-        ))}
-      </HorizontalScroll>
+                </Link>
+              </Shared>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       {/* On sale (only when the admin has discounted something) */}
       {onSale.length > 0 && (
-        <section className="container-page pb-20 lg:pb-24" aria-labelledby="sale-heading">
-          <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-            <h2 id="sale-heading" data-reveal="words" className="type-wide text-4xl sm:text-5xl">
-              <Words text="On sale now" />
-            </h2>
-            <Link href="/shop?sale=1" className="inline-flex items-center gap-1.5 font-semibold text-sale underline-offset-4 hover:underline">
-              All markdowns <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
-          </div>
+        <section className="container-page pb-14 lg:pb-20" aria-labelledby="sale-heading">
+          <SectionHead
+            id="sale-heading"
+            title="On sale now"
+            lede={topDiscount ? `Marked down by up to ${topDiscount}%, while stock lasts.` : undefined}
+            link={{ href: "/shop?sale=1", label: saleCount > onSale.length ? `All ${saleCount} markdowns` : "All markdowns" }}
+          />
           <ul className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
             {onSale.map((p) => (
               <li key={p.id} data-reveal>
@@ -387,51 +305,10 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* The planner: tap appliances, get a matched system from stock */}
-      <section id="planner" className="scroll-mt-24 border-y bg-shelf py-16 lg:py-24" aria-label="Backup planner">
-        <div className="container-page">
-          <LazyPlanner stock={plannerStock} />
-          <p className="mt-5 text-center text-sm text-muted-foreground">
-            Rather pick every part yourself?{" "}
-            <Link href="/build" className="font-semibold text-foreground underline underline-offset-4">
-              Build your system panel by panel
-            </Link>
-          </p>
-        </div>
-      </section>
-
-      {/* What solar saves: an estimate from the visitor's own bill */}
-      <section id="savings" className="container-page scroll-mt-24 py-16 lg:py-24" aria-labelledby="savings-heading">
-        <div className="mb-8 max-w-2xl">
-          <h2 id="savings-heading" data-reveal="words" className="type-wide text-4xl sm:text-5xl">
-            <Words text="What could solar save you?" />
-          </h2>
-          <p data-reveal="fade" className="mt-3 text-lg text-muted-foreground">
-            Move the sliders to your own bill. Prices come from what&apos;s in stock today.
-          </p>
-        </div>
-        <div data-reveal>
-          <SavingsCalculator prices={calculatorPrices(products)} />
-        </div>
-      </section>
-
-      {/* The bold moment: the words light up and the logo switches on as you scroll */}
-      <PowerOn />
-
-      {/* A day on solar, driven by scrolling */}
-      <LazySolarDay />
-
       {/* Popular products */}
       {featured.length > 0 && (
-        <section className="container-page py-20 lg:py-28" aria-labelledby="featured-heading">
-          <div className="mb-2 flex flex-wrap items-end justify-between gap-4">
-            <h2 id="featured-heading" data-reveal="words" className="type-wide text-4xl sm:text-5xl">
-              <Words text="Popular right now" />
-            </h2>
-            <Link href="/shop" className="inline-flex items-center gap-1.5 font-semibold underline-offset-4 hover:underline">
-              Shop everything <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
-          </div>
+        <section className="container-page pb-14 lg:pb-20" aria-labelledby="featured-heading">
+          <SectionHead id="featured-heading" title="Popular right now" link={{ href: "/shop", label: "Shop everything" }} flush />
           <Carousel label="Popular products">
             {featured.map((p) => (
               <li key={p.id}>
@@ -442,44 +319,103 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Brands, in big type, looping both ways and speeding up as you scroll */}
-      {brandList.length > 0 && <BrandWall brands={brandList} />}
+      {/* Help choosing: two estimators in one place, and the two longer routes */}
+      <section id="planner" className="relative scroll-mt-24 border-y bg-shelf py-14 lg:py-20" aria-labelledby="tools-heading">
+        <span id="savings" className="absolute -top-24" aria-hidden="true" />
+        <div className="container-page">
+          <SectionHead
+            id="tools-heading"
+            title="Work out what you need"
+            lede="Two quick estimates, priced from what is in stock today. Our technician confirms the design before anything is installed."
+          />
+          <ToolsTabs
+            tabs={[
+              {
+                id: "planner",
+                label: "Plan your backup",
+                hint: "Pick what must stay on in a power cut",
+                content: <LazyPlanner stock={plannerStock} />,
+              },
+              {
+                id: "savings",
+                label: "Estimate your savings",
+                hint: "What solar takes off your bill",
+                content: <SavingsCalculator prices={calculatorPrices(products)} />,
+              },
+            ]}
+          />
+          <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+            <li>
+              <Link href="/build" className="group flex h-full items-center gap-4 rounded-xl border bg-card p-5 transition-colors hover:border-foreground/40">
+                <PlugZap className="size-6 shrink-0 text-amber-ink" aria-hidden="true" />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">Build your system part by part</span>
+                  <span className="block text-sm text-muted-foreground">Choose the panels, inverter and batteries, sized for your province.</span>
+                </span>
+                <ArrowRight className="size-5 shrink-0 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+              </Link>
+            </li>
+            <li>
+              <Link href="/advisor" className="group flex h-full items-center gap-4 rounded-xl border bg-card p-5 transition-colors hover:border-foreground/40">
+                <MessagesSquare className="size-6 shrink-0 text-amber-ink" aria-hidden="true" />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">Ask the Solar Advisor</span>
+                  <span className="block text-sm text-muted-foreground">Describe your home in your own words and get a matched system.</span>
+                </span>
+                <ArrowRight className="size-5 shrink-0 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+              </Link>
+            </li>
+          </ul>
+        </div>
+      </section>
 
-      {/* How it works, over a photo */}
-      <section className="container-page pt-20 lg:pt-28" aria-labelledby="how-heading">
-        <div className="grain relative isolate overflow-hidden rounded-xl bg-ink text-ink-foreground">
-          <div className="parallax-band absolute inset-0 -z-20">
-            <Image src={installersImage} alt="" fill placeholder="blur" sizes="(min-width: 1440px) 1440px, 100vw" className="object-cover" />
-          </div>
-          <div className="absolute inset-0 -z-10 bg-ink/85" aria-hidden="true" />
-          <Spotlight />
-          <div className="px-6 py-14 sm:px-10 lg:px-14 lg:py-20">
-            <h2 id="how-heading" data-reveal="words" className="type-wide max-w-3xl text-4xl leading-[0.98] sm:text-5xl">
-              <Words text="From your electricity bill to a working system" />
+      {/* A day on solar, driven by scrolling: why a system is sized the way it is */}
+      <LazySolarDay />
+
+      {/* How buying works */}
+      <section className="container-page py-14 lg:py-20" aria-labelledby="how-heading">
+        <div className="grid gap-8 lg:grid-cols-[1fr_1.15fr] lg:gap-14">
+          <Link href="/installation" className="group relative isolate order-last block min-h-72 overflow-hidden rounded-xl bg-ink text-white lg:order-first lg:min-h-0">
+            <Image
+              src={installersImage}
+              alt="Two installers fitting solar panels to a roof"
+              fill
+              placeholder="blur"
+              sizes="(min-width: 1024px) 45vw, 100vw"
+              className="-z-20 object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+            />
+            <span className="photo-wash-bottom absolute inset-0 -z-10" aria-hidden="true" />
+            <span className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
+              <span className="inline-flex items-center gap-2 text-sm font-semibold text-white/85">
+                <BadgeCheck className="size-4 text-sun" aria-hidden="true" /> Certificate of Compliance included
+              </span>
+              <span className="mt-2 flex items-center gap-2 text-lg font-semibold underline-offset-4 group-hover:underline">
+                How installation works <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+              </span>
+            </span>
+          </Link>
+          <div>
+            <h2 id="how-heading" className="type-wide max-w-xl text-3xl leading-[1.02] sm:text-4xl">
+              From your electricity bill to a working system
             </h2>
-            <ol className="mt-12 grid gap-8 md:grid-cols-3 md:gap-6">
+            <ol className="mt-8 divide-y border-y">
               {steps.map((step, i) => (
-                <li key={step.title} data-reveal className="border-t-2 border-sun pt-6" style={{ "--i": i } as React.CSSProperties}>
-                  <p className="type-wide text-2xl text-white">
-                    <span className="num mr-3 text-sun">{i + 1}</span>
-                    {step.title}
-                  </p>
-                  <p className="mt-3 leading-relaxed text-white/75">{step.body}</p>
+                <li key={step.title} className="grid grid-cols-[2.75rem_1fr] gap-x-4 py-5">
+                  <span className="num type-wide grid size-10 place-items-center rounded-full bg-sun text-lg text-ink" aria-hidden="true">
+                    {i + 1}
+                  </span>
+                  <div>
+                    <h3 className="text-lg font-semibold">{step.title}</h3>
+                    <p className="mt-1 leading-relaxed text-muted-foreground">{step.body}</p>
+                  </div>
                 </li>
               ))}
             </ol>
-            <div className="mt-12 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="h-13 px-7 text-base">
-                <Link href="/advisor">
-                  Size my system with the Solar Advisor <ArrowRight />
-                </Link>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="lg" className="h-12 px-6 text-base">
+                <Link href="/advisor">Size my system with the Solar Advisor</Link>
               </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="h-13 border-white/40 bg-transparent px-7 text-base text-white hover:border-white hover:bg-white hover:text-ink"
-              >
+              <Button asChild size="lg" variant="outline" className="h-12 px-6 text-base">
                 <Link href="/contact">Talk to us</Link>
               </Button>
             </div>
@@ -487,13 +423,36 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Brands */}
+      {brandList.length > 0 && (
+        <section className="border-y bg-shelf" aria-labelledby="brands-heading">
+          <div className="container-page grid gap-6 py-12 lg:grid-cols-[16rem_1fr] lg:gap-14 lg:py-14">
+            <div>
+              <h2 id="brands-heading" className="type-wide text-2xl leading-tight sm:text-3xl">
+                {brandList.length} brands we stock
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">Each with its manufacturer&apos;s warranty.</p>
+            </div>
+            <ul className="grid grid-cols-2 gap-x-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {brandList.map((b) => (
+                <li key={b} className="border-b border-foreground/10">
+                  <Link href={`/brands/${slugify(b)}`} className="block truncate py-2.5 font-semibold text-foreground/75 transition-colors hover:text-foreground">
+                    {b}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
+
       {/* FAQ */}
-      <section className="container-page grid gap-12 py-20 lg:grid-cols-[1fr_1.4fr] lg:py-28" aria-labelledby="faq-heading">
+      <section className="container-page grid gap-8 py-14 lg:grid-cols-[1fr_1.6fr] lg:gap-14 lg:py-20" aria-labelledby="faq-heading">
         <div>
-          <h2 id="faq-heading" data-reveal="words" className="type-wide text-4xl sm:text-5xl">
-            <Words text="Straight answers" />
+          <h2 id="faq-heading" className="type-wide text-3xl leading-[1.02] sm:text-4xl">
+            Straight answers
           </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
+          <p className="mt-3 text-lg text-muted-foreground">
             More in our{" "}
             <Link href="/faq" className="font-semibold text-foreground underline underline-offset-4">
               FAQ
@@ -505,7 +464,7 @@ export default async function HomePage() {
             .
           </p>
         </div>
-        <Accordion type="single" collapsible className="w-full" data-reveal="fade">
+        <Accordion type="single" collapsible className="w-full border-t">
           {faqs.map((f) => (
             <AccordionItem key={f.q} value={f.q}>
               <AccordionTrigger className="py-5 text-left text-lg font-semibold">{f.q}</AccordionTrigger>
@@ -513,6 +472,39 @@ export default async function HomePage() {
             </AccordionItem>
           ))}
         </Accordion>
+      </section>
+
+      {/* The last word, and the two ways in */}
+      <section className="container-page" aria-labelledby="closing-heading">
+        <div className="grain relative isolate grid items-center gap-8 overflow-hidden rounded-2xl bg-ink px-6 py-12 text-white sm:px-10 lg:grid-cols-[1fr_auto] lg:px-14 lg:py-16">
+          <div>
+            <h2 id="closing-heading" className="type-wide text-3xl leading-[1.04] sm:text-4xl xl:text-[2.75rem]">
+              <span className="block">The grid switches off on a schedule.</span>
+              <span className="block text-sun">Your lights don&apos;t have to.</span>
+            </h2>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="lg" className="h-13 px-7 text-base">
+                <Link href="/shop/kits">Shop backup kits</Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="h-13 border-white/40 bg-transparent px-7 text-base text-white hover:border-white hover:bg-white hover:text-ink"
+              >
+                <Link href="/advisor">Ask the Solar Advisor</Link>
+              </Button>
+            </div>
+          </div>
+          <svg viewBox="0 0 100 100" className="hidden size-44 overflow-visible lg:block xl:size-52" aria-hidden="true">
+            <g fill="none" stroke="var(--sun)" strokeLinecap="round">
+              <path d={MARK.arms} strokeWidth="9.5" />
+              <path d={MARK.shank} strokeWidth="9.5" />
+              <path d={MARK.stock} strokeWidth="7.1" />
+              <circle cx={MARK.ring.cx} cy={MARK.ring.cy} r={MARK.ring.r} strokeWidth="5.9" />
+            </g>
+          </svg>
+        </div>
       </section>
       <JsonLd
         data={{
@@ -525,5 +517,37 @@ export default async function HomePage() {
         }}
       />
     </PageTransition>
+  );
+}
+
+/** Every section opens the same way: a heading, sometimes a line under it, sometimes a link to the full list. */
+function SectionHead({
+  id,
+  title,
+  lede,
+  link,
+  flush = false,
+}: {
+  id: string;
+  title: string;
+  lede?: string;
+  link?: { href: string; label: string };
+  /** Sits tight above a carousel, which brings its own space for the arrows. */
+  flush?: boolean;
+}) {
+  return (
+    <div className={flush ? "mb-2 flex flex-wrap items-end justify-between gap-x-6 gap-y-2" : "mb-7 flex flex-wrap items-end justify-between gap-x-6 gap-y-2 lg:mb-9"}>
+      <div className="max-w-2xl">
+        <h2 id={id} className="type-wide text-3xl leading-[1.02] sm:text-4xl">
+          {title}
+        </h2>
+        {lede && <p className="mt-2.5 text-lg text-muted-foreground">{lede}</p>}
+      </div>
+      {link && (
+        <Link href={link.href} className="inline-flex items-center gap-1.5 font-semibold underline-offset-4 hover:underline">
+          {link.label} <ArrowRight className="size-4" aria-hidden="true" />
+        </Link>
+      )}
+    </div>
   );
 }

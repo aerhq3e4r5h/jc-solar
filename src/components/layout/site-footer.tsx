@@ -23,7 +23,8 @@ export function SiteFooter() {
     .join(", ");
   return (
     <footer className="mt-16 lg:mt-20">
-      <section aria-label="Why shop with us" className="border-y bg-shelf">
+      {/* The home page says this under its hero, so it is left out there (see [data-footer-promises] in globals.css). */}
+      <section aria-label="Why shop with us" data-footer-promises className="border-y bg-shelf">
         <ul className="container-page grid grid-cols-1 gap-x-8 gap-y-6 py-10 sm:grid-cols-2 lg:grid-cols-4">
           {PROMISES.map(({ icon: Icon, title, body }) => (
             <li key={title} className="flex gap-4">

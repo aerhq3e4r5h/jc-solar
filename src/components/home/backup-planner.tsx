@@ -66,9 +66,9 @@ export function BackupPlanner({ stock }: { stock: PlannerStock }) {
       className="grid gap-x-10 gap-y-6 rounded-xl border bg-card p-5 text-card-foreground sm:p-8 lg:grid-cols-[1.3fr_1fr]"
     >
       <div>
-        <h2 id="planner-heading" className="type-wide text-2xl sm:text-3xl">
+        <h3 id="planner-heading" className="type-wide text-2xl sm:text-3xl">
           Plan your backup
-        </h2>
+        </h3>
         <p className="mt-1 text-sm text-muted-foreground">Tap what must keep running when the power goes off.</p>
 
         <ul className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4" aria-label="Appliances">
