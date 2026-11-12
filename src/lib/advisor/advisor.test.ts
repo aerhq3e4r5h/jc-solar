@@ -259,6 +259,37 @@ describe("runAdvisor", () => {
     expect(r).toMatchObject({ text: "Worth the wait.", model: DEFAULT_MODEL });
   });
 
+  it("keeps a model that was slow but answered at the front of the queue", async () => {
+    // First question: the main model is slow, the one started beside it never answers, the main model answers after all.
+    const slowThenAnswers = ((url: string, init: RequestInit) =>
+      new Promise((resolve, reject) => {
+        init.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+        if (url.includes(`/${DEFAULT_MODEL}:`)) setTimeout(() => resolve(Response.json({ candidates: [{ content: { parts: [{ text: "One." }] } }] })), 400);
+      })) as typeof fetch;
+    const first = await runAdvisor({ ...base, model: DEFAULT_MODEL, history: [{ role: "user", text: "hi" }], fetchImpl: slowThenAnswers, stallMs: 150 });
+    expect(first.model).toBe(DEFAULT_MODEL);
+    // Second question: it is asked first again.
+    const urls: string[] = [];
+    const next = fakeGemini([{ candidates: [{ content: { parts: [{ text: "Two." }] } }] }]);
+    const spy = ((url: string, init: RequestInit) => (urls.push(url.split("/models/")[1].split(":")[0]), next.fetchImpl(url, init))) as typeof fetch;
+    await runAdvisor({ ...base, model: DEFAULT_MODEL, history: [{ role: "user", text: "again" }], fetchImpl: spy });
+    expect(urls).toEqual([DEFAULT_MODEL]);
+  });
+
+  it("asks a third model when two are slow at once", async () => {
+    const urls: string[] = [];
+    const fetchImpl = ((url: string, init: RequestInit) => {
+      urls.push(url.split("/models/")[1].split(":")[0]);
+      return new Promise((resolve, reject) => {
+        init.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+        if (urls.length === 3) resolve(Response.json({ candidates: [{ content: { parts: [{ text: "Third time lucky." }] } }] }));
+      });
+    }) as typeof fetch;
+    const r = await runAdvisor({ ...base, model: DEFAULT_MODEL, history: [{ role: "user", text: "hi" }], fetchImpl, stallMs: 120 });
+    expect(urls).toEqual([DEFAULT_MODEL, FALLBACK_MODELS[0], FALLBACK_MODELS[1]]);
+    expect(r).toMatchObject({ text: "Third time lucky.", model: FALLBACK_MODELS[1] });
+  });
+
   it("gives an overloaded model a second go once the others have had theirs", async () => {
     const urls: string[] = [];
     const { fetchImpl } = fakeGemini([503, 503, 503, 503, { candidates: [{ content: { parts: [{ text: "Back again." }] } }] }]);

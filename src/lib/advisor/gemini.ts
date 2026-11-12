@@ -45,8 +45,15 @@ const API = "https://generativelanguage.googleapis.com/v1beta/models";
 const MAX_TOOL_ROUNDS = 4;
 /** Whole answer, all retries included; hosting functions are stopped at about 26 s. */
 const DEADLINE_MS = 23_000;
-/** A call that has taken this long is slow: the next model is started alongside it, and the first answer wins. */
+/**
+ * A call that has taken this long is slow: the next model is started
+ * alongside it, and the first answer wins. Writing the answer (any call
+ * after the first) takes longer than choosing a tool, so it is given more.
+ */
 const STALL_MS = 4_000;
+const STALL_WRITING_MS = 7_000;
+/** Models asked at the same time, at most. */
+const MAX_TOGETHER = 3;
 /** No single call is waited on for longer than this. */
 const CALL_MS = 15_000;
 /** Not worth starting another model with less time than this left. */
@@ -154,6 +161,7 @@ export async function runAdvisor(opts: RunOptions): Promise<Answer & { model: st
   // Models that failed a moment ago go to the back of the queue.
   const queue = [...listed.filter((m) => (resting.get(m) ?? 0) <= start), ...listed.filter((m) => (resting.get(m) ?? 0) > start)];
   const secondGo = new Set<string>();
+  const slowOnes = new Set<string>();
   const attempts: string[] = [];
   const running = new Map<string, AbortController>();
   let last: unknown;
@@ -188,9 +196,9 @@ export async function runAdvisor(opts: RunOptions): Promise<Answer & { model: st
     if (!running.has(e.model)) continue;
     if ("slow" in e) {
       // One call is taking long: give the next model a start alongside it rather than waiting it out.
-      if (running.size < 2 && queue.length && timeFor()) {
+      if (running.size < MAX_TOGETHER && queue.length && timeFor()) {
         attempts.push(`${e.model}: slow`);
-        resting.set(e.model, Date.now() + SLOW_REST_MS);
+        slowOnes.add(e.model);
         launch();
       }
       continue;
@@ -198,7 +206,9 @@ export async function runAdvisor(opts: RunOptions): Promise<Answer & { model: st
     running.delete(e.model);
     if ("answer" in e) {
       for (const other of running.values()) other.abort();
-      if (!attempts.includes(`${e.model}: slow`)) resting.delete(e.model);
+      // The one that answered starts the next question too; one that was overtaken while slow goes to the back for a minute.
+      resting.delete(e.model);
+      for (const slow of slowOnes) if (slow !== e.model) resting.set(slow, Date.now() + SLOW_REST_MS);
       return { ...e.answer, model: e.model, ...(attempts.length ? { tried: attempts } : {}), trace };
     }
     last = e.error;
@@ -245,7 +255,7 @@ async function runWithModel(
     const remaining = deadline - Date.now();
     if (remaining < 1_000) throw new AdvisorError(`${model} ran out of time.`, "upstream", "timeout");
     const thinking = noThinkingConfig.has(model) ? null : thinkingFor(model);
-    const slow = setTimeout(onSlow, stallMs);
+    const slow = setTimeout(onSlow, round === 0 ? stallMs : Math.max(stallMs, (stallMs * STALL_WRITING_MS) / STALL_MS));
     const began = Date.now();
     const note = (how: string | number) => trace.push(`${model} #${round + 1} ${((Date.now() - began) / 1000).toFixed(1)}s ${how}`);
     try {
