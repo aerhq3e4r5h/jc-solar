@@ -399,7 +399,9 @@ describe("runAdvisor", () => {
       },
     });
     expect(quotaDetail(body)).toEqual({ detail: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier, limit 5, retry in 31s", restMs: 33_000 });
-    expect(quotaDetail(body.replace("PerMinute", "PerDay")).restMs).toBe(30 * 60_000);
+    // a daily limit: left alone until Google says, but looked at again within two hours
+    expect(quotaDetail(body.replace("PerMinute", "PerDay")).restMs).toBe(33_000);
+    expect(quotaDetail(body.replace("PerMinute", "PerDay").replace("31s", "64727s")).restMs).toBe(2 * 60 * 60_000);
     expect(quotaDetail("not json")).toEqual({});
 
     const replies = [new Response(body, { status: 429 }), Response.json({ candidates: [{ content: { parts: [{ text: "Hi." }] } }] })];

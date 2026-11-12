@@ -348,16 +348,31 @@ export function AdvisorChat({ enabled }: { enabled: boolean }) {
         )}
 
         {error && (
-          <div
-            role="alert"
-            className="mx-auto flex max-w-xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive"
-          >
-            <span>{error}</span>
-            {messages[messages.length - 1]?.role === "user" && enabled && (
-              <Button size="sm" variant="outline" onClick={retry}>
-                Try again
-              </Button>
-            )}
+          <div role="alert" className="mx-auto max-w-xl rounded-2xl border border-destructive/40 bg-destructive/5 p-4 text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 text-destructive">
+              <span>{error}</span>
+              {messages[messages.length - 1]?.role === "user" && enabled && (
+                <Button size="sm" variant="outline" onClick={retry}>
+                  Try again
+                </Button>
+              )}
+            </div>
+            {/* The sums don't need the advisor: the planner and the builder do them without it. */}
+            <p className="mt-3 border-t border-destructive/20 pt-3 text-foreground">
+              You can size a system without the advisor:{" "}
+              <Link href="/#planner" className="font-semibold underline underline-offset-4">
+                plan your backup
+              </Link>
+              ,{" "}
+              <Link href="/build" className="font-semibold underline underline-offset-4">
+                build your system
+              </Link>{" "}
+              or{" "}
+              <Link href="/contact" className="font-semibold underline underline-offset-4">
+                ask us
+              </Link>
+              .
+            </p>
           </div>
         )}
       </div>

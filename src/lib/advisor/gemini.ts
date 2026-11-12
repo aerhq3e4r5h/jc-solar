@@ -95,9 +95,10 @@ export function quotaDetail(body: string): { detail?: string; restMs?: number } 
     const quota = typeof violation?.quotaId === "string" ? violation.quotaId : null;
     const limit = violation?.quotaValue !== undefined ? `limit ${String(violation.quotaValue)}` : null;
     const detail = [quota, limit, retry ? `retry in ${retry}` : null].filter(Boolean).join(", ") || error?.message?.slice(0, 160);
-    // A daily limit stays reached for hours; a per-minute one clears when Google says.
+    // A daily limit stays reached until Google's day turns over (it says when); a per-minute one clears in seconds.
     const daily = quota !== null && /PerDay/i.test(quota);
-    const restMs = daily ? 30 * 60_000 : Number.isFinite(seconds) ? Math.min(Math.max(seconds * 1000 + 2_000, 15_000), 5 * 60_000) : undefined;
+    const wait = Number.isFinite(seconds) ? seconds * 1000 + 2_000 : undefined;
+    const restMs = daily ? Math.min(wait ?? 30 * 60_000, 2 * 60 * 60_000) : wait === undefined ? undefined : Math.min(Math.max(wait, 15_000), 5 * 60_000);
     return { detail: detail || undefined, restMs };
   } catch {
     return {};
