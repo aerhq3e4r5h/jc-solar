@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
   const started = Date.now();
   try {
-    const { text, model, tried, toolsUsed } = await runAdvisor({
+    const { text, model, tried, toolsUsed, trace } = await runAdvisor({
       apiKey: config.apiKey,
       model: config.model,
       system: advisorSystemPrompt(today),
@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
       model,
       ms: Date.now() - started,
       steps: toolsUsed,
+      trace,
       ...(tried ? { tried } : {}),
     });
   } catch (e) {
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
           ? "The advisor is having trouble right now. Please try again shortly, or contact us."
           : e.message;
       return json(
-        { error: message, code: e.code, ...(e.detail ? { detail: e.detail } : {}) },
+        { error: message, code: e.code, ...(e.detail ? { detail: e.detail } : {}), ...(e.trace ? { trace: e.trace, ms: Date.now() - started } : {}) },
         e.kind === "limit" ? 429 : e.kind === "blocked" ? 400 : 502,
       );
     }

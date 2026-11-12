@@ -164,7 +164,9 @@ describe("runAdvisor", () => {
       { candidates: [{ content: { role: "model", parts: [{ text: "Try the Deye battery [[SE-G5.1]]." }] }, finishReason: "STOP" }] },
     ]);
     const r = await runAdvisor({ ...base, history: [{ role: "user", text: "Which battery?" }], fetchImpl });
-    expect(r).toEqual({ text: "Try the Deye battery [[SE-G5.1]].", toolsUsed: ["search_products"], model: "gemini-2.5-flash" });
+    expect(r).toMatchObject({ text: "Try the Deye battery [[SE-G5.1]].", toolsUsed: ["search_products"], model: "gemini-2.5-flash" });
+    expect(r.tried).toBeUndefined();
+    expect(r.trace).toHaveLength(2); // one call that asked for the tool, one that answered
     // The second request echoes the model turn (with its signature) and the tool result.
     const second = requests[1].contents;
     expect(second[1]).toMatchObject({ role: "model", parts: [{ thoughtSignature: "sig" }] });
@@ -321,6 +323,15 @@ describe("runAdvisor", () => {
     // the last tool result itself says that it is time to answer
     const lastResult = requests.at(-1)!.contents.at(-1)!.parts[0].functionResponse as { response: Record<string, unknown> };
     expect(lastResult.response.next_step).toMatch(/Reply to the customer now/);
+  });
+
+  it("drops a leaked thinking marker and reports each call it made", async () => {
+    const { fetchImpl } = fakeGemini([503, { candidates: [{ content: { parts: [{ text: "_thought\nHere are your options." }] } }] }]);
+    const r = await runAdvisor({ ...base, model: DEFAULT_MODEL, history: [{ role: "user", text: "hi" }], fetchImpl });
+    expect(r.text).toBe("Here are your options.");
+    expect(r.trace).toHaveLength(2);
+    expect(r.trace[0]).toMatch(new RegExp(`^${DEFAULT_MODEL} #1 \\d+\\.\\ds 503$`));
+    expect(r.trace[1]).toMatch(/ #1 \d+\.\ds 200$/);
   });
 
   it("doesn't run the same tool call twice in one answer", async () => {

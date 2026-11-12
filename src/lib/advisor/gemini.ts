@@ -25,6 +25,8 @@ export class AdvisorError extends Error {
   ) {
     super(message);
   }
+  /** Every call made to a model for this answer and how long it took, for diagnosis. */
+  trace?: string[];
 }
 
 /**
@@ -44,7 +46,7 @@ const MAX_TOOL_ROUNDS = 4;
 /** Whole answer, all retries included; hosting functions are stopped at about 26 s. */
 const DEADLINE_MS = 23_000;
 /** A call that has taken this long is slow: the next model is started alongside it, and the first answer wins. */
-const STALL_MS = 6_000;
+const STALL_MS = 4_000;
 /** No single call is waited on for longer than this. */
 const CALL_MS = 15_000;
 /** Not worth starting another model with less time than this left. */
@@ -134,6 +136,8 @@ type RunOptions = {
 };
 
 type Answer = { text: string; toolsUsed: string[] };
+/** One line per call to a model: which model, which round, how long, how it ended. */
+type Trace = string[];
 type Event = { model: string; slow: true } | { model: string; answer: Answer } | { model: string; error: unknown };
 
 /**
@@ -142,8 +146,9 @@ type Event = { model: string; slow: true } | { model: string; answer: Answer } |
  * the next started alongside it (the first answer wins), and one that
  * failed for a passing reason gets a second go after the others.
  */
-export async function runAdvisor(opts: RunOptions): Promise<Answer & { model: string; tried?: string[] }> {
+export async function runAdvisor(opts: RunOptions): Promise<Answer & { model: string; tried?: string[]; trace: Trace }> {
   const start = Date.now();
+  const trace: Trace = [];
   const deadline = start + (opts.budgetMs ?? DEADLINE_MS);
   const listed = [opts.model, ...FALLBACK_MODELS.filter((m) => m !== opts.model)];
   // Models that failed a moment ago go to the back of the queue.
@@ -170,7 +175,7 @@ export async function runAdvisor(opts: RunOptions): Promise<Answer & { model: st
     if (!model) return;
     const controller = new AbortController();
     running.set(model, controller);
-    runWithModel({ ...opts, model }, deadline, controller.signal, () => report({ model, slow: true })).then(
+    runWithModel({ ...opts, model }, deadline, controller.signal, () => report({ model, slow: true }), trace).then(
       (answer) => report({ model, answer }),
       (error) => report({ model, error }),
     );
@@ -194,11 +199,12 @@ export async function runAdvisor(opts: RunOptions): Promise<Answer & { model: st
     if ("answer" in e) {
       for (const other of running.values()) other.abort();
       if (!attempts.includes(`${e.model}: slow`)) resting.delete(e.model);
-      return { ...e.answer, model: e.model, ...(attempts.length ? { tried: attempts } : {}) };
+      return { ...e.answer, model: e.model, ...(attempts.length ? { tried: attempts } : {}), trace };
     }
     last = e.error;
     if (!(e.error instanceof AdvisorError) || !SWITCH_CODES.has(e.error.code)) {
       for (const other of running.values()) other.abort();
+      if (e.error instanceof AdvisorError) e.error.trace = trace;
       throw e.error;
     }
     resting.set(e.model, Date.now() + (e.error.restMs ?? REST_MS));
@@ -214,7 +220,10 @@ export async function runAdvisor(opts: RunOptions): Promise<Answer & { model: st
       launch();
     }
   }
-  if (last instanceof AdvisorError && attempts.length) last.detail = attempts.join("; ");
+  if (last instanceof AdvisorError) {
+    if (attempts.length) last.detail = attempts.join("; ");
+    last.trace = trace;
+  }
   throw last;
 }
 
@@ -225,6 +234,7 @@ async function runWithModel(
   stop: AbortSignal,
   /** Called when a call to the model has taken long enough to be worth starting another model. */
   onSlow: () => void,
+  trace: Trace,
 ): Promise<Answer> {
   const contents: Content[] = history.map((t) => ({ role: t.role === "assistant" ? "model" : "user", parts: [{ text: t.text }] }));
   const toolsUsed: string[] = [];
@@ -236,6 +246,8 @@ async function runWithModel(
     if (remaining < 1_000) throw new AdvisorError(`${model} ran out of time.`, "upstream", "timeout");
     const thinking = noThinkingConfig.has(model) ? null : thinkingFor(model);
     const slow = setTimeout(onSlow, stallMs);
+    const began = Date.now();
+    const note = (how: string | number) => trace.push(`${model} #${round + 1} ${((Date.now() - began) / 1000).toFixed(1)}s ${how}`);
     try {
       const res = await fetchImpl(`${API}/${encodeURIComponent(model)}:generateContent`, {
         method: "POST",
@@ -255,6 +267,7 @@ async function runWithModel(
         signal: AbortSignal.any([stop, AbortSignal.timeout(Math.min(remaining, CALL_MS))]),
       });
       clearTimeout(slow);
+      note(res.status);
       // A model that does not know the thinking setting answers with a generic
       // "invalid argument", so any 400 gets one retry without it.
       if (thinking && res.status === 400 && !/API key/i.test(await res.clone().text())) {
@@ -264,8 +277,10 @@ async function runWithModel(
       return res;
     } catch (e) {
       if (e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError")) {
+        note(stop.aborted ? "stopped" : "timeout");
         throw new AdvisorError(`${model} took too long to answer.`, "upstream", "timeout");
       }
+      note("failed");
       throw e;
     } finally {
       clearTimeout(slow);
@@ -308,6 +323,8 @@ async function runWithModel(
         .filter((p): p is Extract<Part, { text: string }> => "text" in p && !p.thought)
         .map((p) => p.text)
         .join("")
+        // Some models print a marker line where their thinking would have been.
+        .replace(/^\s*_?thought\s*\n/i, "")
         .trim();
       if (!text) {
         if (candidate?.finishReason === "SAFETY") throw new AdvisorError("I can't help with that request.", "blocked");
