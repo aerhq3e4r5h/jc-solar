@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { DEFAULT_MODEL } from "@/lib/advisor/gemini";
 
 const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(20),
@@ -44,5 +45,5 @@ export function eftDetails() {
 export function geminiConfig() {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) return null;
-  return { apiKey, model: process.env.GEMINI_MODEL?.trim() || "gemini-flash-latest" };
+  return { apiKey, model: process.env.GEMINI_MODEL?.trim() || DEFAULT_MODEL };
 }

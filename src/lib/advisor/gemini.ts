@@ -26,16 +26,24 @@ export class AdvisorError extends Error {
 }
 
 /**
- * Models tried in order after the configured one, when it is missing,
- * overloaded or too slow. The "-latest" aliases always point at Google's
- * current Flash and Flash-Lite models.
+ * The model used unless GEMINI_MODEL says otherwise, and the ones tried
+ * after it when it is missing, overloaded or slow. Stable, fast models come
+ * first. The "-latest" aliases follow Google's newest release, which is
+ * often overloaded in its first months, so they are the last resort.
+ * (Checked against Google's model list in November 2026. When Google
+ * retires a model, put its replacement here.)
  */
-export const FALLBACK_MODELS = ["gemini-flash-latest", "gemini-flash-lite-latest", "gemini-2.5-flash"];
+export const DEFAULT_MODEL = "gemini-3.6-flash";
+export const FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-flash-lite-latest"];
 
 const API = "https://generativelanguage.googleapis.com/v1beta/models";
 const MAX_TOOL_ROUNDS = 6;
 /** Whole answer, all retries included; hosting functions are stopped at about 26 s. */
 const DEADLINE_MS = 23_000;
+/** The longest one call to a model may take while another model is still untried: a slow model is left for a faster one. */
+const CALL_MS = 9_000;
+/** A model that just failed is tried last for this long. */
+const REST_MS = 3 * 60_000;
 /** Errors worth trying another model for. */
 const SWITCH_CODES = new Set([
   "model_not_found",
@@ -49,6 +57,29 @@ const SWITCH_CODES = new Set([
   "gemini_504",
 ]);
 
+/**
+ * How little a model should "think" before answering. This kind of question
+ * is answered well without extended thinking, and several times faster. The
+ * setting differs by generation: 2.5 takes a budget of tokens, 3 and later a
+ * level, and not every model accepts the lowest level.
+ */
+export function thinkingFor(model: string): Record<string, unknown> | null {
+  if (/^gemini-2\.5-flash-lite/.test(model)) return null; // off unless asked for
+  if (/^gemini-2\.5-flash/.test(model)) return { thinkingBudget: 0 };
+  if (/^gemini-2\./.test(model)) return null;
+  if (/flash-lite|gemini-3\.6-flash|gemini-3-flash/.test(model)) return { thinkingLevel: "minimal" };
+  return { thinkingLevel: "low" };
+}
+
+// What this server instance has learnt about the models: which just failed (tried last for a while), and which reject the thinking setting.
+const resting = new Map<string, number>();
+const noThinkingConfig = new Set<string>();
+/** For tests: forget what was learnt about the models. */
+export function forgetModelHealth() {
+  resting.clear();
+  noThinkingConfig.clear();
+}
+
 type RunOptions = {
   apiKey: string;
   model: string;
@@ -58,22 +89,30 @@ type RunOptions = {
   fetchImpl?: typeof fetch;
   /** Milliseconds available for the whole answer. */
   budgetMs?: number;
+  /** Milliseconds one call may take while another model is still untried. */
+  callMs?: number;
 };
 
 /** Runs the conversation, moving to the next model when one is unavailable, overloaded or slow. */
-export async function runAdvisor(opts: RunOptions): Promise<{ text: string; toolsUsed: string[]; model: string }> {
-  const deadline = Date.now() + (opts.budgetMs ?? DEADLINE_MS);
-  const models = [opts.model, ...FALLBACK_MODELS.filter((m) => m !== opts.model)];
+export async function runAdvisor(opts: RunOptions): Promise<{ text: string; toolsUsed: string[]; model: string; tried?: string[] }> {
+  const start = Date.now();
+  const deadline = start + (opts.budgetMs ?? DEADLINE_MS);
+  const listed = [opts.model, ...FALLBACK_MODELS.filter((m) => m !== opts.model)];
+  // Models that failed a moment ago go to the back of the queue.
+  const models = [...listed.filter((m) => (resting.get(m) ?? 0) <= start), ...listed.filter((m) => (resting.get(m) ?? 0) > start)];
   let last: unknown;
   const attempts: string[] = [];
-  for (const model of models) {
+  for (const [i, model] of models.entries()) {
     // Not worth starting a model with too little time left for an answer.
-    if (model !== models[0] && deadline - Date.now() < 5_000) break;
+    if (i > 0 && deadline - Date.now() < 5_000) break;
     try {
-      return { ...(await runWithModel({ ...opts, model }, deadline)), model };
+      const answer = await runWithModel({ ...opts, model }, deadline, i < models.length - 1);
+      resting.delete(model);
+      return { ...answer, model, ...(attempts.length ? { tried: attempts } : {}) };
     } catch (e) {
       last = e;
       if (!(e instanceof AdvisorError) || !SWITCH_CODES.has(e.code)) throw e;
+      resting.set(model, Date.now() + REST_MS);
       console.warn(`[advisor] ${model}: ${e.message}`);
       attempts.push(`${model}: ${e.code}${e.detail ? ` (${e.detail})` : ""}`);
     }
@@ -82,17 +121,18 @@ export async function runAdvisor(opts: RunOptions): Promise<{ text: string; tool
   throw last;
 }
 
-// Models that rejected the thinking setting; remembered for this server instance.
-const noThinkingConfig = new Set<string>();
-
-async function runWithModel({ apiKey, model, system, history, ctx, fetchImpl = fetch }: RunOptions, deadline: number) {
+async function runWithModel(
+  { apiKey, model, system, history, ctx, fetchImpl = fetch, callMs = CALL_MS }: RunOptions,
+  deadline: number,
+  othersWaiting: boolean,
+) {
   const contents: Content[] = history.map((t) => ({ role: t.role === "assistant" ? "model" : "user", parts: [{ text: t.text }] }));
   const toolsUsed: string[] = [];
 
   const request = async (round: number): Promise<Response> => {
     const remaining = deadline - Date.now();
     if (remaining < 1_000) throw new AdvisorError(`${model} ran out of time.`, "upstream", "timeout");
-    const thinking = /flash/i.test(model) && !noThinkingConfig.has(model);
+    const thinking = noThinkingConfig.has(model) ? null : thinkingFor(model);
     try {
       const res = await fetchImpl(`${API}/${encodeURIComponent(model)}:generateContent`, {
         method: "POST",
@@ -106,15 +146,14 @@ async function runWithModel({ apiKey, model, system, history, ctx, fetchImpl = f
           generationConfig: {
             temperature: 0.4,
             maxOutputTokens: 4096,
-            // Flash answers this kind of question well without extended thinking,
-            // and several times faster.
-            ...(thinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+            ...(thinking ? { thinkingConfig: thinking } : {}),
           },
         }),
-        signal: AbortSignal.timeout(remaining),
+        // While another model is still untried, a slow call is cut short so that model gets its turn.
+        signal: AbortSignal.timeout(othersWaiting ? Math.min(remaining, callMs) : remaining),
       });
-      // Newer models reject thinkingBudget with a generic "invalid argument",
-      // so any 400 gets one retry without it.
+      // A model that does not know the thinking setting answers with a generic
+      // "invalid argument", so any 400 gets one retry without it.
       if (thinking && res.status === 400 && !/API key/i.test(await res.clone().text())) {
         noThinkingConfig.add(model);
         return request(round);

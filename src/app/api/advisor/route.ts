@@ -44,15 +44,23 @@ export async function POST(request: NextRequest) {
   const [catalogue, overrides] = await Promise.all([getCatalogue(), getCompatibilityOverrides()]);
   const today = new Intl.DateTimeFormat("en-ZA", { dateStyle: "long", timeZone: "Africa/Johannesburg" }).format(new Date());
 
+  const started = Date.now();
   try {
-    const { text } = await runAdvisor({
+    const { text, model, tried } = await runAdvisor({
       apiKey: config.apiKey,
       model: config.model,
       system: advisorSystemPrompt(today),
       history: parsed.data.messages,
       ctx: { catalogue, overrides },
     });
-    return json({ reply: text, products: extractRecommendations(text, catalogue).map(recommendationCard) });
+    // Which model answered and how long it took: nothing secret, and it makes a slow day easy to diagnose from the browser.
+    return json({
+      reply: text,
+      products: extractRecommendations(text, catalogue).map(recommendationCard),
+      model,
+      ms: Date.now() - started,
+      ...(tried ? { tried } : {}),
+    });
   } catch (e) {
     if (e instanceof AdvisorError) {
       if (e.kind === "config" || e.kind === "upstream") console.error(`[advisor] ${e.message}`);

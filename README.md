@@ -167,7 +167,7 @@ The repo includes `netlify.toml`; Netlify builds it with its official Next.js ad
 | `EFT_BANK_NAME`, `EFT_ACCOUNT_NAME`, `EFT_ACCOUNT_NUMBER`, `EFT_BRANCH_CODE`, `EFT_ACCOUNT_TYPE` | your banking details | Printed on quotes and pro forma invoices |
 | `RESEND_API_KEY`, `EMAIL_FROM` | from Resend | Optional; emails are logged without it |
 | `GEMINI_API_KEY` | from [Google AI Studio](https://aistudio.google.com/apikey) | Secret. Turns on the Solar Advisor |
-| `GEMINI_MODEL` | optional, default `gemini-flash-latest` (falls back to Flash-Lite and 2.5 Flash when busy) | |
+| `GEMINI_MODEL` | optional, default `gemini-3.6-flash`. When that model is missing, overloaded or slow the advisor moves on to `gemini-3.5-flash-lite`, then Google's `-latest` aliases (the list is in `src/lib/advisor/gemini.ts`; update it when Google retires a model) | |
 
 `NEXT_PUBLIC_*` values are built into the pages, so redeploy after changing them. In Supabase, add the Netlify address under **Authentication > URL Configuration** (site URL and redirect URL `https://<your-site>/auth/callback`).
 
@@ -190,6 +190,7 @@ npm run build && npm start
 - Conversations are not stored; the browser keeps the current chat for that tab only.
 - Without `GEMINI_API_KEY` the page still loads and says the advisor isn't switched on.
 - The key is read at build time for the page and at request time for the API, so **redeploy after adding it**.
+- **When it stops answering:** the reply from `/api/advisor` (the browser's Network tab) says why. An error carries `code` and `detail` (which models were tried and what each said); an answer carries `model` and `ms` (which model answered and how long it took). Google renames and retires models several times a year: keep `DEFAULT_MODEL` and `FALLBACK_MODELS` in `src/lib/advisor/gemini.ts` on stable models, with the moving `-latest` names last, because Google's newest model is often overloaded.
 
 ## Products: import, update and export
 

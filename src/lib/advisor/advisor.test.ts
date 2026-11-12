@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { makeProduct } from "@/lib/catalogue/fixtures";
-import { AdvisorError, runAdvisor } from "./gemini";
+import { AdvisorError, DEFAULT_MODEL, FALLBACK_MODELS, forgetModelHealth, runAdvisor, thinkingFor } from "./gemini";
 import { estimateSystem } from "./sizing";
 import { extractRecommendations, runTool } from "./tools";
 
@@ -108,6 +108,7 @@ function fakeGemini(responses: unknown[]) {
 
 describe("runAdvisor", () => {
   const base = { apiKey: "k", model: "gemini-2.5-flash", system: "sys", ctx };
+  beforeEach(() => forgetModelHealth());
 
   it("runs tool calls and returns the final answer", async () => {
     const { fetchImpl, requests } = fakeGemini([
@@ -154,8 +155,8 @@ describe("runAdvisor", () => {
     const urls: string[] = [];
     const spy = ((url: string, init: RequestInit) => (urls.push(url), fetchImpl(url, init))) as typeof fetch;
     const r = await runAdvisor({ ...base, history: [{ role: "user", text: "hi" }], fetchImpl: spy });
-    expect(r).toMatchObject({ text: "Hello!", model: "gemini-flash-latest" });
-    expect(urls[1]).toContain("/gemini-flash-latest:generateContent");
+    expect(r).toMatchObject({ text: "Hello!", model: FALLBACK_MODELS[0], tried: ["gemini-2.5-flash: model_not_found"] });
+    expect(urls[1]).toContain(`/${FALLBACK_MODELS[0]}:generateContent`);
     expect(requests).toHaveLength(2);
   });
 
@@ -163,9 +164,53 @@ describe("runAdvisor", () => {
     const urls: string[] = [];
     const { fetchImpl } = fakeGemini([503, { candidates: [{ content: { parts: [{ text: "Hi there." }] } }] }]);
     const spy = ((url: string, init: RequestInit) => (urls.push(url), fetchImpl(url, init))) as typeof fetch;
-    const r = await runAdvisor({ ...base, model: "gemini-flash-latest", history: [{ role: "user", text: "hi" }], fetchImpl: spy });
-    expect(r).toMatchObject({ text: "Hi there.", model: "gemini-flash-lite-latest" });
-    expect(urls.map((u) => u.split("/models/")[1])).toEqual(["gemini-flash-latest:generateContent", "gemini-flash-lite-latest:generateContent"]);
+    const r = await runAdvisor({ ...base, model: DEFAULT_MODEL, history: [{ role: "user", text: "hi" }], fetchImpl: spy });
+    expect(r).toMatchObject({ text: "Hi there.", model: FALLBACK_MODELS[0] });
+    expect(urls.map((u) => u.split("/models/")[1])).toEqual([`${DEFAULT_MODEL}:generateContent`, `${FALLBACK_MODELS[0]}:generateContent`]);
+  });
+
+  it("starts with stable models and leaves Google's moving \"latest\" names for last", () => {
+    expect(DEFAULT_MODEL).not.toMatch(/latest|preview/);
+    expect(FALLBACK_MODELS[0]).not.toMatch(/latest|preview/);
+    expect(FALLBACK_MODELS).not.toContain(DEFAULT_MODEL);
+    // retired on 1 December 2026
+    expect([DEFAULT_MODEL, ...FALLBACK_MODELS]).not.toContain("gemini-2.5-flash");
+  });
+
+  it("asks each generation of model for as little thinking as it allows", () => {
+    expect(thinkingFor("gemini-3.6-flash")).toEqual({ thinkingLevel: "minimal" });
+    expect(thinkingFor("gemini-3.5-flash-lite")).toEqual({ thinkingLevel: "minimal" });
+    expect(thinkingFor("gemini-flash-lite-latest")).toEqual({ thinkingLevel: "minimal" });
+    // the newest Flash and the aliases that follow it do not take "minimal"
+    expect(thinkingFor("gemini-3.8-flash")).toEqual({ thinkingLevel: "low" });
+    expect(thinkingFor("gemini-flash-latest")).toEqual({ thinkingLevel: "low" });
+    expect(thinkingFor("gemini-2.5-flash")).toEqual({ thinkingBudget: 0 });
+    expect(thinkingFor("gemini-2.5-flash-lite")).toBeNull();
+  });
+
+  it("leaves a slow model for the next one instead of waiting out the whole time", async () => {
+    const urls: string[] = [];
+    const fetchImpl = ((url: string, init: RequestInit) => {
+      urls.push(url.split("/models/")[1]);
+      if (urls.length === 1) return new Promise((_, reject) => init.signal?.addEventListener("abort", () => reject(init.signal?.reason)));
+      return Promise.resolve(Response.json({ candidates: [{ content: { parts: [{ text: "Quick answer." }] } }] }));
+    }) as typeof fetch;
+    const started = Date.now();
+    const r = await runAdvisor({ ...base, model: DEFAULT_MODEL, history: [{ role: "user", text: "hi" }], fetchImpl, budgetMs: 23_000, callMs: 300 });
+    expect(r).toMatchObject({ text: "Quick answer.", model: FALLBACK_MODELS[0], tried: [`${DEFAULT_MODEL}: timeout`] });
+    // cut off after the per-call limit, well inside the whole budget
+    expect(Date.now() - started).toBeLessThan(3_000);
+  });
+
+  it("tries a model that just failed last, for a few minutes", async () => {
+    const overloaded = fakeGemini([503, { candidates: [{ content: { parts: [{ text: "One." }] } }] }]);
+    await runAdvisor({ ...base, model: DEFAULT_MODEL, history: [{ role: "user", text: "hi" }], fetchImpl: overloaded.fetchImpl });
+    const urls: string[] = [];
+    const next = fakeGemini([{ candidates: [{ content: { parts: [{ text: "Two." }] } }] }]);
+    const spy = ((url: string, init: RequestInit) => (urls.push(url.split("/models/")[1]), next.fetchImpl(url, init))) as typeof fetch;
+    const r = await runAdvisor({ ...base, model: DEFAULT_MODEL, history: [{ role: "user", text: "hi again" }], fetchImpl: spy });
+    expect(r.model).toBe(FALLBACK_MODELS[0]);
+    expect(urls).toEqual([`${FALLBACK_MODELS[0]}:generateContent`]);
   });
 
   it("retries without the thinking setting when a model rejects it", async () => {
