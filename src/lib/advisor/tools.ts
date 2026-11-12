@@ -10,6 +10,7 @@ import { availability, CATEGORIES, productTitle, productUrl, specNum, type Produ
 import { batteryBus, checkPair, inverterBus, type Override } from "@/lib/compatibility/engine";
 import { discountPercent } from "@/lib/pricing/sale";
 import { estimateSystem } from "./sizing";
+import { compatiblePartners, findProducts, suggestSystem } from "./suggest";
 
 const CATEGORY_SLUGS = Object.keys(CATEGORIES) as [CategorySlug, ...CategorySlug[]];
 
@@ -41,8 +42,21 @@ export const TOOL_DECLARATIONS = [
     parameters: { type: "object", properties: { sku: { type: "string" } }, required: ["sku"] },
   },
   {
+    name: "find_compatible",
+    description:
+      "Everything in stock that works with one product, in a single call: the batteries for an inverter, or the inverters for a battery, each already checked for compatibility. Give the SKU, or words such as 'Deye 5 kW hybrid'. Use this instead of searching and checking pairs one at a time.",
+    parameters: {
+      type: "object",
+      properties: {
+        product: { type: "string", description: "The SKU, or the brand and size, of an inverter or battery." },
+        limit: { type: "integer", description: "1 to 10, default 6." },
+      },
+      required: ["product"],
+    },
+  },
+  {
     name: "check_compatibility",
-    description: "Check whether a battery works with an inverter (battery voltage, inverter type, confirmed pairs).",
+    description: "Check whether one particular battery works with one particular inverter (battery voltage, inverter type, confirmed pairs).",
     parameters: {
       type: "object",
       properties: { inverter_sku: { type: "string" }, battery_sku: { type: "string" } },
@@ -52,7 +66,7 @@ export const TOOL_DECLARATIONS = [
   {
     name: "estimate_system",
     description:
-      "Size an inverter, battery and solar array from the customer's loads, backup hours and usage or bill. Always use this for sizing numbers instead of calculating yourself.",
+      "Size an inverter, battery and solar array from the customer's loads, backup hours and usage or bill, and get the matching products from stock (inverter, batteries, panels, already checked to work together) in the same result. Always use this for sizing numbers instead of calculating yourself.",
     parameters: {
       type: "object",
       properties: {
@@ -69,6 +83,7 @@ export const TOOL_DECLARATIONS = [
           enum: [...PROVINCES],
           description: "The customer's province. Solar is sized for the weakest month of the year there, so always pass it when you know it.",
         },
+        phase: { type: "string", enum: ["single", "three"], description: "The home's electricity supply. Most homes are single phase." },
       },
       required: ["simultaneous_load_w", "backup_hours"],
     },
@@ -91,6 +106,7 @@ const schemas = {
     limit: num.int().min(1).max(12).optional(),
   }),
   get_product: z.object({ sku: z.string().max(80) }),
+  find_compatible: z.object({ product: z.string().trim().min(1).max(120), limit: num.int().min(1).max(10).optional() }),
   check_compatibility: z.object({ inverter_sku: z.string().max(80), battery_sku: z.string().max(80) }),
   estimate_system: z.object({
     simultaneous_load_w: num.min(0).max(200_000),
@@ -102,6 +118,7 @@ const schemas = {
     tariff_rand_per_kwh: num.min(0.5).max(15).optional(),
     solar_offset: num.min(0).max(1).optional(),
     province: z.enum(PROVINCES).optional(),
+    phase: z.enum(["single", "three"]).optional(),
   }),
 };
 
@@ -131,6 +148,11 @@ function summary(p: Product) {
     battery_bus: bus(p),
     specs: Object.fromEntries(p.specs.slice(0, 8).map((s) => [s.label, s.valueText])),
   };
+}
+
+/** The few fields a recommendation needs. */
+function brief(p: Product) {
+  return { sku: p.sku, name: p.name, price_incl_vat: p.priceInclVat, stock: availability(p).label, size: size(p) === null ? null : `${size(p)} ${SIZE_SPEC[p.category].unit}` };
 }
 
 export function findBySku(catalogue: Product[], sku: string): Product | undefined {
@@ -185,6 +207,21 @@ export function runTool(name: string, rawArgs: unknown, ctx: ToolContext): Recor
         description: p.shortDescription,
       };
     }
+    case "find_compatible": {
+      const a = args as z.infer<(typeof schemas)["find_compatible"]>;
+      const matches = findProducts(ctx.catalogue, a.product);
+      const product = matches[0];
+      if (!product) return { error: "No inverter or battery matches that. Try search_products, or ask the customer which model they have." };
+      const partners = compatiblePartners(product, ctx.catalogue, ctx.overrides);
+      return {
+        product: { ...brief(product), category: product.category, battery_bus: bus(product) },
+        // Other products the words could mean, so a different one can be asked for by SKU.
+        ...(matches.length > 1 ? { other_matches: matches.slice(1, 5).map((p) => ({ sku: p.sku, name: p.name })) } : {}),
+        total_compatible_in_stock: partners.length,
+        ...(partners.length ? {} : { note: "Nothing in stock could be matched to this product (its battery voltage may not be on file). Ask which exact model the customer has, or suggest they contact us." }),
+        compatible: partners.slice(0, a.limit ?? 6).map((o) => ({ ...brief(o.product), compatibility: o.pair.status, why: o.pair.reason })),
+      };
+    }
     case "check_compatibility": {
       const a = args as z.infer<(typeof schemas)["check_compatibility"]>;
       const inverter = findBySku(ctx.catalogue, a.inverter_sku);
@@ -195,18 +232,53 @@ export function runTool(name: string, rawArgs: unknown, ctx: ToolContext): Recor
     }
     case "estimate_system": {
       const a = args as z.infer<(typeof schemas)["estimate_system"]>;
+      const estimate = estimateSystem({
+        simultaneousLoadW: a.simultaneous_load_w,
+        surgeLoadW: a.surge_load_w,
+        averageBackupLoadW: a.average_backup_load_w,
+        backupHours: a.backup_hours,
+        dailyUsageKwh: a.daily_usage_kwh,
+        monthlyBillRand: a.monthly_bill_rand,
+        tariffRandPerKwh: a.tariff_rand_per_kwh,
+        solarOffset: a.solar_offset,
+        province: a.province,
+      });
+      const system = suggestSystem(ctx.catalogue, ctx.overrides, {
+        inverterKw: estimate.inverterKw,
+        batteryKwh: estimate.batteryNominalKwh,
+        solarKwp: estimate.solarKwp,
+        phase: a.phase,
+      });
       return {
-        ...estimateSystem({
-          simultaneousLoadW: a.simultaneous_load_w,
-          surgeLoadW: a.surge_load_w,
-          averageBackupLoadW: a.average_backup_load_w,
-          backupHours: a.backup_hours,
-          dailyUsageKwh: a.daily_usage_kwh,
-          monthlyBillRand: a.monthly_bill_rand,
-          tariffRandPerKwh: a.tariff_rand_per_kwh,
-          solarOffset: a.solar_offset,
-          province: a.province,
-        }),
+        ...estimate,
+        suggested_products: system
+          ? {
+              note: "The lowest-priced combination in stock that meets this estimate, already checked to work together. Recommend these unless the customer asked for another brand or size.",
+              inverter: brief(system.inverter),
+              ...(system.battery
+                ? {
+                    battery: {
+                      ...brief(system.battery.product),
+                      quantity: system.battery.quantity,
+                      total_rated_kwh: system.battery.totalKwh,
+                      compatibility: system.battery.pair.status,
+                      why: system.battery.pair.reason,
+                    },
+                  }
+                : {}),
+              ...(system.panels
+                ? {
+                    panels: {
+                      ...brief(system.panels.product),
+                      quantity: system.panels.quantity,
+                      array_kwp: system.panels.kwp,
+                      strings: system.panels.strings ?? "Our technician plans the strings at the site assessment.",
+                    },
+                  }
+                : {}),
+              total_incl_vat: Math.round(system.total * 100) / 100,
+            }
+          : { note: "Nothing in stock covers this estimate as one system. Use search_products for the nearest sizes, or suggest the customer contacts us." },
       };
     }
   }

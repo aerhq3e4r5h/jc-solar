@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
   const started = Date.now();
   try {
-    const { text, model, tried } = await runAdvisor({
+    const { text, model, tried, toolsUsed } = await runAdvisor({
       apiKey: config.apiKey,
       model: config.model,
       system: advisorSystemPrompt(today),
@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
       products: extractRecommendations(text, catalogue).map(recommendationCard),
       model,
       ms: Date.now() - started,
+      steps: toolsUsed,
       ...(tried ? { tried } : {}),
     });
   } catch (e) {

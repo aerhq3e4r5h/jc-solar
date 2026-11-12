@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { makeProduct } from "@/lib/catalogue/fixtures";
-import { AdvisorError, DEFAULT_MODEL, FALLBACK_MODELS, forgetModelHealth, runAdvisor, thinkingFor } from "./gemini";
+import { AdvisorError, DEFAULT_MODEL, FALLBACK_MODELS, forgetModelHealth, quotaDetail, runAdvisor, thinkingFor } from "./gemini";
 import { estimateSystem } from "./sizing";
 import { extractRecommendations, runTool } from "./tools";
 
@@ -88,6 +88,45 @@ describe("advisor tools", () => {
     expect(runTool("search_products", { category: "toasters" }, ctx)).toHaveProperty("error");
     expect(runTool("delete_everything", {}, ctx)).toHaveProperty("error");
     expect(runTool("estimate_system", { simultaneous_load_w: "1500", backup_hours: 3 }, ctx)).toHaveProperty("inverterKw", 2);
+  });
+  it("returns the matching products from stock with the estimate, in one call", () => {
+    const panel = makeProduct("solar-panels", "JA Solar: 550W Mono PERC Half-Cell – VOC: 49.90V / ISC: 14.00A (JAM72S30-550/MR)", { sku: "JAM-550", priceInclVat: 1500, stockQty: 40 });
+    const stock = { catalogue: [...ctx.catalogue, panel], overrides: [] };
+    const r = runTool("estimate_system", { simultaneous_load_w: 2000, average_backup_load_w: 800, backup_hours: 4, monthly_bill_rand: 2100, province: "Gauteng" }, stock) as {
+      batteryNominalKwh: number;
+      panelCount: number;
+      suggested_products: {
+        inverter: { sku: string };
+        battery: { sku: string; quantity: number; total_rated_kwh: number; compatibility: string };
+        panels: { sku: string; quantity: number; strings: string };
+        total_incl_vat: number;
+      };
+    };
+    const s = r.suggested_products;
+    // the 24 V Lux is out of stock, and its battery doesn't fit the 48 V Deye
+    expect(s.inverter.sku).toBe("SUN-5K-SG04LP1-EU-SM2");
+    expect(s.battery).toMatchObject({ sku: "SE-G5.1", compatibility: "likely" });
+    expect(s.battery.total_rated_kwh).toBeGreaterThanOrEqual(r.batteryNominalKwh);
+    expect(s.panels).toMatchObject({ sku: "JAM-550", quantity: r.panelCount });
+    expect(s.total_incl_vat).toBe(21000 + 18000 * s.battery.quantity + 1500 * s.panels.quantity);
+  });
+  it("says so when stock can't cover the estimate", () => {
+    const r = runTool("estimate_system", { simultaneous_load_w: 30000, backup_hours: 4 }, ctx) as { suggested_products: Record<string, unknown> };
+    expect(r.suggested_products).not.toHaveProperty("inverter");
+    expect(r.suggested_products.note).toMatch(/Nothing in stock/);
+  });
+  it("finds everything that works with a product from a SKU or a description", () => {
+    const byWords = runTool("find_compatible", { product: "Deye 5 kW hybrid inverter" }, ctx) as {
+      product: { sku: string };
+      compatible: { sku: string; compatibility: string }[];
+    };
+    expect(byWords.product.sku).toBe("SUN-5K-SG04LP1-EU-SM2");
+    expect(byWords.compatible.map((c) => c.sku)).toEqual(["SE-G5.1"]); // the 24 V Lux battery is left out
+    const bySku = runTool("find_compatible", { product: "se-g5.1" }, ctx) as { product: { category: string }; compatible: { sku: string }[] };
+    expect(bySku.product.category).toBe("batteries");
+    expect(bySku.compatible.map((c) => c.sku)).toEqual(["SUN-5K-SG04LP1-EU-SM2"]); // the Lux inverter is out of stock, and 24 V
+    expect(runTool("find_compatible", { product: "Deye 8kW" }, ctx)).toHaveProperty("error"); // no 8 kW in this catalogue
+    expect(runTool("find_compatible", { product: "toaster" }, ctx)).toHaveProperty("error");
   });
   it("turns [[SKU]] markers into known products only, once each", () => {
     const text = "Pair the inverter [[SUN-5K-SG04LP1-EU-SM2]] with [[SE-G5.1]] (or two [[SE-G5.1]]). Not [[MADE-UP-1]].";
@@ -235,10 +274,60 @@ describe("runAdvisor", () => {
   });
 
   it("forces a written answer after too many tool rounds", async () => {
-    const call = { candidates: [{ content: { role: "model", parts: [{ functionCall: { name: "search_products", args: { category: "kits" } } }] } }] };
-    const { fetchImpl, requests } = fakeGemini([call, call, call, call, call, call, { candidates: [{ content: { parts: [{ text: "Done." }] } }] }]);
+    const call = (limit: number) => ({
+      candidates: [{ content: { role: "model", parts: [{ functionCall: { name: "search_products", args: { category: "kits", limit } } }] } }],
+    });
+    const { fetchImpl, requests } = fakeGemini([call(1), call(2), call(3), call(4), { candidates: [{ content: { parts: [{ text: "Done." }] } }] }]);
     const r = await runAdvisor({ ...base, history: [{ role: "user", text: "kits?" }], fetchImpl });
     expect(r.text).toBe("Done.");
+    expect(requests).toHaveLength(5);
     expect(requests.at(-1)?.toolConfig).toEqual({ functionCallingConfig: { mode: "NONE" } });
+    // the last tool result itself says that it is time to answer
+    const lastResult = requests.at(-1)!.contents.at(-1)!.parts[0].functionResponse as { response: Record<string, unknown> };
+    expect(lastResult.response.next_step).toMatch(/Reply to the customer now/);
+  });
+
+  it("doesn't run the same tool call twice in one answer", async () => {
+    const call = { candidates: [{ content: { role: "model", parts: [{ functionCall: { name: "search_products", args: { category: "inverters" } } }] } }] };
+    const { fetchImpl, requests } = fakeGemini([call, call, { candidates: [{ content: { parts: [{ text: "Here you go." }] } }] }]);
+    const r = await runAdvisor({ ...base, history: [{ role: "user", text: "inverters?" }], fetchImpl });
+    expect(r.text).toBe("Here you go.");
+    const results = requests.at(-1)!.contents.filter((c) => c.parts[0].functionResponse).map((c) => (c.parts[0].functionResponse as { response: Record<string, unknown> }).response);
+    expect(results[0]).toHaveProperty("products");
+    expect(results[1]).not.toHaveProperty("products");
+    expect(results[1].note).toMatch(/already have this result/);
+  });
+
+  it("moves to another model when one keeps calling tools instead of answering", async () => {
+    const call = (limit: number) => ({
+      candidates: [{ content: { role: "model", parts: [{ functionCall: { name: "search_products", args: { category: "kits", limit } } }] } }],
+    });
+    const { fetchImpl } = fakeGemini([call(1), call(2), call(3), call(4), call(5), { candidates: [{ content: { parts: [{ text: "Straight answer." }] } }] }]);
+    const r = await runAdvisor({ ...base, model: DEFAULT_MODEL, history: [{ role: "user", text: "kits?" }], fetchImpl });
+    expect(r).toMatchObject({ text: "Straight answer.", model: FALLBACK_MODELS[0] });
+    expect(r.tried?.[0]).toMatch(new RegExp(`^${DEFAULT_MODEL}: too_many_steps \\(search_products`));
+  });
+
+  it("reads which of Google's limits was reached, and rests the model for as long as Google says", async () => {
+    const body = JSON.stringify({
+      error: {
+        code: 429,
+        message: "You exceeded your current quota, please check your plan and billing details.",
+        status: "RESOURCE_EXHAUSTED",
+        details: [
+          { "@type": "type.googleapis.com/google.rpc.QuotaFailure", violations: [{ quotaId: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier", quotaValue: "5" }] },
+          { "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "31s" },
+        ],
+      },
+    });
+    expect(quotaDetail(body)).toEqual({ detail: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier, limit 5, retry in 31s", restMs: 33_000 });
+    expect(quotaDetail(body.replace("PerMinute", "PerDay")).restMs).toBe(30 * 60_000);
+    expect(quotaDetail("not json")).toEqual({});
+
+    const replies = [new Response(body, { status: 429 }), Response.json({ candidates: [{ content: { parts: [{ text: "Hi." }] } }] })];
+    const fetchImpl = (async () => replies.shift()!) as unknown as typeof fetch;
+    const r = await runAdvisor({ ...base, model: DEFAULT_MODEL, history: [{ role: "user", text: "hi" }], fetchImpl });
+    expect(r.model).toBe(FALLBACK_MODELS[0]);
+    expect(r.tried).toEqual([`${DEFAULT_MODEL}: rate_limited (GenerateRequestsPerMinutePerProjectPerModel-FreeTier, limit 5, retry in 31s)`]);
   });
 });
