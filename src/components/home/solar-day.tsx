@@ -253,7 +253,7 @@ export function SolarDay() {
       <div className="sticky top-16 h-[calc(100svh-4rem)] overflow-hidden lg:top-[4.5rem] lg:h-[calc(100svh-4.5rem)]">
         <div className="container-page flex h-full flex-col gap-3 py-3 sm:gap-4 sm:py-5 lg:grid lg:grid-cols-[1fr_1.25fr] lg:grid-rows-[1fr_auto_auto_1fr] lg:gap-x-14 lg:gap-y-5 lg:py-6">
           <div className="shrink-0 lg:col-start-1 lg:row-start-2">
-            <h2 id="day-heading" className="type-wide text-2xl sm:text-4xl xl:text-5xl">
+            <h2 id="day-heading" className="type-wide text-2xl sm:text-4xl">
               24 hours on solar
             </h2>
             <p className="mt-2 hidden text-white/60 sm:block">

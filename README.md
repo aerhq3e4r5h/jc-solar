@@ -182,15 +182,17 @@ npm run build && npm start
 
 `/advisor` is a chat with Google Gemini that sizes a system and recommends products. It can't make anything up about the shop: the model calls server-side tools (`src/lib/advisor/tools.ts`) for everything factual.
 
-- `search_products` and `get_product` read the same cached catalogue as the shop (live prices and stock).
-- `check_compatibility` uses the same engine as the cart.
-- `estimate_system` (`src/lib/advisor/sizing.ts`) does the sizing maths deterministically, with its assumptions listed in the result.
+- `estimate_system` (`src/lib/advisor/sizing.ts`) does the sizing maths deterministically, with its assumptions listed in the result, and returns the matching in-stock products with it (inverter, batteries and panels that work together, picked in `src/lib/advisor/suggest.ts`). A sizing question is answered with one tool call.
+- `find_compatible` returns everything in stock that works with one inverter or battery, from a SKU or words like "Deye 5 kW hybrid".
+- `search_products` and `get_product` read the same cached catalogue as the shop (live prices and stock); `check_compatibility` checks one pair with the same engine as the cart.
+- An answer is two or three calls to the model, about three seconds on a normal day. The model gets at most four tool rounds, and a repeated call is not run twice.
 - Recommended products come back as `[[SKU]]` markers. The server keeps only SKUs that exist and shows them as cards with **Add to cart** and **Add all to cart**.
 - The key stays on the server (`/api/advisor`). Requests are size-limited and rate-limited per visitor (20 per 10 minutes per server instance), and only accepted from the site's own pages.
 - Conversations are not stored; the browser keeps the current chat for that tab only.
 - Without `GEMINI_API_KEY` the page still loads and says the advisor isn't switched on.
 - The key is read at build time for the page and at request time for the API, so **redeploy after adding it**.
-- **When it stops answering:** the reply from `/api/advisor` (the browser's Network tab) says why. An error carries `code` and `detail` (which models were tried and what each said); an answer carries `model` and `ms` (which model answered and how long it took). Google renames and retires models several times a year: keep `DEFAULT_MODEL` and `FALLBACK_MODELS` in `src/lib/advisor/gemini.ts` on stable models, with the moving `-latest` names last, because Google's newest model is often overloaded.
+- **Slow or overloaded models:** Google's models are sometimes slow or answer "overloaded" (503), most often on a free-tier key. The advisor tries the models in `src/lib/advisor/gemini.ts` in order; when one takes more than four seconds the next is started alongside it and the first answer wins; an overloaded one gets a second go after the others; and the chat page tries once more by itself before showing an error. The whole answer has 23 seconds, because hosting stops a request at about 26.
+- **When it stops answering:** the reply from `/api/advisor` (the browser's Network tab) says why. An answer carries `model`, `ms`, `steps` (the tools used) and `trace` (every call to a model and how long it took); an error carries `code`, `detail` (which models were tried and what each said) and the same `trace`. `rate_limited` with a `FreeTier` limit in the detail means the key has reached Google's free allowance: set up billing for the key in [Google AI Studio](https://aistudio.google.com/) to lift it. Google renames and retires models several times a year: keep `DEFAULT_MODEL` and `FALLBACK_MODELS` on stable models, with the moving `-latest` names last, because Google's newest model is often overloaded.
 
 ## Products: import, update and export
 
@@ -280,7 +282,7 @@ The site always runs with full animation, for every visitor, whatever their devi
 - The level is one constant, `MOTION_LEVEL` in `src/lib/motion/pref.ts`, written onto `<html data-motion>` by the root layout. The stylesheet and components also understand `calm` (fades only; nothing slides, zooms or flies) and `off` (nothing animates). Changing that constant runs the whole site at another level.
 - In CSS, animation rules are scoped with `:root[data-motion="full"]` (or the `motion-full:`, `motion-calm:`, `motion-off:` Tailwind variants). In components, use `useMotion()` from `src/components/motion/use-motion.ts`; outside React, `currentMotion()`.
 - **Scroll reveals:** put `data-reveal` on any element (`"up"` by default, or `fade`, `left`, `right`, `scale`, `drop`). For a headline that arrives word by word, use `data-reveal="words"` with `<Words text="..." />` inside. A small inline script (`REVEAL_SCRIPT`) marks elements `data-shown` as they scroll into view, so it works in server components and never hides content when JavaScript is off.
-- The brand row keeps its own Pause button, so its links are easy to click.
+- The home page keeps its motion to two places: the house's lights coming on in the hero, and the 24-hour story. Its sections share one heading (`SectionHead` in `src/app/(site)/page.tsx`) and one rhythm (`py-14 lg:py-20`); keep new sections to that.
 
 ## Guides and calculators
 

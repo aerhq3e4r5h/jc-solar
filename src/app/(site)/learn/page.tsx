@@ -37,7 +37,7 @@ export default function LearnPage() {
         </ul>
 
         <section aria-labelledby="tools-heading" className="mt-20 lg:mt-28">
-          <h2 id="tools-heading" data-reveal="words" className="type-wide text-4xl sm:text-5xl">
+          <h2 id="tools-heading" data-reveal="words" className="type-wide text-3xl leading-[1.02] sm:text-4xl">
             <Words text="Or just work it out" />
           </h2>
           <p data-reveal="fade" className="mt-3 max-w-2xl text-lg text-muted-foreground">
